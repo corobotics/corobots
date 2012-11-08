@@ -1,0 +1,16 @@
+<package>
+  <description brief="obstacle_avoidance">
+
+     obstacle_avoidance
+
+  </description>
+  <author>Max Bogue</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <!--<url>http://ros.org/wiki/obstacle_avoidance</url>-->
+  <depend package="turtlebot_node"/>
+  <depend package="sensor_msgs"/>
+
+</package>
+
+
