@@ -1,0 +1,2 @@
+Problem: The turtlebot upstart script couldn't access the USB port.
+Solution: http://answers.ros.org/question/11185/cant-access-turtlebot-through-ttyusb0/?answer=16585#answer-container-16585
