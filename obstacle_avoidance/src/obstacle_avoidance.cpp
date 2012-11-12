@@ -1,26 +1,51 @@
+#include "obstacle_avoidance.h"
+
 #include "ros/ros.h"
+#include "geometry_msgs/Point.h"
+#include "geometry_msgs/Pose2D.h"
 #include "sensor_msgs/LaserScan.h"
 #include "turtlebot_node/Turtle.h"
 
-using namespace std;
-using namespace ros;
-using namespace geometry_msgs;
-using namespace sensor_msgs;
+using geometry_msgs::Point;
+using geometry_msgs::Pose2D;
+using sensor_msgs::LaserScan;
+using turtlebot_node::Turtle;
 
-void ObstacleAvoider::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
-void ObstacleAvoider::poseCallback(const geometry_msgs::Pose2D::ConstPtr& pose);
-void ObstacleAvoider::waypointCallback(const geometry_msgs::Point::ConstPtr& waypoint);
+void ObstacleAvoider::updatePose(const Pose2D::ConstPtr& pose) {
 
-Publisher pub;
+}
+
+void ObstacleAvoider::addWaypoint(const Point::ConstPtr& waypoint) {
+
+}
+
+Point APF::nav(const LaserScan::ConstPtr& scan) {
+    Point p;
+    return p;
+}
+
+void scanCallback(const LaserScan::ConstPtr& scan) {
+
+}
+
+void poseCallback(const Pose2D::ConstPtr& pose) {
+
+}
+
+void waypointCallback(const Point::ConstPtr& waypoint) {
+
+}
+
+ros::Publisher pub;
 
 int main(int argc, char** argv) {
-    init(argc, argv, "obstacle_avoidance");
-    NodeHandle n;
-    Publisher pub = n.advertise<turtlebot_node::Turtle>("cmd_vel", 1000);
+    ros::init(argc, argv, "obstacle_avoidance");
+    ros::NodeHandle n;
+    ros::Publisher pub = n.advertise<turtlebot_node::Turtle>("cmd_vel", 1000);
     APF obsAvoider;
-    Subscriber scanSub = n.subscribe("scan", 1000, obsAvoider.scanCallback);
-    Subscriber poseSub = n.subscribe("pose", 1000, obsAvoider.poseCallback);
-    Subscriber waypointSub = n.subscribe("waypoints", 1000, obsAvoider.waypointCallback);
-    spin();
+    ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
+    ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);
+    ros::Subscriber waypointSub = n.subscribe("waypoints", 1000, waypointCallback);
+    ros::spin();
     return 0;
 }
