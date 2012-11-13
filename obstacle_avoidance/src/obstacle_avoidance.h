@@ -7,10 +7,11 @@
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Pose2D.h"
 #include "sensor_msgs/LaserScan.h"
+#include "turtlebot_node/Turtle.h"
 
 class ObstacleAvoider {
 public:
-    virtual geometry_msgs::Point nav(const sensor_msgs::LaserScan::ConstPtr& scan) = 0;
+    virtual turtlebot_node::Turtle nav(const sensor_msgs::LaserScan::ConstPtr& scan) = 0;
     void updatePose(const geometry_msgs::Pose2D::ConstPtr& pose);
     void addWaypoint(const geometry_msgs::Point::ConstPtr& waypoint);
 
@@ -21,7 +22,7 @@ protected:
 
 class APF : public ObstacleAvoider {
 public:
-    virtual geometry_msgs::Point nav(const sensor_msgs::LaserScan::ConstPtr& scan);
+    virtual turtlebot_node::Turtle nav(const sensor_msgs::LaserScan::ConstPtr& scan);
 };
 
 #endif /* obstable_avoidance_h */
