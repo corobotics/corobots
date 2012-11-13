@@ -11,9 +11,9 @@
 
 class ObstacleAvoider {
 public:
-    virtual turtlebot_node::Turtle nav(const sensor_msgs::LaserScan::ConstPtr& scan) = 0;
-    void updatePose(const geometry_msgs::Pose2D::ConstPtr& pose);
-    void addWaypoint(const geometry_msgs::Point::ConstPtr& waypoint);
+    virtual turtlebot_node::Turtle nav(sensor_msgs::LaserScan scan) = 0;
+    void updatePose(geometry_msgs::Pose2D pose);
+    void addWaypoint(geometry_msgs::Point waypoint);
 
 protected:
     geometry_msgs::Pose2D pose;
@@ -22,7 +22,7 @@ protected:
 
 class APF : public ObstacleAvoider {
 public:
-    virtual turtlebot_node::Turtle nav(const sensor_msgs::LaserScan::ConstPtr& scan);
+    virtual turtlebot_node::Turtle nav(sensor_msgs::LaserScan scan);
 };
 
 #endif /* obstable_avoidance_h */

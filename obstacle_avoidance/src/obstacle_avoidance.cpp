@@ -11,32 +11,32 @@ using geometry_msgs::Pose2D;
 using sensor_msgs::LaserScan;
 using turtlebot_node::Turtle;
 
-void ObstacleAvoider::updatePose(const Pose2D::ConstPtr& newPose) {
+void ObstacleAvoider::updatePose(Pose2D newPose) {
     pose = newPose;
     // Check if reached waypoint.
 }
 
-void ObstacleAvoider::addWaypoint(const Point::ConstPtr& waypoint) {
+void ObstacleAvoider::addWaypoint(Point waypoint) {
     waypointQueue.push(waypoint);
 }
 
-Turtle APF::nav(const LaserScan::ConstPtr& scan) {
+Turtle APF::nav(LaserScan scan) {
     Turtle t;
     return t;
 }
 
 ObstacleAvoider* oa = NULL;
 
-void scanCallback(const LaserScan::ConstPtr& scan) {
+void scanCallback(LaserScan scan) {
     Turtle t = oa->nav(scan);
     // Publish.
 }
 
-void poseCallback(const Pose2D::ConstPtr& pose) {
+void poseCallback(Pose2D pose) {
     oa->updatePose(pose);
 }
 
-void waypointCallback(const Point::ConstPtr& waypoint) {
+void waypointCallback(Point waypoint) {
     oa->addWaypoint(waypoint);
 }
 
