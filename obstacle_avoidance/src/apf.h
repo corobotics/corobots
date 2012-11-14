@@ -28,9 +28,8 @@ private:
 
 class APF : public ObstacleAvoider {
 public:
-    APF();
-    APF(float ko, float kg, ForceCalc* distForce) :
-        ko(ko), kg(kg), distForce(distForce) {};
+    APF(const float& ko, const float& kg);
+    APF(const float& ko, const float& kg, ForceCalc* distForce);
     virtual geometry_msgs::Point nav(sensor_msgs::LaserScan scan);
 private:
     float ko;

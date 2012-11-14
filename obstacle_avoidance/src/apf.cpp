@@ -16,9 +16,14 @@ float InversePowerForce::calc(const float& dist) {
     return pow(dist, -exp);
 }
 
-APF::APF() {
+APF::APF(const float& ko, const float& kg) :
+    ko(ko), kg(kg)
+{
+    distForce = new InversePowerForce(2.0);
+};
 
-}
+APF::APF(const float& ko, const float& kg, ForceCalc* distForce) :
+    ko(ko), kg(kg), distForce(distForce) {};
 
 list<Polar> APF::findLocalMinima(LaserScan scan) {
     // List of "object" points: local minima of the scan.

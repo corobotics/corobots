@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "obstacle_avoidance");
     ros::NodeHandle n;
     ros::Publisher pub = n.advertise<turtlebot_node::Turtle>("cmd_vel", 1000);
-    oa = new APF();
+    oa = new APF(0.0, 0.0);
     ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);
     ros::Subscriber waypointSub = n.subscribe("waypoints", 1000, waypointCallback);
