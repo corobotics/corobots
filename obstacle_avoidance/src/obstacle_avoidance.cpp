@@ -25,7 +25,7 @@ void ObstacleAvoider::addWaypoint(Point waypoint) {
 ObstacleAvoider* oa = NULL;
 
 void scanCallback(LaserScan scan) {
-    Turtle t = oa->nav(scan);
+    Point p = oa->nav(scan);
     // Publish.
 }
 

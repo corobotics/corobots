@@ -11,7 +11,7 @@
 
 class ObstacleAvoider {
 public:
-    virtual turtlebot_node::Turtle nav(sensor_msgs::LaserScan scan) = 0;
+    virtual geometry_msgs::Point nav(sensor_msgs::LaserScan scan) = 0;
     void updatePose(geometry_msgs::Pose2D pose);
     void addWaypoint(geometry_msgs::Point waypoint);
 
