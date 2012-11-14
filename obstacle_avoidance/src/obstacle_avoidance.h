@@ -20,9 +20,4 @@ protected:
     std::queue<geometry_msgs::Point> waypointQueue;
 };
 
-class APF : public ObstacleAvoider {
-public:
-    virtual turtlebot_node::Turtle nav(sensor_msgs::LaserScan scan);
-};
-
 #endif /* obstable_avoidance_h */

@@ -1,11 +1,13 @@
-#include "obstacle_avoidance.h"
-
 #include "ros/ros.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Pose2D.h"
 #include "sensor_msgs/LaserScan.h"
 #include "turtlebot_node/Turtle.h"
 
+#include "obstacle_avoidance.h"
+#include "apf.h"
+
+using namespace std;
 using geometry_msgs::Point;
 using geometry_msgs::Pose2D;
 using sensor_msgs::LaserScan;
@@ -18,11 +20,6 @@ void ObstacleAvoider::updatePose(Pose2D newPose) {
 
 void ObstacleAvoider::addWaypoint(Point waypoint) {
     waypointQueue.push(waypoint);
-}
-
-Turtle APF::nav(LaserScan scan) {
-    Turtle t;
-    return t;
 }
 
 ObstacleAvoider* oa = NULL;

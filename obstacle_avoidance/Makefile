@@ -304,6 +304,21 @@ tests/fast:
 .PHONY : tests/fast
 
 # target to build an object file
+src/apf.o:
+	$(MAKE) -f CMakeFiles/obstacle_avoidance.dir/build.make CMakeFiles/obstacle_avoidance.dir/src/apf.o
+.PHONY : src/apf.o
+
+# target to preprocess a source file
+src/apf.i:
+	$(MAKE) -f CMakeFiles/obstacle_avoidance.dir/build.make CMakeFiles/obstacle_avoidance.dir/src/apf.i
+.PHONY : src/apf.i
+
+# target to generate assembly for a file
+src/apf.s:
+	$(MAKE) -f CMakeFiles/obstacle_avoidance.dir/build.make CMakeFiles/obstacle_avoidance.dir/src/apf.s
+.PHONY : src/apf.s
+
+# target to build an object file
 src/obstacle_avoidance.o:
 	$(MAKE) -f CMakeFiles/obstacle_avoidance.dir/build.make CMakeFiles/obstacle_avoidance.dir/src/obstacle_avoidance.o
 .PHONY : src/obstacle_avoidance.o
@@ -342,6 +357,9 @@ help:
 	@echo "... test-results"
 	@echo "... test-results-run"
 	@echo "... tests"
+	@echo "... src/apf.o"
+	@echo "... src/apf.i"
+	@echo "... src/apf.s"
 	@echo "... src/obstacle_avoidance.o"
 	@echo "... src/obstacle_avoidance.i"
 	@echo "... src/obstacle_avoidance.s"
