@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iostream>
 #include <list>
 
 #include "geometry_msgs/Point.h"
@@ -37,6 +38,7 @@ list<Polar> APF::findLocalMinima(LaserScan scan) {
     // Whether the last angle's distance was bigger than the current one.
     bool lastWasFurther = true;
     // Search each data point.
+    cout << endl;
     for (unsigned int i = 0; i < scan.ranges.size() - 1; i++) {
         d = scan.ranges[i];
         // If d is a valid distance and closer than [i+1],
@@ -45,6 +47,7 @@ list<Polar> APF::findLocalMinima(LaserScan scan) {
             if (lastWasFurther) {
                 objLoc.d = d;
                 objLoc.a = a;
+                cout << "Obstacle found: " << d << ", " << a << endl;
                 objLocs.push_back(objLoc);
             }
             lastWasFurther = false;
@@ -53,6 +56,7 @@ list<Polar> APF::findLocalMinima(LaserScan scan) {
         }
         a += scan.angle_increment;
     }
+    cout << endl;
     return objLocs;
 }
 
@@ -61,6 +65,9 @@ list<Polar> APF::findLocalMinima(LaserScan scan) {
 Point APF::nav(LaserScan scan) {
     // The goal is the head of the waypoint queue. TODO: Handle empty queue?
     Point goal = waypointQueue.front();
+
+    cout << "Goal: (" << goal.x << ", " << goal.y << ")" << endl;
+    cout << "Pose: (" << pose.x << ", " << pose.y << ") " << pose.theta << endl;
 
     // The list of "objects" found; right now using local minima of the scan.
     list<Polar> objLocs = findLocalMinima(scan);

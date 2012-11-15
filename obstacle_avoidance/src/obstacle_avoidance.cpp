@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "ros/ros.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Pose2D.h"
@@ -30,6 +32,7 @@ ObstacleAvoider* oa;
 
 void scanCallback(LaserScan scan) {
     Point p = oa->nav(scan);
+    cout << "Nav vector: <" << p.x << ", " << p.y << ">" << endl;
     // Publish.
     Twist t;
     t.linear.x = sqrt(p.x * p.x + p.y * p.y);
