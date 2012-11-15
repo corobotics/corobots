@@ -80,7 +80,7 @@ Point APF::nav(LaserScan scan) {
 
     // Sum over all obstacles.
     for (list<Polar>::iterator p = objLocs.begin(); p != objLocs.end(); ++p) {
-        force = 0; // f(p.d);
+        force = distForce->calc(p->d);
         sum.x += force * cos(p->a);
         sum.y += force * sin(p->a);
     }
