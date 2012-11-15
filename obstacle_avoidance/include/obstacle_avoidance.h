@@ -7,7 +7,6 @@
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Pose2D.h"
 #include "sensor_msgs/LaserScan.h"
-#include "turtlebot_node/Turtle.h"
 
 class ObstacleAvoider {
 public:

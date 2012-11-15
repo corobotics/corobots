@@ -1,17 +1,20 @@
 #include "ros/ros.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Pose2D.h"
+#include "geometry_msgs/Twist.h"
 #include "sensor_msgs/LaserScan.h"
-#include "turtlebot_node/Turtle.h"
 
 #include "obstacle_avoidance.h"
 #include "apf.h"
 
+#define KGOAL 1.8
+#define KOBS 0.5
+
 using namespace std;
 using geometry_msgs::Point;
 using geometry_msgs::Pose2D;
+using geometry_msgs::Twist;
 using sensor_msgs::LaserScan;
-using turtlebot_node::Turtle;
 
 void ObstacleAvoider::updatePose(Pose2D newPose) {
     pose = newPose;
@@ -22,11 +25,16 @@ void ObstacleAvoider::addWaypoint(Point waypoint) {
     waypointQueue.push(waypoint);
 }
 
-ObstacleAvoider* oa = NULL;
+ros::Publisher pub;
+ObstacleAvoider* oa;
 
 void scanCallback(LaserScan scan) {
     Point p = oa->nav(scan);
     // Publish.
+    Twist t;
+    t.linear.x = sqrt(p.x * p.x + p.y * p.y);
+    t.angular.z = atan2(p.y, p.x);
+    pub.publish(t);
 }
 
 void poseCallback(Pose2D pose) {
@@ -37,13 +45,11 @@ void waypointCallback(Point waypoint) {
     oa->addWaypoint(waypoint);
 }
 
-ros::Publisher pub;
-
 int main(int argc, char** argv) {
     ros::init(argc, argv, "obstacle_avoidance");
     ros::NodeHandle n;
-    ros::Publisher pub = n.advertise<turtlebot_node::Turtle>("cmd_vel", 1000);
-    oa = new APF(0.0, 0.0);
+    pub = n.advertise<Twist>("cmd_vel", 1000);
+    oa = new APF(KOBS, KGOAL);
     ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);
     ros::Subscriber waypointSub = n.subscribe("waypoints", 1000, waypointCallback);

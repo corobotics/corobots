@@ -1,8 +1,9 @@
 #include <cmath>
 #include <list>
 
+#include "geometry_msgs/Point.h"
+#include "geometry_msgs/Pose2D.h"
 #include "sensor_msgs/LaserScan.h"
-#include "turtlebot_node/Turtle.h"
 
 #include "apf.h"
 
@@ -10,7 +11,6 @@ using namespace std;
 using geometry_msgs::Point;
 using geometry_msgs::Pose2D;
 using sensor_msgs::LaserScan;
-using turtlebot_node::Turtle;
 
 float InversePowerForce::calc(const float& dist) {
     return pow(dist, -exp);
