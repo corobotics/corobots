@@ -1,0 +1,18 @@
+<package>
+  <description brief="localization">
+
+     localization
+
+  </description>
+  <author>Max Bogue</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/localization</url>
+  <depend package="geometry_msgs"/>
+  <depend package="nav_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="turtlebot_node"/>
+
+</package>
+
+
