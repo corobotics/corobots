@@ -8,10 +8,8 @@
     <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find turtlebot_description)/robots/turtlebot.urdf.xacro'" />
     <param name="robot_description" command="$(arg urdf_file)" />
 
-    <param name="robot/name" value="$(optenv ROBOT turtlebot)"/>
+    <param name="robot/name" value="$(optenv ROBOT corobot)"/>
     <param name="robot/type" value="turtlebot"/>
-
-    <include file="$(find turtlebot_bringup)/app_manager.launch" />
 
     <!-- Turtlebot Driver -->
     <node pkg="turtlebot_node" type="turtlebot_node.py" name="turtlebot_node" output="screen" respawn="true" args="--respawnable">
