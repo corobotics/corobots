@@ -1,0 +1,22 @@
+#!/bin/bash
+
+log_file=/tmp/corobot-upstart.log
+
+corobot_stamp () {
+    echo "[`date +"%Y/%m/%d %T"`] $1"
+}
+
+if [ -s /etc/ros/setup.bash ]; then
+    setup_file=/etc/ros/setup.bash
+else
+    setup_file=/opt/ros/fuerte/setup.bash
+fi
+
+corobot_stamp "Stopping using setup file $setup_file"
+source /opt/ros/fuerte/setup.bash
+
+for i in $( rosnode list ); do
+    rosnode kill $i;
+done
+
+killall roslaunch

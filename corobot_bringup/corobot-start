@@ -1,0 +1,34 @@
+#!/bin/bash
+
+log_file=/tmp/corobot-upstart.log
+interface=wlan0
+user=turtlebot
+
+corobot_stamp () {
+    echo "[`date +"%Y/%m/%d %T"`] $1"
+}
+
+if [ -s /etc/ros/setup.bash ]; then
+    setup_file=/etc/ros/setup.bash
+else
+    setup_file=/opt/ros/fuerte/setup.bash
+fi
+
+corobot_stamp "Starting using setup file $setup_file"
+source /opt/ros/fuerte/setup.bash
+
+corobot_stamp "Using interface $interface"
+export ROS_IP=`ifconfig $interface | grep -o 'inet addr:[^ ]*' | cut -d: -f2`
+
+if [ "$ROS_IP" = "" ]; then
+    corobot_stamp "Can't run with empty ROS_IP."
+    exit 1
+else
+    corobot_stamp "Setting ROS_IP=$ROS_IP"
+fi
+
+if [ -s /etc/ros/fuerte/corobot.launch ]; then
+    setuidgid $user roslaunch /etc/ros/fuerte/corobot.launch
+else
+    setuidgid $user roslaunch corobot_bringup corobot.launch
+fi
