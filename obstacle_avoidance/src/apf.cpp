@@ -13,19 +13,31 @@ using geometry_msgs::Point;
 using geometry_msgs::Pose2D;
 using sensor_msgs::LaserScan;
 
+/**
+ * {@inheritDoc}
+ */
 float InversePowerForce::calc(const float& dist) {
     return pow(dist, -exp);
 }
 
+/**
+ * {@inheritDoc}
+ */
 APF::APF(const float& ko, const float& kg) :
     ko(ko), kg(kg)
 {
     distForce = new InversePowerForce(2.0);
 };
 
+/**
+ * {@inheritDoc}
+ */
 APF::APF(const float& ko, const float& kg, ForceCalc* distForce) :
     ko(ko), kg(kg), distForce(distForce) {};
 
+/**
+ * {@inheritDoc}
+ */
 list<Polar> APF::findLocalMinima(LaserScan scan) {
     // List of "object" points: local minima of the scan.
     list<Polar> objLocs;
@@ -60,8 +72,9 @@ list<Polar> APF::findLocalMinima(LaserScan scan) {
     return objLocs;
 }
 
-
-
+/**
+ * {@inheritDoc}
+ */
 Point APF::nav(LaserScan scan) {
     // The goal is the head of the waypoint queue. TODO: Handle empty queue?
     Point goal = waypointQueue.front();

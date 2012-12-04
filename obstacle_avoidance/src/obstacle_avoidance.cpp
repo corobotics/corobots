@@ -9,7 +9,10 @@
 #include "obstacle_avoidance.h"
 #include "apf.h"
 
+/** The goal constant to use for APF. */
 #define KGOAL 1.8
+
+/** The obstacle constant to use for APF. */
 #define KOBS 0.5
 
 using namespace std;
@@ -18,18 +21,34 @@ using geometry_msgs::Pose2D;
 using geometry_msgs::Twist;
 using sensor_msgs::LaserScan;
 
+/**
+ * {@inheritDoc}
+ */
 void ObstacleAvoider::updatePose(Pose2D newPose) {
     pose = newPose;
     // Check if reached waypoint.
 }
 
+/**
+ * {@inheritDoc}
+ */
 void ObstacleAvoider::addWaypoint(Point waypoint) {
     waypointQueue.push(waypoint);
 }
 
-ros::Publisher pub;
+/**
+ * The publisher for movement velocity commands.
+ */
+ros::Publisher cmdVelPub;
+
+/**
+ * The obstacle avoider to use.
+ */
 ObstacleAvoider* oa;
 
+/**
+ * Callback for laserscan messages.
+ */
 void scanCallback(LaserScan scan) {
     Point p = oa->nav(scan);
     cout << "Nav vector: <" << p.x << ", " << p.y << ">" << endl;
@@ -37,13 +56,19 @@ void scanCallback(LaserScan scan) {
     Twist t;
     t.linear.x = sqrt(p.x * p.x + p.y * p.y);
     t.angular.z = atan2(p.y, p.x);
-    pub.publish(t);
+    cmdVelPub.publish(t);
 }
 
+/**
+ * Callback for pose messages.
+ */
 void poseCallback(Pose2D pose) {
     oa->updatePose(pose);
 }
 
+/**
+ * Callback for new waypoint messages.
+ */
 void waypointCallback(Point waypoint) {
     oa->addWaypoint(waypoint);
 }
@@ -51,7 +76,7 @@ void waypointCallback(Point waypoint) {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "obstacle_avoidance");
     ros::NodeHandle n;
-    pub = n.advertise<Twist>("cmd_vel", 1000);
+    cmdVelPub = n.advertise<Twist>("cmd_vel", 1000);
     oa = new APF(KOBS, KGOAL);
     ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);
