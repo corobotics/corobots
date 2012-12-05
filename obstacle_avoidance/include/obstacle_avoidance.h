@@ -1,6 +1,10 @@
 #ifndef obstable_avoidance_h
 #define obstable_avoidance_h
 
+/**
+ * Generic obstacle avoidance things.
+ */
+
 #include <queue>
 
 #include "ros/ros.h"
