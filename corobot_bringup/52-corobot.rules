@@ -1,1 +1,2 @@
 ATTRS{idProduct}=="6001",ATTRS{idVendor}=="0403",MODE="666",GROUP="corobot"
+ATTRS{idProduct}=="2303",ATTRS{idVendor}=="067b",MODE="666",GROUP="corobot"
