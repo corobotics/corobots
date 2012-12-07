@@ -1,7 +1,5 @@
 #!/bin/bash
 
-log_file=/tmp/corobot-upstart.log
-
 corobot_stamp () {
     echo "[`date +"%Y/%m/%d %T"`] $1"
 }
@@ -15,7 +13,7 @@ fi
 corobot_stamp "Stopping using setup file $setup_file"
 source /opt/ros/fuerte/setup.bash
 
-for i in $( rosnode list ); do
+for i in $(rosnode list); do
     rosnode kill $i;
 done
 

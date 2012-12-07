@@ -8,29 +8,44 @@
 #  or
 # sudo ./install.bash usb0 fuerte
 #
-# where usb0 is whatever network interface you want to set the robot
-# up for.
+# where usb0 is whatever network interface you want to set the robot up for.
 # and fuerte is the specified version of ROS to use.
 # Default is the latest installed.
 
-interface=$(iwconfig 2>/dev/null | awk '{print $1}' | head -n1)
+mkdir -p /etc/ros/corobot
 
-#stackPath=/opt/ros/fuerte/stacks/turtlebot/turtlebot_bringup/upstart
-stackPath=./
-
-if [ $# -gt 0 ]; then
-    if [ "$1" != "" ]; then
-        interface=$1
-    fi
+if [ $# -gt 0 -a "$1" != "" ]; then
+    interface=$1
+elif [ -s /etc/ros/corobot/interface ]; then
+    interface=$(cat /etc/ros/corobot/interface)
+else
+    interface=$(iwconfig 2>/dev/null | awk '{print $1}' | head -n1)
 fi
 
-release=$(ls /opt/ros/ | tail -n1)
+if [ "$interface" = "" ]; then
+    echo "Couldn't detect interface."
+    exit 1
+else
+    echo "Using interface $interface."
+    echo "$interface" > /etc/ros/corobot/interface
+fi
+
+if [ -s /etc/ros/corobot/user ]; then
+    user=$(cat /etc/ros/corobot/user)
+else
+    user=corobot
+    echo "$user" > /etc/ros/corobot/user
+fi
 
 if [ $# -gt 1 ]; then
     if [ "$2" != "" ]; then
         release=$2
     fi
 fi
+
+stackPath=.
+
+release=$(ls /opt/ros/ | tail -n1)
 
 
 source /opt/ros/$release/setup.bash
