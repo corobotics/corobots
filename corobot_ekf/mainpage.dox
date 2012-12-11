@@ -2,7 +2,7 @@
 \mainpage
 \htmlinclude manifest.html
 
-\b localization 
+\b corobot_ekf 
 
 <!-- 
 Provide an overview of your package.

@@ -1,17 +1,17 @@
 <package>
-  <description brief="localization">
+  <description brief="corobot_ekf">
 
-     localization
+     corobot_ekf
 
   </description>
   <author>Max Bogue</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/localization</url>
+  <url>http://ros.org/wiki/corobot_ekf</url>
+  <depend package="rospy"/>
   <depend package="geometry_msgs"/>
   <depend package="nav_msgs"/>
   <depend package="sensor_msgs"/>
-  <depend package="turtlebot_node"/>
 
 </package>
 
