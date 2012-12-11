@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest("corobot_localization")
+import roslib; roslib.load_manifest("corobot_ekf")
 import rospy
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from nav_msgs.msg import Odometry
 
 def odom_callback(odom):
     pub.publish(odom.pose)
