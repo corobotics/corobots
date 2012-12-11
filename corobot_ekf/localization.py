@@ -12,7 +12,7 @@ def odom_callback(odom):
 def main():
     global pub;
     rospy.init_node("localization")
-    pub = rospy.Publisher("pose", 1000)
+    pub = rospy.Publisher("pose", PoseWithCovarianceStamped)
     rospy.Subscriber("odom", Odometry, odom_callback)
     rospy.spin()
 
