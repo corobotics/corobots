@@ -1,0 +1,14 @@
+<package>
+  <description brief="corobot_msgs">
+
+     corobot_msgs
+
+  </description>
+  <author>Max Bogue</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/corobot_msgs</url>
+
+</package>
+
+
