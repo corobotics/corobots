@@ -2,15 +2,15 @@
 #include <iostream>
 #include <list>
 
+#include "corobot_msgs/Pose.h"
 #include "geometry_msgs/Point.h"
-#include "geometry_msgs/Pose2D.h"
 #include "sensor_msgs/LaserScan.h"
 
 #include "apf.h"
 
 using namespace std;
+using corobot_msgs::Pose;
 using geometry_msgs::Point;
-using geometry_msgs::Pose2D;
 using sensor_msgs::LaserScan;
 
 /**

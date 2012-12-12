@@ -8,8 +8,8 @@
 #include <queue>
 
 #include "ros/ros.h"
+#include "corobot_msgs/Pose.h"
 #include "geometry_msgs/Point.h"
-#include "geometry_msgs/Pose2D.h"
 #include "sensor_msgs/LaserScan.h"
 
 /**
@@ -30,7 +30,7 @@ public:
      *
      * @param pose  The new pose of the robot.
      */
-    void updatePose(geometry_msgs::Pose2D pose);
+    void updatePose(corobot_msgs::Pose pose);
 
     /**
      * Add a waypoint to the queue.
@@ -43,7 +43,7 @@ protected:
     /**
      * The current pose of the robot.
      */
-    geometry_msgs::Pose2D pose;
+    corobot_msgs::Pose pose;
 
     /**
      * A queue of waypoints for the robot to navigate to.

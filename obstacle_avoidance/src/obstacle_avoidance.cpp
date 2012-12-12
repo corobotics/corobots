@@ -1,8 +1,8 @@
 #include <iostream>
 
 #include "ros/ros.h"
+#include "corobot_msgs/Pose.h"
 #include "geometry_msgs/Point.h"
-#include "geometry_msgs/Pose2D.h"
 #include "geometry_msgs/Twist.h"
 #include "sensor_msgs/LaserScan.h"
 
@@ -16,15 +16,15 @@
 #define KOBS 0.5
 
 using namespace std;
+using corobot_msgs::Pose;
 using geometry_msgs::Point;
-using geometry_msgs::Pose2D;
 using geometry_msgs::Twist;
 using sensor_msgs::LaserScan;
 
 /**
  * {@inheritDoc}
  */
-void ObstacleAvoider::updatePose(Pose2D newPose) {
+void ObstacleAvoider::updatePose(Pose newPose) {
     pose = newPose;
     // Check if reached waypoint.
 }
@@ -62,7 +62,7 @@ void scanCallback(LaserScan scan) {
 /**
  * Callback for pose messages.
  */
-void poseCallback(Pose2D pose) {
+void poseCallback(Pose pose) {
     oa->updatePose(pose);
 }
 
