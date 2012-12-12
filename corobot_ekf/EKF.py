@@ -1,24 +1,36 @@
-#ifndef corobots_ekf_h
-#define corobots_ekf_h
 
-/**
- * Implements the Extended Kalman Filter as described in Robotic Motion
- */
-class EKF {
-public:
+class EKF(object):
 
-    void update(geometry_msgs::PoseWithCovarianceStamped pose);
-    void predict();
-    mat33 R();
+    """Implements an Extended Kalman Filter.
 
-private:
-    # The time between 
-    const double dt;
-    vec3 x;
-    mat33 P;
-    vec3 xp;
-    mat33 PP;
-    double k;
-}
+    Follows the EKF described in Priciples of Robotic Motion.
 
-#endif /* corobots_ekf_h */
+    """
+
+    def __init__(self):
+        self.initialized = False
+
+        # x(k+1|k+1); the system state.
+        self.x = np.zeros(3)
+
+        # P(k+1|k+1); the system covariance matrix.
+        self.P = matrix([[10000.0, 0.0, 0.0],
+                         [0.0, 10000.0, 0.0],
+                         [0.0, 0.0, 10000.0]])
+
+        # x(k+1|k); the state prediction.
+        self.xp = np.zeros(3)
+
+        # P(k+1|k); the covariance prediction.
+        self.PP = matrix([[10000.0, 0.0, 0.0],
+                          [0.0, 10000.0, 0.0],
+                          [0.0, 0.0, 10000.0]])
+
+    def update(pose):
+        pass
+
+    def predict():
+        pass
+
+    def R():
+        pass
