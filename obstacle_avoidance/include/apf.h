@@ -16,14 +16,12 @@
  * Helper struct for 2D polar coordinates.
  */
 typedef struct {
-    /**
-     * Distance (radius).
-     */
+    /** Distance (radius) in meters. */
     float d;
-    /**
-     * Angle.
-     */
+    /** Angle in radians. */
     float a;
+    /** Only positive distances are allowed by convention. */
+    bool isValid() const;
 } Polar;
 
 /**
