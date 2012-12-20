@@ -39,32 +39,62 @@ APF::APF(const float& ko, const float& kg, ForceCalc* distForce) :
  * {@inheritDoc}
  */
 list<Polar> APF::findLocalMinima(LaserScan scan) {
+/**
+ * {@inheritDoc}
+ */
+list<Polar> APF::findObjects(LaserScan scan) {
     // List of "object" points: local minima of the scan.
     list<Polar> objLocs;
     // Object for setting and adding to objLocs.
-    Polar objLoc;
+    Polar objMin;
+    Polar lastObjectMin;
+    bool lastObject = false;
+    bool lastObjectWasLess = false;
     // Loop variable for current distance.
     float d;
     // Loop variable for the current angle.
     float a = scan.angle_min;
-    // Whether the last angle's distance was bigger than the current one.
-    bool lastWasFurther = true;
-    // Search each data point.
+    // State variable for whether we're currently in a contiguous object.
+    bool inObject = false;
     cout << endl;
-    for (unsigned int i = 0; i < scan.ranges.size() - 1; i++) {
+    for (unsigned int i = 0; i < scan.ranges.size(); i++) {
         d = scan.ranges[i];
         // If d is a valid distance and closer than [i+1],
-        if (d > scan.range_min && d < scan.range_max && d <= scan.ranges[i + 1]) {
-            // If the previous range was also further, we have a minima.
-            if (lastWasFurther) {
-                objLoc.d = d;
-                objLoc.a = a;
-                cout << "Obstacle found: " << d << ", " << a << endl;
-                objLocs.push_back(objLoc);
+        if (d > scan.range_min && d < scan.range_max) {
+            if (inObject) {
+                if (d < objMin.d) {
+                    objMin.d = d;
+                    objMin.a = a;
+                }
+            } else {
+                objMin.a = a;
+                objMin.d = d;
+                inObject = true;
             }
-            lastWasFurther = false;
+            // Check whether the next point is also in the object.
+            if (i < scan.ranges.size() - 1 && Math.abs(d - scan.ranges[i + 1]) < 0.2) {
+                inObject = true;
+            } else {
+                // At the end of an object.
+                inObject = false;
+                // If there was an adjacent previous object...
+                if (lastObject) {
+                    // and it was an object local minima, store it.
+                    if (lastObjectMin.d < objMin.d && lastObjectWasLess) {
+                        objLocs.push_back(lastObjectMin);
+                        lastObjectWasLess = false;
+                    } else {
+                        lastObjectWasLess = true;
+                    }
+                } else {
+                    lastObjectWasLess = true;
+                }
+                lastObject = true;
+                lastObjectMin = objMin;
+            }
         } else {
-            lastWasFurther = true;
+            inObject = false;
+            lastObject = false;
         }
         a += scan.angle_increment;
     }
