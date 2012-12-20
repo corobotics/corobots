@@ -20,6 +20,10 @@ float InversePowerForce::calc(const float& dist) {
     return pow(dist, -exp);
 }
 
+bool Polar::isValid() const {
+    return d >= 0.0;
+}
+
 /**
  * {@inheritDoc}
  */
@@ -35,10 +39,58 @@ APF::APF(const float& ko, const float& kg) :
 APF::APF(const float& ko, const float& kg, ForceCalc* distForce) :
     ko(ko), kg(kg), distForce(distForce) {};
 
+list<Polar APF::scanToList(LaserScan scan) {
+    list<Polar> points;
+    // Create a placeholder with the initial angle.
+    Polar p;
+    p.a = scan.angle_min;
+    // Convert scan.ranges into a list.
+    for (unsigned int i = 0; i < scan.ranges.size() - 1; i++) {
+        float d = scan.ranges[i];
+        if (d > scan.range_min && d < scan.range_max) {
+            p.d = d;
+        } else {
+            // New convention: < 0 means invalid.
+            p.d = -1.0;
+        }
+        points.push_back(p);
+        p.a += scan.angle_increment;
+    }
+    return points;
+}
+
 /**
  * {@inheritDoc}
  */
-list<Polar> APF::findLocalMinima(LaserScan scan) {
+list<Polar> APF::findLocalMinima(list<Polar> points) {
+    // List of local minima that have been found.
+    list<Polar> localMinima;
+    // Whether the last angle's distance was smaller than the current one.
+    bool lastWasCloser = false;
+    // The previous point; init to an invalid point.
+    Polar prev = {-1.0, 0.0};
+    for (list<Polar>::iterator i = points.begin(); i != points.end(); i++) {
+        Polar p = *i;
+        // If p is a valid point and closer than the previous one.
+        if (p.isValid() && (!prev.isValid() || p.d < prev.d)) {
+            // We mark it as a potential candidate for being a local minima.
+            lastWasCloser = true;
+        } else {
+            // Otherwise if i-1 was closer than i-2, i-1 is a local minima.
+            if (lastWasCloser) {
+                localMinima.push_back(prev);
+            }
+            lastWasCloser = false;;
+        }
+        prev = p;
+    }
+    // Check in case the last point was a minima.
+    if (lastWasCloser) {
+        localMinima.push_back(prev);
+    }
+    return localMinima;
+}
+
 /**
  * {@inheritDoc}
  */
