@@ -1,0 +1,44 @@
+Potential API for user library:
+
+// location is a map name, block specifies whether this call
+// blocks until location reached or some failure condition.
+// return value is whether location is reached (?)
+bool navigateToLocation(String location, bool block)
+
+// this one does not do any planning, just goes straight to
+// the given location (or not, if blocked!)
+bool goToLocation(String location, bool block)
+
+// this does the same as goToLocation (i.e. no planning), but
+// takes x,y instead.  May not be useful but easy to implement
+bool goToXY(double x, double y, bool block)
+
+// return type is language dependent but holds two doubles (x,y)
+pair getPos()
+
+// return type could be a MapNode or a String
+String getClosestLoc()
+
+// not sure how to define "close" here, but likely to be useful
+List<String> getAllCloseLocs()
+
+// show a message on the laptop GUI
+void displayMessage(String)
+
+// pop up an OK button on the laptop GUI
+// pass in a timeout value
+// return is whether confirmed (true) or timed out (false)
+bool waitForConfirm(int)
+
+// gives back the map. may not need to communicate with the
+// robot, depending on implementation
+RobotMap getMap()
+
+RobotMap class contains a dictionary of String->MapNode
+MapNode contains String name, double x,y, List<String> neighbors(?)
+
+// not sure what data type makes sense for the return value here...
+// parameter selects which camera
+Image getImage(int)
+
+// may want other access to robot data but not sure what yet.
