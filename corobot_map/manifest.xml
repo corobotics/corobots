@@ -1,0 +1,17 @@
+<package>
+  <description brief="corobot_map">
+
+     corobot_map
+
+  </description>
+  <author>Karl Berger</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/corobot_map</url>
+  <depend package="rospy"/>
+  <depend package="nav_msgs"/>
+  <depend package="corobot_msgs"/>
+
+</package>
+
+
