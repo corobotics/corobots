@@ -3,7 +3,7 @@
 import roslib; roslib.load_manifest("corobot_ekf")
 import rospy
 
-from geometry_msgs.msg import PoseWithCovariance
+from corobot_msgs.msg import Pose
 from nav_msgs.msg import Odometry
 
 def odom_callback(odom):
@@ -12,7 +12,7 @@ def odom_callback(odom):
 def main():
     global pub;
     rospy.init_node("localization")
-    pub = rospy.Publisher("pose", PoseWithCovariance)
+    pub = rospy.Publisher("pose", Pose)
     rospy.Subscriber("odom", Odometry, odom_callback)
     rospy.spin()
 
