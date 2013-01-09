@@ -39,7 +39,10 @@ APF::APF(const float& ko, const float& kg) :
 APF::APF(const float& ko, const float& kg, ForceCalc* distForce) :
     ko(ko), kg(kg), distForce(distForce) {};
 
-list<Polar APF::scanToList(LaserScan scan) {
+/**
+ * {@inheritDoc}
+ */
+list<Polar> APF::scanToList(LaserScan scan) {
     list<Polar> points;
     // Create a placeholder with the initial angle.
     Polar p;
@@ -94,64 +97,45 @@ list<Polar> APF::findLocalMinima(list<Polar> points) {
 /**
  * {@inheritDoc}
  */
-list<Polar> APF::findObjects(LaserScan scan) {
+list<Polar> APF::findObjects(list<Polar> points) {
     // List of "object" points: local minima of the scan.
-    list<Polar> objLocs;
-    // Object for setting and adding to objLocs.
+    list<Polar> objects;
+    // Point of the current object's minimum, for setting and adding to objects.
     Polar objMin;
-    Polar lastObjectMin;
-    bool lastObject = false;
-    bool lastObjectWasLess = false;
-    // Loop variable for current distance.
-    float d;
-    // Loop variable for the current angle.
-    float a = scan.angle_min;
-    // State variable for whether we're currently in a contiguous object.
-    bool inObject = false;
-    cout << endl;
-    for (unsigned int i = 0; i < scan.ranges.size(); i++) {
-        d = scan.ranges[i];
-        // If d is a valid distance and closer than [i+1],
-        if (d > scan.range_min && d < scan.range_max) {
-            if (inObject) {
-                if (d < objMin.d) {
-                    objMin.d = d;
-                    objMin.a = a;
-                }
-            } else {
-                objMin.a = a;
-                objMin.d = d;
-                inObject = true;
-            }
-            // Check whether the next point is also in the object.
-            if (i < scan.ranges.size() - 1 && Math.abs(d - scan.ranges[i + 1]) < 0.2) {
-                inObject = true;
-            } else {
-                // At the end of an object.
-                inObject = false;
-                // If there was an adjacent previous object...
-                if (lastObject) {
-                    // and it was an object local minima, store it.
-                    if (lastObjectMin.d < objMin.d && lastObjectWasLess) {
-                        objLocs.push_back(lastObjectMin);
-                        lastObjectWasLess = false;
-                    } else {
-                        lastObjectWasLess = true;
+    Polar last;
+    last.d = -1.0;
+    for (list<Polar>::iterator i = points.begin(); i != points.end(); i++) {
+        Polar p = *i;
+        if (p.d >= 0) {
+            // if this is a valid point
+            if (last.d >= 0) {
+                // and there is an obj in progress
+                if (abs(p.d - last.d) < 0.2) {
+                    // check if this point is still in the object
+                    if (p.d < objMin.d) {
+                        // if this point is closer than objMin, save it.
+                        objMin = p;
                     }
                 } else {
-                    lastObjectWasLess = true;
+                    // not in an object; add the previous object to the list and
+                    // make a new one.
+                    objects.push_back(objMin);
+                    objMin = p;
                 }
-                lastObject = true;
-                lastObjectMin = objMin;
+            } else {
+                // no object in progress; start a new one.
+                objMin = p;
             }
-        } else {
-            inObject = false;
-            lastObject = false;
+        } else if (last.d >= 0) {
+            // else if there was an object in progress, add it to the list.
+            objects.push_back(objMin);
         }
-        a += scan.angle_increment;
+        last = p;
     }
-    cout << endl;
-    return objLocs;
+    if (last.d >= 0) {
+        objects.push_back(objMin);
+    }
+    return objects;
 }
 
 /**
@@ -164,8 +148,8 @@ Point APF::nav(LaserScan scan) {
     cout << "Goal: (" << goal.x << ", " << goal.y << ")" << endl;
     cout << "Pose: (" << pose.x << ", " << pose.y << ") " << pose.theta << endl;
 
-    // The list of "objects" found; right now using local minima of the scan.
-    list<Polar> objLocs = findLocalMinima(scan);
+    // The list of "objects" found.
+    list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
 
     // Stores the object force vector summation. z is ignored.
     Point sum;
@@ -174,7 +158,7 @@ Point APF::nav(LaserScan scan) {
     double force;
 
     // Sum over all obstacles.
-    for (list<Polar>::iterator p = objLocs.begin(); p != objLocs.end(); ++p) {
+    for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
         force = distForce->calc(p->d);
         sum.x += force * cos(p->a);
         sum.y += force * sin(p->a);
