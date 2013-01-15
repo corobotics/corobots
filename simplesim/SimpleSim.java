@@ -1,0 +1,237 @@
+/**
+ * SimController implements the controller in a very
+ * simple simulated fashion.  For initial testing of
+ * user apps only.
+ * 
+ * @author zjb Dec-2011, revised Jan-2013
+ */
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.awt.Color;
+import java.awt.Dimension;
+
+public class SimpleSim extends Thread {
+
+    public static final int USER_PORT = 15001;
+    public static final int MONITOR_PORT = 16001;
+
+    private static final double DEST_EPS = 0.02;
+    private static final int WIN_SCALE = 2;
+    private GridMap mapWin;
+    private int[][] theWorld;
+    private int mapW, mapH;
+    private double mpp;
+    private double rX, rY;
+    private double destX, destY;
+    private double rV = 0.1; // robot velocity, meters per second
+    private int ticklen = 100; // simulation cycle time, millisec
+
+    public SimpleSim(String paramfile) throws Exception {
+	Scanner s = new Scanner(new File(paramfile));
+	if (!(s.next().equals("FILENAME")))
+	    throw new Exception ("Expected FILENAME");
+	FileInputStream mapFile = new FileInputStream(s.next());
+	if (!(s.next().equals("WIDTH")))
+	    throw new Exception ("Expected WIDTH");
+	mapW = s.nextInt();
+	if (!(s.next().equals("HEIGHT")))
+	    throw new Exception ("Expected HEIGHT");
+	mapH = s.nextInt();
+	if (!(s.next().equals("MPP")))
+	    throw new Exception ("Expected MPP");
+	mpp = s.nextDouble();
+	
+	theWorld = new int[mapW][mapH];
+	mapWin = new GridMap(mapW*mpp,mapH*mpp,mpp*WIN_SCALE);
+	for (int y = 0; y < mapH; y++) {
+	    for (int x = 0; x < mapW; x++) {
+		theWorld[x][y] = mapFile.read();
+		mapWin.setPix(x/WIN_SCALE,y/WIN_SCALE,theWorld[x][y]);
+	    }
+	}
+	if (!(s.next().equals("INIT_X")))
+	    throw new Exception ("Expected INIT_X");
+	rX = s.nextDouble();
+	destX = rX;
+	if (!(s.next().equals("INIT_Y")))
+	    throw new Exception ("Expected INIT_Y");
+	rY = s.nextDouble();
+	destY = rY;
+	mapWin.setColorBlob(rX,rY,Color.RED);
+	mapWin.setSize(new Dimension((int)(mapW/WIN_SCALE),(int)(mapH/WIN_SCALE)));
+	mapWin.setVisible(true);
+    }
+
+    // goes from world coordinates (meters, right-handed, 0 at center) 
+    // to image coordinates (pixels, left-handed, 0 at upper left)
+    private int mapAt(double x, double y) {
+	int mx = (int)(x/mpp + mapW/2);
+        int my = (int)(mapH/2 - y/mpp);
+	if (mx < 0 || mx >= mapW || my < 0 || my >= mapH)
+	    return -1;
+	return theWorld[mx][my];
+    }
+
+    public void openSockets() throws Exception {
+	ServerSocket userSock = new ServerSocket(USER_PORT);
+	// if exception, will not get past here
+	new UserListener(userSock).start();
+
+	ServerSocket monSock = new ServerSocket(MONITOR_PORT);
+	// if exception, will not get past here
+	new MonitorListener(monSock).start();
+
+    }
+
+    private boolean atDestination() {
+	double deltaX = destX - rX;
+	double deltaY = destY - rY;
+	return (Math.abs(deltaX) < DEST_EPS && Math.abs(deltaY) < DEST_EPS);
+    }
+
+    public void run() {
+	// spin and update position based on data from user-comm thread
+	while (true) {
+	    if (!atDestination()) {
+		double deltaX = destX - rX;
+		double deltaY = destY - rY;
+		double magDelta = Math.sqrt((deltaX*deltaX) + (deltaY*deltaY));
+		double dist = rV * (ticklen/1000.0); // max dist to travel in one tick
+		if (dist > magDelta)
+		    dist = magDelta; // don't overshoot
+		double newX = rX + dist*(deltaX/magDelta);
+		double newY = rY + dist*(deltaY/magDelta);
+		
+		// test for collisions
+		int obs = (mapAt(newX,newY));
+		if (obs == 0)  { // CRASH!
+		    // don't try to keep going
+		    destX = rX;
+		    destY = rY;
+		} else {
+		    // update both the sim and the display
+		    // this next line is a hack
+		    mapWin.setColorBlob(rX,rY,Color.WHITE);
+		    mapWin.setColorBlob(newX,newY,Color.RED);
+		    mapWin.repaint();
+		    rX = newX;
+		    rY = newY;
+		}
+	    }
+	    try {
+		sleep(ticklen);
+	    } catch (InterruptedException e) {}
+	}
+    }
+
+    class UserListener extends Thread {
+	private ServerSocket ss;
+	public UserListener(ServerSocket ss) {
+	    this.ss = ss;
+	}
+
+	public void run() {
+	    while (true) {
+		try {
+		    System.out.println("Waiting for user connection");
+		    Socket s = ss.accept();
+		    // make sure it's localhost
+		    PrintWriter out = new PrintWriter(s.getOutputStream());
+		    BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+		    boolean tellArrive = false;
+		    while(s.isConnected()) {
+			// get a message
+			// depending on its type, set a value or respond
+			String message = in.readLine();
+			if (message == null) break;
+			System.out.println(message);
+			String[] parts = message.split(" ");
+			System.out.println("New message: " + parts[0]);
+			if (parts[0].equals("GETPOS")) {
+			    out.println("POS " + rX + " " + rY);
+			    out.flush();
+			} else if (parts[0].equals("GOTOXY")) {
+			    double newX = Double.parseDouble(parts[1]);
+			    double newY = Double.parseDouble(parts[2]);
+			    // maybe do some sanity checking here
+			    // but not right now
+			    destX = newX;
+			    destY = newY;
+			} else if (parts[0].equals("QUERY_ARRIVE")) {
+			    // wait here since if we loop we will block
+			    // until next message.
+			    double waitX = destX, waitY = destY;
+			    while (!atDestination()) {
+				try {
+				    Thread.sleep(1000);
+				} catch (InterruptedException e) { }
+			    }
+			    // if crashed, destination will have changed
+			    if (waitX == destX && waitY == destY)
+				out.println("ARRIVE");
+			    else
+				out.println("GOTOFAIL");
+			    out.flush();
+			}
+		    }
+		} catch (IOException e) {
+		    System.err.println("Monitor socket failure: " + e);
+		}
+	    }
+	}
+    }
+
+    class MonitorListener extends Thread {
+	private ServerSocket ss;
+	public MonitorListener(ServerSocket ss) {
+	    this.ss = ss;
+	}
+
+	public void run() {
+	    while(true) {
+		try {
+		    System.out.println("Waiting for monitor connection");
+		    Socket s = ss.accept();
+		    // make sure it's localhost
+		    PrintWriter out = new PrintWriter(s.getOutputStream());
+		    while(s.isConnected()) {
+			// send position to monitor
+			out.println("POS " + rX + " " + rY);
+			out.println("DEST " + destX + " " + destY);
+			out.flush();
+			// sleep
+			try {
+			    sleep(1000);
+			} catch (InterruptedException e) { }
+		    }
+		} catch (IOException e) {
+		    System.err.println("Monitor socket failure: " + e);
+		}
+	    }
+	}
+    }
+
+    public static void main(String[] args) {
+
+       	try {
+	    String filename = "params.txt";
+	    if (args.length > 0)
+		filename = args[1];
+
+	    SimpleSim theSim = new SimpleSim(filename);
+	    
+	    theSim.openSockets();
+
+	    theSim.start(); 
+
+	} catch (IOException e) {
+	    System.out.println("IO Exception occurred: " + e);
+	} catch (Exception e) {
+	    System.out.println("Other exception: " + e);
+	    e.printStackTrace();
+	}
+    }
+
+}
