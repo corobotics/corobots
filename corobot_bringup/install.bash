@@ -2,91 +2,70 @@
 
 # Run this as root, from the directory containing it!
 #
-# USAGE: sudo ./install.bash
-#  or
-# sudo ./install.bash usb0
-#  or
-# sudo ./install.bash usb0 fuerte
+# USAGE: sudo ./install.bash [network_interface] [ros_release]
 #
-# where usb0 is whatever network interface you want to set the robot up for.
-# and fuerte is the specified version of ROS to use.
-# Default is the latest installed.
+# Where network_interface defaults to whatever active wireless interface
+# you have, and ros_release defaults to the latest installed.
 
-mkdir -p /etc/ros/corobot
+interface=$(iwconfig 2>/dev/null | awk '{print $1}' | head -n1)
 
 if [ $# -gt 0 -a "$1" != "" ]; then
     interface=$1
-elif [ -s /etc/ros/corobot/interface ]; then
-    interface=$(cat /etc/ros/corobot/interface)
-else
-    interface=$(iwconfig 2>/dev/null | awk '{print $1}' | head -n1)
 fi
 
 if [ "$interface" = "" ]; then
     echo "Couldn't detect interface."
     exit 1
 else
-    echo "Using interface $interface."
-    echo "$interface" > /etc/ros/corobot/interface
+    echo "Using network interface $interface."
 fi
-
-if [ -s /etc/ros/corobot/user ]; then
-    user=$(cat /etc/ros/corobot/user)
-else
-    user=corobot
-    echo "$user" > /etc/ros/corobot/user
-fi
-
-if [ $# -gt 1 ]; then
-    if [ "$2" != "" ]; then
-        release=$2
-    fi
-fi
-
-stackPath=.
 
 release=$(ls /opt/ros/ | tail -n1)
 
+if [ $# -gt 1 -a "$2" != "" ]; then
+    release=$2
+fi
 
-source /opt/ros/$release/setup.bash
-OLD_DIR=$(pwd)
-cd `rospack find turtlebot_bringup`/upstart
+if [ "$release" = "" ]; then
+    echo "Couldn't find ROS release installed."
+    exit 1
+else
+    echo "Using ROS release $release."
+fi
+
+if ! cp ./52-corobot.rules /etc/udev/rules.d/; then
+    echo "Error copying udev rules; are you root?"
+    exit 1
+fi
 
 # checks if turtlebot user+group exists, if it doesn't, then it creates a turtlebot daemon.
 
-if ! grep "^turtlebot:" /etc/group >/dev/null 2>&1; then
-    echo "Group turtlebot does not exist, creating."
-    groupadd turtlebot
+if ! grep "^corobot:" /etc/group >/dev/null 2>&1; then
+    echo "Group corobot does not exist, creating."
+    groupadd corobot
 fi
 
-if ! id -u turtlebot >/dev/null 2>&1; then
-    echo "User turtlebot does not exist, creating and adding it to groups turtlebot and sudo."
-    useradd -g turtlebot turtlebot
-    usermod turtlebot -G sudo
-    if [ ! -e /home/turtlebot ]; then
-        echo "Turtlebot home directory was not created, creating."
-        mkdir /home/turtlebot
-        chown turtlebot:turtlebot /home/turtlebot
+if ! id -u corobot >/dev/null 2>&1; then
+    echo "User corobot does not exist, creating and adding it to groups corobot and sudo."
+    useradd -g corobot corobot
+    usermod corobot -G sudo
+    if [ ! -e /home/corobot ]; then
+        echo "Corobot home directory was not created, creating."
+        mkdir /home/corobot
+        chown corobot:corobot /home/corobot
     fi
 fi
 
-cp $stackPath/52-turtlebot.rules /etc/udev/rules.d/
+cat ./corobot-start | sed "s/wlan0/$interface/g" | sed "s/fuerte/$release/"g > /usr/sbin/corobot-start
+cat ./corobot-start-kinect | sed "s/wlan0/$interface/g" | sed "s/fuerte/$release/"g > /usr/sbin/corobot-start-kinect
+cat ./corobot-stop | sed "s/wlan0/$interface/g" | sed "s/fuerte/$release/"g > /usr/sbin/corobot-stop
+cat ./corobot.conf | sed "s/wlan0/$interface/g" > /etc/init/corobot.conf
+chmod +x /usr/sbin/corobot-start
+chmod +x /usr/sbin/corobot-start-kinect
+chmod +x /usr/sbin/corobot-stop
 
-source /opt/ros/$release/setup.bash
-
-echo "Installing using network interface $interface."
-
-sed "s/wlan0/$interface/g" < $stackPath/turtlebot-start | sed "s/electric/$release/"g > /usr/sbin/turtlebot-start
-chmod +x /usr/sbin/turtlebot-start
-sed "s/wlan0/$interface/g" < $stackPath/turtlebot-stop | sed "s/electric/$release/"g > /usr/sbin/turtlebot-stop
-chmod +x /usr/sbin/turtlebot-stop
-sed "s/wlan0/$interface/g" < $stackPath/turtlebot.conf > /etc/init/turtlebot.conf
-
-# Copy files into /etc/ros/$release/turtlebot
 mkdir -p /etc/ros
 mkdir -p /etc/ros/$release
-cat $stackPath/turtlebot.launch > /etc/ros/$release/turtlebot.launch
+cat ./corobot.launch > /etc/ros/$release/corobot.launch
 
 echo ". /opt/ros/$release/setup.bash;" > /etc/ros/setup.bash
-
-cd $OLD_DIR

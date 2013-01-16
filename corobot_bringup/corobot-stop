@@ -4,14 +4,10 @@ corobot_stamp () {
     echo "[`date +"%Y/%m/%d %T"`] $1"
 }
 
-if [ -s /etc/ros/setup.bash ]; then
-    setup_file=/etc/ros/setup.bash
-else
-    setup_file=/opt/ros/fuerte/setup.bash
-fi
+setup_file=/opt/ros/fuerte/setup.bash
 
 corobot_stamp "Stopping using setup file $setup_file"
-source /opt/ros/fuerte/setup.bash
+source $setup_file
 
 for i in $(rosnode list); do
     rosnode kill $i;

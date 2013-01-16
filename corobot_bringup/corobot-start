@@ -1,7 +1,7 @@
 #!/bin/bash
 
-interface=`cat /etc/ros/corobot/interface`
-user=`cat /etc/ros/corobot/user`
+interface=wlan0
+user=corobot
 
 corobot_stamp () {
     echo "[`date +"%Y/%m/%d %T"`] $1"
