@@ -30,19 +30,6 @@ public class RobotMap {
 	    System.err.println(e);
 	}
     }
-
-    public static String getClosestNode(double x, double y) {
-	double minsqdist = 99999;
-	String closest = "";
-	for (MapNode mn : theMap.nodes.values()) {
-	    double sqdist = (x - mn.x) * (x - mn.x) + (y - mn.y) * (y - mn.y);
-	    if (sqdist < minsqdist) {
-		minsqdist = sqdist;
-		closest = mn.name;
-	    }
-	}
-	return closest;
-    }
     
     public static HashMap<String,MapNode> getNodes() {
 	return theMap.nodes;
