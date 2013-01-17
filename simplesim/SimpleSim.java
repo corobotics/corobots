@@ -11,12 +11,16 @@ import java.net.*;
 import java.util.*;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.net.InetAddress;
+import org.apache.http.client.methods.HttpGet;
 
 public class SimpleSim extends Thread {
 
     public static final int USER_PORT = 15001;
     public static final int MONITOR_PORT = 16001;
+    public static final String SERVER_HOST = "129.21.30.80";
 
+    private static String myName;
     private static final double DEST_EPS = 0.02;
     private static final int WIN_SCALE = 2;
     private GridMap mapWin;
@@ -27,8 +31,11 @@ public class SimpleSim extends Thread {
     private double destX, destY;
     private double rV = 0.1; // robot velocity, meters per second
     private int ticklen = 100; // simulation cycle time, millisec
+    private long lastUpdate = 0; // time of last server update
 
     public SimpleSim(String paramfile) throws Exception {
+	myName = InetAddress.getLocalHost().getHostName() + "-sim";
+
 	Scanner s = new Scanner(new File(paramfile));
 	if (!(s.next().equals("FILENAME")))
 	    throw new Exception ("Expected FILENAME");
@@ -123,6 +130,12 @@ public class SimpleSim extends Thread {
 	    try {
 		sleep(ticklen);
 	    } catch (InterruptedException e) {}
+	    if (System.currentTimeMillis() - lastUpdate > 1000) {
+		lastUpdate = System.currentTimeMillis();
+		System.out.println("Sending update to " + SERVER_HOST + 
+				   " with value " + rX + " " + rY);
+		HttpGet httpget = new HttpGet("http://"+SERVER_HOST+":8080/acceptInput?robotname=" + myName + "&" + "x=" + rX + "&y=" + rY);
+	    }
 	}
     }
 
