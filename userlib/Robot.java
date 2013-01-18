@@ -81,7 +81,12 @@ public class Robot {
      * @return return whether location has been reached (if blocking)
      */
     boolean goToLocation(String location, boolean block) {
-	throw new UnsupportedOperationException();
+	// should check for existence of loc in map, not yet...
+	out.println("GOTOLOC " + location.toUpperCase());
+	out.flush();
+	if (block)
+	    return queryArrive();
+	return true;
     }
 
     /**
@@ -147,7 +152,8 @@ public class Robot {
      * @return Name of location
      */
     String getClosestLoc() {
-	throw new UnsupportedOperationException();
+	Point p = getPos();
+	return RobotMap.getClosestNode(p.getX(),p.getY());
     }
 
     /**
@@ -184,17 +190,6 @@ public class Robot {
     	throw new UnsupportedOperationException();
     }
 	
-
-    /**
-     * Get the full map information
-     *
-     * Currently not implemented, waiting for map.
-     * @return Map
-     */
-    RobotMap getMap() {
-	throw new UnsupportedOperationException();
-    }
-    
     // RobotMap class contains a dictionary of String->MapNode
     // MapNode contains String name, double x,y, List<String> neighbors(?)
 
