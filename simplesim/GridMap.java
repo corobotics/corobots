@@ -9,7 +9,7 @@ import java.awt.image.BufferedImage;
  */
 public class GridMap extends JFrame {
 
-    private BufferedImage theMap;
+    private BufferedImage theMap, backMap;
     private int imwidth, imheight;
     private double scale;
 
@@ -26,10 +26,14 @@ public class GridMap extends JFrame {
         scale = mpp;
         theMap = new BufferedImage(imwidth,imheight,
                                    BufferedImage.TYPE_INT_ARGB);
+        backMap = new BufferedImage(imwidth,imheight,
+                                   BufferedImage.TYPE_INT_ARGB);
         int midgray = (0xff << 24) | (180 << 16) | (180 << 8) | (180);
         for (int x = 0; x < imwidth; x++)
-            for (int y = 0; y < imheight; y++)
-                theMap.setRGB(x,y,midgray);
+            for (int y = 0; y < imheight; y++) {
+                theMap.setRGB(x,y,midgray); 
+                theMap.setRGB(x,y,midgray); 
+	    }
 
         MapPanel mp = new MapPanel();
         add(mp);
@@ -45,8 +49,10 @@ public class GridMap extends JFrame {
         if (value < 0 || value > 255)
             return;
         int rgbval = (0xff << 24) | (value << 16) | (value << 8) | value;
-        if (x >= 0 && x < imwidth && y >= 0 && y < imheight)
+        if (x >= 0 && x < imwidth && y >= 0 && y < imheight) {
             theMap.setRGB(x,y,rgbval);
+	    backMap.setRGB(x,y,rgbval);
+	}
     }
 
     /**
@@ -67,9 +73,10 @@ public class GridMap extends JFrame {
         // flip y to go from right-handed world to left-handed image
         int imy = (int)(imheight/2 - y/scale);
         //int rgbval = (0xff << 24) | (ival << 16) | (ival << 8) | ival;
-        if (imx >= 0 && imx < imwidth && imy >= 0 && imy < imheight)
+        if (imx >= 0 && imx < imwidth && imy >= 0 && imy < imheight) {
             theMap.setRGB(imx,imy,rgbval);
-
+            backMap.setRGB(imx,imy,rgbval);
+	}
     } 
 
     void setColor(double x, double y, Color c) {
@@ -83,9 +90,36 @@ public class GridMap extends JFrame {
 	int blobRad = 1;
 	for (int imx = cx-blobRad; imx <= cx+blobRad; imx++)
 	    for (int imy = cy-blobRad; imy <= cy+blobRad; imy++)
-		if (imx >= 0 && imx < imwidth && imy >= 0 && imy < imheight)
+		if (imx >= 0 && imx < imwidth && imy >= 0 && imy < imheight) {
 		    theMap.setRGB(imx,imy,c.getRGB());
+		    backMap.setRGB(imx,imy,c.getRGB());
+		}
     }
+
+    void addColorBlob(double x, double y, Color c) {
+        int cx = (int)(x/scale + imwidth/2);
+        // flip y to go from right-handed world to left-handed image
+        int cy = (int)(imheight/2 - y/scale);
+	int blobRad = 1;
+	for (int imx = cx-blobRad; imx <= cx+blobRad; imx++)
+	    for (int imy = cy-blobRad; imy <= cy+blobRad; imy++)
+		if (imx >= 0 && imx < imwidth && imy >= 0 && imy < imheight) {
+		    theMap.setRGB(imx,imy,c.getRGB());
+		}
+    }
+
+    void eraseBlob(double x, double y) {
+        int cx = (int)(x/scale + imwidth/2);
+        // flip y to go from right-handed world to left-handed image
+        int cy = (int)(imheight/2 - y/scale);
+	int blobRad = 2;
+	for (int imx = cx-blobRad; imx <= cx+blobRad; imx++)
+	    for (int imy = cy-blobRad; imy <= cy+blobRad; imy++)
+		if (imx >= 0 && imx < imwidth && imy >= 0 && imy < imheight) {
+		    theMap.setRGB(imx,imy,backMap.getRGB(imx,imy));
+		}
+    }
+    
 
     class MapPanel extends JPanel {
 

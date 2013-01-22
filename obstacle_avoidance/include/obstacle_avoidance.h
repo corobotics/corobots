@@ -33,6 +33,13 @@ public:
     void updatePose(corobot_msgs::Pose pose);
 
     /**
+     * Whether this ObstacleAvoider has any waypoints.
+     *
+     * @return      True if there are any waypoints in the queue.
+     */
+    bool hasWaypoint();
+
+    /**
      * Add a waypoint to the queue.
      *
      * @param waypoint  The new waypoint for the queue.

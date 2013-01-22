@@ -3,7 +3,7 @@
  * simple simulated fashion.  For initial testing of
  * user apps only.
  * 
- * @author zjb Dec-2011, revised Jan-2013
+ * @author zjb Dec-2011, added to corobot project Jan-2013
  */
 
 import java.io.*;
@@ -11,14 +11,23 @@ import java.net.*;
 import java.util.*;
 import java.awt.Color;
 import java.awt.Dimension;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.net.InetAddress;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.impl.client.BasicResponseHandler;
 
 public class SimpleSim extends Thread {
 
     public static final int USER_PORT = 15001;
     public static final int MONITOR_PORT = 16001;
+    public static final String SERVER_HOST = "129.21.30.80";
 
     private static final double DEST_EPS = 0.02;
-    private static final int WIN_SCALE = 2;
+    private static final int WIN_SCALE = 4;
     private GridMap mapWin;
     private int[][] theWorld;
     private int mapW, mapH;
@@ -27,12 +36,21 @@ public class SimpleSim extends Thread {
     private double destX, destY;
     private double rV = 0.1; // robot velocity, meters per second
     private int ticklen = 100; // simulation cycle time, millisec
+    private long lastUpdate = 0; // time of last server update
+    private String myName;
+    private ResponseHandler<String> responseHandler;
+    private HttpClient httpclient;
 
     public SimpleSim(String paramfile) throws Exception {
+	myName = InetAddress.getLocalHost().getHostName() + "-sim";
+	responseHandler = new BasicResponseHandler();
+	httpclient = new DefaultHttpClient();
+
 	Scanner s = new Scanner(new File(paramfile));
 	if (!(s.next().equals("FILENAME")))
 	    throw new Exception ("Expected FILENAME");
-	FileInputStream mapFile = new FileInputStream(s.next());
+	//	FileInputStream mapFile = new FileInputStream(s.next());
+	BufferedImage mapImage = ImageIO.read(new File(s.next()));
 	if (!(s.next().equals("WIDTH")))
 	    throw new Exception ("Expected WIDTH");
 	mapW = s.nextInt();
@@ -47,7 +65,9 @@ public class SimpleSim extends Thread {
 	mapWin = new GridMap(mapW*mpp,mapH*mpp,mpp*WIN_SCALE);
 	for (int y = 0; y < mapH; y++) {
 	    for (int x = 0; x < mapW; x++) {
-		theWorld[x][y] = mapFile.read();
+		theWorld[x][y] = mapImage.getRGB(x,y) % 256;
+		if (theWorld[x][y] < 0) theWorld[x][y] += 256;
+		//if (x == y) System.out.println(mapImage.getRGB(x,y) + " " + theWorld[x][y]);
 		mapWin.setPix(x/WIN_SCALE,y/WIN_SCALE,theWorld[x][y]);
 	    }
 	}
@@ -59,7 +79,13 @@ public class SimpleSim extends Thread {
 	    throw new Exception ("Expected INIT_Y");
 	rY = s.nextDouble();
 	destY = rY;
-	mapWin.setColorBlob(rX,rY,Color.RED);
+	mapWin.addColorBlob(rX,rY,Color.RED);
+
+	Set<String> mapNames = RobotMap.getNodeNames();
+	for (String n : mapNames) {
+	    mapWin.setColorBlob(RobotMap.getNode(n).x, RobotMap.getNode(n).y, Color.BLUE);
+	}
+	
 	mapWin.setSize(new Dimension((int)(mapW/WIN_SCALE),(int)(mapH/WIN_SCALE)));
 	mapWin.setVisible(true);
     }
@@ -113,8 +139,8 @@ public class SimpleSim extends Thread {
 		} else {
 		    // update both the sim and the display
 		    // this next line is a hack
-		    mapWin.setColorBlob(rX,rY,Color.WHITE);
-		    mapWin.setColorBlob(newX,newY,Color.RED);
+		    mapWin.eraseBlob(rX,rY);
+		    mapWin.addColorBlob(newX,newY,Color.RED);
 		    mapWin.repaint();
 		    rX = newX;
 		    rY = newY;
@@ -123,6 +149,17 @@ public class SimpleSim extends Thread {
 	    try {
 		sleep(ticklen);
 	    } catch (InterruptedException e) {}
+	    if (System.currentTimeMillis() - lastUpdate > 1000) {
+		try {
+		    lastUpdate = System.currentTimeMillis();
+		    //		    System.out.println("Sending update to " + SERVER_HOST + 
+		    //		       " with value " + rX + " " + rY);
+		    HttpGet httpget = new HttpGet("http://"+SERVER_HOST+":8080/acceptInput?robotname=" + myName + "&" + "x=" + rX + "&y=" + rY);
+		    httpclient.execute(httpget,responseHandler);
+		} catch (IOException e) {
+		    //System.err.println(e);
+		}
+	    }
 	}
     }
 
@@ -159,6 +196,13 @@ public class SimpleSim extends Thread {
 			    // but not right now
 			    destX = newX;
 			    destY = newY;
+			} else if (parts[0].equals("GOTOLOC")) {
+			    MapNode dnode = RobotMap.getNode(parts[1]);
+			    if (dnode != null) {
+				System.out.println("Going to " + parts[1] + " at " + dnode.x + "," + dnode.y);
+				destX = dnode.x;
+				destY = dnode.y;
+			    }
 			} else if (parts[0].equals("QUERY_ARRIVE")) {
 			    // wait here since if we loop we will block
 			    // until next message.

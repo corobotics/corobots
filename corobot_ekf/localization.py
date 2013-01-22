@@ -11,11 +11,11 @@ from nav_msgs.msg import Odometry
 def convert_to_pose(odom):
     pose = Pose()
     pose.header = odom.header
-    pose.x = odom.pose.position.x
-    pose.y = odom.pose.position.y
-    qz = odom.pose.orientation.z
-    qw = odom.pose.orientation.w
-    pose.theta = atan2(0, w * w - z * z)
+    pose.x = odom.pose.pose.position.x
+    pose.y = odom.pose.pose.position.y
+    qz = odom.pose.pose.orientation.z
+    qw = odom.pose.pose.orientation.w
+    pose.theta = atan2(2 * qw * qz, 1 - 2 * qz * qz)
     cov = odom.pose.covariance
     pose.cov = (
         cov[0],  cov[1],  cov[5],

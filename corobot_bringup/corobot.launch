@@ -44,8 +44,6 @@
         <param name="output_frame" value="odom"/>
     </node>
 
-    <!-- Kinect -->
-    <include file="$(find corobot_bringup)/kinect.launch" />
     <!-- Map -->
     <include file="$(find corobot_bringup)/map.launch" />
 
