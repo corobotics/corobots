@@ -24,6 +24,13 @@ using sensor_msgs::LaserScan;
 /**
  * {@inheritDoc}
  */
+bool ObstacleAvoider::hasWaypoint() {
+    return !waypointQueue.empty();
+}
+
+/**
+ * {@inheritDoc}
+ */
 void ObstacleAvoider::updatePose(Pose newPose) {
     pose = newPose;
     // Check if reached waypoint.
@@ -50,10 +57,15 @@ ObstacleAvoider* oa;
  * Callback for laserscan messages.
  */
 void scanCallback(LaserScan scan) {
+    Twist t;
+    if (!oa->hasWaypoint()) {
+        cout << "No waypoints; returning." << endl;
+        cmdVelPub.publish(t);
+        return;
+    }
     Point p = oa->nav(scan);
     cout << "Nav vector: <" << p.x << ", " << p.y << ">" << endl;
     // Publish.
-    Twist t;
     t.linear.x = sqrt(p.x * p.x + p.y * p.y);
     t.angular.z = atan2(p.y, p.x);
     cmdVelPub.publish(t);

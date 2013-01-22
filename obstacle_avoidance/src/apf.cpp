@@ -138,6 +138,10 @@ list<Polar> APF::findObjects(list<Polar> points) {
     return objects;
 }
 
+double vectorLength(double x, double y) {
+    return sqrt(x*x + y*y);
+}
+
 /**
  * {@inheritDoc}
  */
@@ -157,8 +161,10 @@ Point APF::nav(LaserScan scan) {
     sum.y = 0;
     double force;
 
+    cout << endl << endl;
     // Sum over all obstacles.
     for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
+        cout << "Obj: " << p->a << ", " << p->d << endl;
         force = distForce->calc(p->d);
         sum.x += force * cos(p->a);
         sum.y += force * sin(p->a);
@@ -175,6 +181,13 @@ Point APF::nav(LaserScan scan) {
     Point res;
     res.x = kg * cos(theta) - sum.x;
     res.y = kg * sin(theta) - sum.y;
+
+    // Since we're only guaranteed there's one point in the queue coming into
+    // this function, we pop nearby waypoints at the end...
+    while (!waypointQueue.empty() && vectorLength(pose.x - goal.x, pose.y - goal.y) < 0.2) {
+        waypointQueue.pop();
+        goal = waypointQueue.front();
+    }
 
     return res;
 }
