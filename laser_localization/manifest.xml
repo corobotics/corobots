@@ -1,0 +1,17 @@
+<package>
+  <description brief="laser_localization">
+
+     laser_localization
+
+  </description>
+  <author>Max Bogue</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/laser_localization</url>
+  <depend package="corobot_msgs"/>
+  <depend package="nav_msgs"/>
+  <depend package="sensor_msgs"/>
+
+</package>
+
+
