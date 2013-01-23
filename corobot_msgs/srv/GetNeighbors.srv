@@ -1,0 +1,3 @@
+corobot_msgs/Waypoint curr
+---
+corobot_msgs/Waypoint[] neighbors
