@@ -53,10 +53,12 @@ public class RobotMap {
     }
 
     public static MapNode getNode(String name) {
+	name = name.toUpperCase();
 	return theMap.nodes.get(name);
     }
 
     public static boolean isNode(String name) {
+	name = name.toUpperCase();
 	return theMap.nodes.containsKey(name);
     }
 }
