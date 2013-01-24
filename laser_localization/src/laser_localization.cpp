@@ -1,15 +1,14 @@
 #include "nav_msgs/OccupancyGrid.h"
 #include "sensor_msgs/LaserScan.h"
 
+#include "corobot.h"
 #include "laser_localization.h"
 
 using corobot_msgs::Pose;
 using nav_msgs::OccupancyGrid;
 using sensor_msgs::LaserScan;
 
-float dist(float x, float y) {
-    return sqrt(x * x + y * y);
-}
+using namespace corobot;
 
 LaserLocalization::LaserLocalization(OccupancyGrid grid) {
     updateGrid(grid);
