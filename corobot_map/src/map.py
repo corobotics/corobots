@@ -34,8 +34,12 @@ def get_neighbors(req):
 
 def loadWaypoints():
 	with open(wploc, 'r') as wpFile:
+		first = True
 		for line in wpFile:
-			vals = line.split(',')
+			if first:
+				first = False
+				continue
+			vals = line.strip().split(',')
 			neighborList = []
 			for neighbor in vals[6:]:
 				if neighbor != "":
