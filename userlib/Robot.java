@@ -61,24 +61,15 @@ public class Robot {
     }
 
     /**
-     * Plans and executes a path to the given location.  Planning is done by the robot.
+     * Plans and executes a path to the given location
      *
+     * Currently not implemented, waiting for map.
      * @param location Name (as on map) 
      * @param block specifies whether this call blocks until location reached or some failure condition.
      * @return return whether location has been reached (if blocking)
      */
-    boolean navigateToLocation(String location, boolean block) {
-	location = location.toUpperCase();
-	if (RobotMap.isNode(location)) {
-	    out.println("NAVTOLOC " + location.toUpperCase());
-	    out.flush();
-	    if (block)
-		return queryArrive();
-	    return true;
-	}
-	else {
-	    return false;
-	}
+    boolean navigateToLocation(String location) {
+	throw new UnsupportedOperationException();
     }
     
     /**
@@ -90,7 +81,7 @@ public class Robot {
      * @return return whether location has been reached (if blocking)
      */
     boolean goToLocation(String location, boolean block) {
-	location = location.toUpperCase();
+	// should check for existence of loc in map, not yet...
 	if (RobotMap.isNode(location)) {
 	    out.println("GOTOLOC " + location.toUpperCase());
 	    out.flush();

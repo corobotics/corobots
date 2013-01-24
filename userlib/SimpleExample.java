@@ -6,10 +6,9 @@ public class SimpleExample {
 	System.out.println("Connected!");
 	Point p = robot.getPos();
 	System.out.println("Starting at " + p);
-	//	String loc = robot.getClosestLoc();
-	//	System.out.println("Closest location is " + loc);
-	//	robot.goToLocation(loc, true);
-	robot.navigateToLocation("AtriumS3",true);
+	String loc = robot.getClosestLoc();
+	System.out.println("Closest location is " + loc);
+	robot.goToLocation(loc, true);
 	if (robot.goToXY(p.getX() - 1.5, p.getY() + 1.0, true)) 
 	    System.out.println("Made it!");
 	else

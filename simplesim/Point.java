@@ -12,21 +12,12 @@ public class Point {
 	this.y = y;
     }
 
-    public Point(Point p) {
-	this.x = p.x;
-	this.y = p.y;
-    }
-
     public double getX() {
 	return x;
     }
 
     public double getY() {
 	return y;
-    }
-
-    public double dist(Point o) {
-	return (o.x-x)*(o.x-x)+(o.y-y)*(o.y-y);
     }
 
     public String toString() {
