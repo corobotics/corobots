@@ -1,0 +1,7 @@
+---
+nav_msgs/OccupanyGrid map
+
+#Simple list of all waypoints, no edge data.
+# Useful for finding closest waypoint to current location?
+corobot_msgs/Waypoint[] wps
+

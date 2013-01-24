@@ -8,7 +8,7 @@ public class RobotMap {
 
     private RobotMap() {
 	try {
-	    Scanner input = new Scanner(new File("../corobot_map/map/locations.csv"));
+	    Scanner input = new Scanner(new File("../corobot_map/map/waypoints.csv"));
 	    String nodeline = input.nextLine(); // toss the headers of the csv
 	    nodes = new HashMap<String,MapNode>();
 	    while (input.hasNextLine()) {
@@ -54,6 +54,10 @@ public class RobotMap {
 
     public static MapNode getNode(String name) {
 	return theMap.nodes.get(name);
+    }
+
+    public static boolean isNode(String name) {
+	return theMap.nodes.containsKey(name);
     }
 }
 class MapNode {

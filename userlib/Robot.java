@@ -68,7 +68,7 @@ public class Robot {
      * @param block specifies whether this call blocks until location reached or some failure condition.
      * @return return whether location has been reached (if blocking)
      */
-    boolean navigateToLocation(String location, boolean block) {
+    boolean navigateToLocation(String location) {
 	throw new UnsupportedOperationException();
     }
     
@@ -82,11 +82,16 @@ public class Robot {
      */
     boolean goToLocation(String location, boolean block) {
 	// should check for existence of loc in map, not yet...
-	out.println("GOTOLOC " + location.toUpperCase());
-	out.flush();
-	if (block)
-	    return queryArrive();
-	return true;
+	if (RobotMap.isNode(location)) {
+	    out.println("GOTOLOC " + location.toUpperCase());
+	    out.flush();
+	    if (block)
+		return queryArrive();
+	    return true;
+	}
+	else {
+	    return false;
+	}
     }
 
     /**
@@ -148,7 +153,6 @@ public class Robot {
     /** 
      * Gives the named location closest to the robot's current position.
      *
-     * Currently not implemented, waiting for map.
      * @return Name of location
      */
     String getClosestLoc() {
@@ -160,7 +164,7 @@ public class Robot {
      * Returns all named locations close to the robot's current position.
      * not sure how to define "close" here, but likely to be useful
      *
-     * Currently not implemented, waiting for map.
+     * Currently not implemented.
      *
      * @return list of nearby location names
      */
