@@ -7,7 +7,7 @@ from nav_msgs.srv import *
 from corobot_msgs.msg import Waypoint
 from corobot_msgs.srv import *
 
-wploc = roslib.packages.get_pkg_dir('corobot_map') + "/map/locations.csv"
+wploc = roslib.packages.get_pkg_dir('corobot_map') + "/map/waypoints.csv"
 wps = {}
 
 def handle_get_map(req):
