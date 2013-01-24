@@ -55,6 +55,10 @@ public class RobotMap {
     public static MapNode getNode(String name) {
 	return theMap.nodes.get(name);
     }
+
+    public static boolean isNode(String name) {
+	return theMap.nodes.containsKey(name);
+    }
 }
 class MapNode {
     String name;
