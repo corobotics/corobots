@@ -1,4 +1,4 @@
-FILENAME ../corobot_map/map/070-3-clean.png
+FILENAME ../corobot_map/map/robotMap.png
 WIDTH 4096
 HEIGHT 1440
 MPP 0.0328

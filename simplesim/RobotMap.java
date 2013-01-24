@@ -17,8 +17,9 @@ public class RobotMap {
 		// name xpix ypix xm ym type nbrs...
 		MapNode newnode = new MapNode();
 		newnode.name = parts[0].toUpperCase();
-		newnode.x = Double.parseDouble(parts[3]);
-		newnode.y = Double.parseDouble(parts[4]);
+		double x = Double.parseDouble(parts[3]);
+		double y = Double.parseDouble(parts[4]);
+		newnode.pos = new Point(x,y);
 		newnode.nbrs = new LinkedList<String>();
 		for (int i = 6; i < parts.length; i++)
 		    if (!(parts[i].equals("")))
@@ -31,6 +32,15 @@ public class RobotMap {
 	}
     }
     
+    public static TreeMap<Double,MapNode> getNodesFromLoc(Point p) {
+	TreeMap<Double,MapNode> pts = new TreeMap<Double,MapNode>();
+	for (MapNode n : theMap.nodes.values()) {
+	    double d = p.dist(n.pos);
+	    pts.put(d,n);
+	}
+	return pts;
+    }
+
     public static HashMap<String,MapNode> getNodes() {
 	return theMap.nodes;
     }
@@ -45,6 +55,6 @@ public class RobotMap {
 }
 class MapNode {
     String name;
-    double x, y; // in meters
+    Point pos; // in meters
     List<String> nbrs;
 }
