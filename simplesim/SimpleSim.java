@@ -33,6 +33,7 @@ public class SimpleSim extends Thread {
     private int mapW, mapH;
     private double mpp;
     private double rX, rY;
+    private LinkedList<Point> dests;
     private double destX, destY;
     private double rV = 0.1; // robot velocity, meters per second
     private int ticklen = 100; // simulation cycle time, millisec
