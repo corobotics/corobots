@@ -30,7 +30,12 @@ def get_waypoints():
 	return None
 
 def get_neighbors(req):
-	return None
+	neighbors = wps[req.name][2]
+	waypoints = []
+	for neighbor in neighbors:
+		node = wps[neighbor]
+		waypoints.append( Waypoint(node[0],node[1],neighbor) )
+	return GetNeighborsResponse(waypoints)
 
 def loadWaypoints():
 	with open(wploc, 'r') as wpFile:
@@ -44,7 +49,7 @@ def loadWaypoints():
 			for neighbor in vals[6:]:
 				if neighbor != "":
 					neighborList.append(neighbor)
-			wps[vals[0]]=vals[3],vals[4],neighborList
+			wps[vals[0]]=float(vals[3]),float(vals[4]),neighborList
 
 '''This node is acting as a relay for image-driven map data and then
 ties in our waypoint/location data'''
