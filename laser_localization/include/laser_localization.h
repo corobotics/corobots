@@ -8,6 +8,8 @@
 
 #define PI 3.14159265
 
+#define OCCUPANCY_THRESH 30
+
 typedef struct {
     int x;
     int y;
@@ -25,7 +27,9 @@ private:
     int h;
 
     GridPose randomPose();
+    int8_t gridLookup(int x, int y);
     int8_t gridLookup(GridPose pose);
+    float findObstacle(int x1, int y2, float a);
     sensor_msgs::LaserScan poseToScan(GridPose pose);
     float compareScans(sensor_msgs::LaserScan s1, sensor_msgs::LaserScan s2);
     corobot_msgs::Pose find(sensor_msgs::LaserScan scan);
