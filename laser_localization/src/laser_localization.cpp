@@ -103,12 +103,18 @@ float LaserLocalization::findObstacle(int x1, int y1, float a) {
             }
         }
     }
-    return -1;
+    return -1.0;
 }
 
-LaserScan LaserLocalization::poseToScan(GridPose pose) {
-    LaserScan scan;
-    return scan;
+float* LaserLocalization::poseToRanges(GridPose pose, LaserScan scan) {
+    int n = (int)((scan.angle_max - scan.angle_min) / scan.angle_increment) + 1;
+    float* ranges = new float[n];
+    float a = scan.angle_min;
+    for (int i = 0; i < n; i++) {
+        ranges[i] = findObstacle(pose.x, pose.y, pose.a + a);
+        a += scan.angle_increment;
+    }
+    return ranges;
 }
 
 float LaserLocalization::compareScans(LaserScan s1, LaserScan s2) {

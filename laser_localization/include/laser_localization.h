@@ -30,7 +30,7 @@ private:
     int8_t gridLookup(int x, int y);
     int8_t gridLookup(GridPose pose);
     float findObstacle(int x1, int y2, float a);
-    sensor_msgs::LaserScan poseToScan(GridPose pose);
+    float* poseToRanges(GridPose pose, sensor_msgs::LaserScan scan);
     float compareScans(sensor_msgs::LaserScan s1, sensor_msgs::LaserScan s2);
     corobot_msgs::Pose find(sensor_msgs::LaserScan scan);
 };
