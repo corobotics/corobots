@@ -10,11 +10,22 @@
 
 #define OCCUPANCY_THRESH 30
 
+#define NUM_GUESSES 10000
+
 typedef struct {
     int x;
     int y;
     float a;
 } GridPose;
+
+typedef struct GridPoseP {
+    int x;
+    int y;
+    float a;
+    float p;
+    GridPoseP() {}
+    GridPoseP(GridPose pose, float p) : x(pose.x), y(pose.y), a(pose.a), p(p) {}
+} GridPoseP;
 
 class LaserLocalization {
 public:

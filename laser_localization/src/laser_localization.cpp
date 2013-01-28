@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <vector>
+
 #include "nav_msgs/OccupancyGrid.h"
 #include "sensor_msgs/LaserScan.h"
 
@@ -131,8 +134,28 @@ float LaserLocalization::comparePoseToScan(GridPose pose, LaserScan scan) {
     return p;
 }
 
+int gridPoseCmp(GridPoseP p1, GridPoseP p2) {
+    if (p1.p > p2.p) {
+        return -1;
+    } else if (p1.p == p2.p) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 Pose LaserLocalization::find(LaserScan scan) {
     Pose pose;
+    std::vector<GridPoseP> guesses(NUM_GUESSES);
+    GridPose guess;
+    float p;
+    for (int i = 0; i < NUM_GUESSES; i++) {
+        guess = randomPose();
+        p = comparePoseToScan(guess, scan);
+        GridPoseP guessP(guess, p);
+        guesses[i] = guessP;
+    }
+    std::sort(guesses.begin(), guesses.end(), gridPoseCmp);
     return pose;
 }
 
