@@ -32,9 +32,9 @@ public class SimpleSim extends Thread {
     private int[][] theWorld;
     private int mapW, mapH;
     private double mpp;
-    private double rX, rY;
-    private LinkedList<Point> dests;
-    private double destX, destY;
+    private Point rPos;
+    private LinkedList<Point> dests; // remaining destinations (not including dest)
+    private Point dest;
     private double rV = 0.1; // robot velocity, meters per second
     private int ticklen = 100; // simulation cycle time, millisec
     private long lastUpdate = 0; // time of last server update
@@ -43,9 +43,11 @@ public class SimpleSim extends Thread {
     private HttpClient httpclient;
 
     public SimpleSim(String paramfile) throws Exception {
-	myName = InetAddress.getLocalHost().getHostName() + "-sim";
+	myName = InetAddress.getLocalHost().getHostName() + "-sim-" + (System.currentTimeMillis()%10000);
 	responseHandler = new BasicResponseHandler();
 	httpclient = new DefaultHttpClient();
+	
+	dests = new LinkedList<Point>();
 
 	Scanner s = new Scanner(new File(paramfile));
 	if (!(s.next().equals("FILENAME")))
@@ -74,17 +76,18 @@ public class SimpleSim extends Thread {
 	}
 	if (!(s.next().equals("INIT_X")))
 	    throw new Exception ("Expected INIT_X");
-	rX = s.nextDouble();
-	destX = rX;
+	double rX = s.nextDouble();
 	if (!(s.next().equals("INIT_Y")))
 	    throw new Exception ("Expected INIT_Y");
-	rY = s.nextDouble();
-	destY = rY;
+	double rY = s.nextDouble();
+	rPos = new Point(rX,rY);
+	dest = new Point(rX,rY); // separate point object, robot will move!
+
 	mapWin.addColorBlob(rX,rY,Color.RED);
 
 	Set<String> mapNames = RobotMap.getNodeNames();
 	for (String n : mapNames) {
-	    mapWin.setColorBlob(RobotMap.getNode(n).x, RobotMap.getNode(n).y, Color.BLUE);
+	    mapWin.setColorBlob(RobotMap.getNode(n).pos.getX(), RobotMap.getNode(n).pos.getY(), Color.BLUE);
 	}
 	
 	mapWin.setSize(new Dimension((int)(mapW/WIN_SCALE),(int)(mapH/WIN_SCALE)));
@@ -112,9 +115,107 @@ public class SimpleSim extends Thread {
 
     }
 
+    private boolean navigableTo(MapNode n) {
+	double cx = rPos.getX(), cy = rPos.getY();
+	double dx = n.pos.getX()-rPos.getX(), dy = n.pos.getY()-rPos.getY();
+	double sdx = Math.signum(dx), sdy = Math.signum(dy);
+	double incx, incy;
+	if (Math.abs(dx) > Math.abs(dy)) {
+	    incx = sdx*mpp/2; incy = dy/(dx/incx);
+	} else {
+	    incy = sdy*mpp/2; incx = dx/(dy/incy);
+	}
+	//System.out.println("Testing going straight to " + n.name + " " + n.pos + " inc (" + 
+	//		   incx + "," + incy + ") totald (" + dx + "," + dy + ")");
+	while (sdx*dx > 0 || sdy*dy > 0) {
+	    if (mapAt(cx+dx,cy+dy) == 0) {
+		return false;
+	    }
+	    dx -= incx; dy -= incy;
+	}
+	return true;
+    }
+
+    class AStarNode implements Comparable<AStarNode>{
+	double f,g,h;
+	MapNode n;
+	AStarNode(double g, double h, MapNode n) {
+	    this.g = g; this.h = h; this.n = n; this.f = g+h;
+	}
+	public int compareTo(AStarNode o) {
+	    return (new Double(f)).compareTo(o.f);
+	}
+	public String toString() {
+	    return "" + f + " = " + (int)(g) + " + " + (int)(h) + " (" + n.name + ")";
+	}
+    }
+
+    private LinkedList<MapNode> aStar(MapNode dest) {
+	// first find the start of the search
+	System.out.println("Planning to " + dest.name);
+	TreeMap<Double,MapNode> nodes = RobotMap.getNodesFromLoc(rPos);
+	System.out.println("Finding possible start nodes");
+	HashMap<String,String> preds = new HashMap<String,String>();
+	PriorityQueue<AStarNode> queue = new PriorityQueue<AStarNode>();
+	// This should probably leave out office nodes?
+	for (MapNode n : nodes.values()) {
+	    if (navigableTo(n)) {
+		//System.out.println("Adding " + n.name + " as possible 1st waypoint");
+		// g is dist to waypoint, h is distance from waypoint to goal
+		queue.add(new AStarNode(rPos.dist(n.pos),n.pos.dist(dest.pos),n));
+		preds.put(n.name,null);
+	    }
+	}
+	if (queue.isEmpty())
+	    throw new RuntimeException("Crap, can't find a nearby waypoint to start A*");
+	while (!queue.isEmpty()) {
+	    AStarNode curr = queue.poll();
+	    MapNode cnode = curr.n;
+	    if (cnode.name.equals(dest.name)) {
+		// got it, build path
+		LinkedList<MapNode> path = new LinkedList<MapNode>();
+		MapNode pnode = dest;
+		while (pnode != null) {
+		    path.offerFirst(pnode);
+		    pnode = RobotMap.getNode(preds.get(pnode.name));
+		}
+		// and return
+		return path;
+	    } 
+	    for (String n : cnode.nbrs) {
+		MapNode adj = RobotMap.getNode(n);
+		double newg = curr.g + adj.pos.dist(cnode.pos);
+		double newh = adj.pos.dist(dest.pos);
+		// is this an improvement?
+		boolean skipit = false, replace = false;
+		for (Iterator<AStarNode> qit = queue.iterator(); qit.hasNext(); ) {
+		    AStarNode asn = qit.next();
+		    if (asn.n == adj) {
+			if (newg+newh < asn.f) {
+			    // it's better, replace (annoying to replace below since 
+			    qit.remove();			    
+			    replace = true;
+			} else {
+			    skipit = true;
+			}
+			break;
+		    }
+		}
+		if (skipit) continue;
+		// if already seen and not replacing, skip it also
+		if (!replace && preds.containsKey(adj.name)) continue;
+		AStarNode newnode = new AStarNode(newg,newh,adj);
+		queue.offer(newnode);
+		preds.put(adj.name,cnode.name);
+	    }
+	}
+	// no path!
+	return null;
+    }
+
     private boolean atDestination() {
-	double deltaX = destX - rX;
-	double deltaY = destY - rY;
+	double deltaX = dest.getX() - rPos.getX();
+	double deltaY = dest.getY() - rPos.getY();
 	return (Math.abs(deltaX) < DEST_EPS && Math.abs(deltaY) < DEST_EPS);
     }
 
@@ -122,30 +223,32 @@ public class SimpleSim extends Thread {
 	// spin and update position based on data from user-comm thread
 	while (true) {
 	    if (!atDestination()) {
-		double deltaX = destX - rX;
-		double deltaY = destY - rY;
+		double deltaX = dest.getX() - rPos.getX();
+		double deltaY = dest.getY() - rPos.getY();
 		double magDelta = Math.sqrt((deltaX*deltaX) + (deltaY*deltaY));
 		double dist = rV * (ticklen/1000.0); // max dist to travel in one tick
 		if (dist > magDelta)
 		    dist = magDelta; // don't overshoot
-		double newX = rX + dist*(deltaX/magDelta);
-		double newY = rY + dist*(deltaY/magDelta);
+		double newX = rPos.getX() + dist*(deltaX/magDelta);
+		double newY = rPos.getY() + dist*(deltaY/magDelta);
 		
 		// test for collisions
 		int obs = (mapAt(newX,newY));
 		if (obs == 0)  { // CRASH!
 		    // don't try to keep going
-		    destX = rX;
-		    destY = rY;
+		    dest = new Point(rPos);
+		    dests.clear();
 		} else {
 		    // update both the sim and the display
 		    // this next line is a hack
-		    mapWin.eraseBlob(rX,rY);
+		    mapWin.eraseBlob(rPos.getX(),rPos.getY());
 		    mapWin.addColorBlob(newX,newY,Color.RED);
 		    mapWin.repaint();
-		    rX = newX;
-		    rY = newY;
+		    rPos = new Point(newX,newY);
 		}
+	    } else if (!dests.isEmpty()) {
+		// at a destination, but more to get to...
+		dest = dests.poll();
 	    }
 	    try {
 		sleep(ticklen);
@@ -153,9 +256,8 @@ public class SimpleSim extends Thread {
 	    if (System.currentTimeMillis() - lastUpdate > 1000) {
 		try {
 		    lastUpdate = System.currentTimeMillis();
-		    //		    System.out.println("Sending update to " + SERVER_HOST + 
-		    //		       " with value " + rX + " " + rY);
-		    HttpGet httpget = new HttpGet("http://"+SERVER_HOST+":8080/acceptInput?robotname=" + myName + "&" + "x=" + rX + "&y=" + rY);
+		    HttpGet httpget = new HttpGet("http://"+SERVER_HOST+":8080/acceptInput?robotname=" + 
+						  myName + "&" + "x=" + rPos.getX() + "&y=" + rPos.getY());
 		    httpclient.execute(httpget,responseHandler);
 		} catch (IOException e) {
 		    //System.err.println(e);
@@ -188,33 +290,54 @@ public class SimpleSim extends Thread {
 			String[] parts = message.split(" ");
 			System.out.println("New message: " + parts[0]);
 			if (parts[0].equals("GETPOS")) {
-			    out.println("POS " + rX + " " + rY);
+			    out.println("POS " + rPos.getX() + " " + rPos.getY());
 			    out.flush();
 			} else if (parts[0].equals("GOTOXY")) {
 			    double newX = Double.parseDouble(parts[1]);
 			    double newY = Double.parseDouble(parts[2]);
 			    // maybe do some sanity checking here
 			    // but not right now
-			    destX = newX;
-			    destY = newY;
+			    dest = new Point(newX, newY);
 			} else if (parts[0].equals("GOTOLOC")) {
 			    MapNode dnode = RobotMap.getNode(parts[1]);
+			    // should have been checked client-side, but to be safe:
 			    if (dnode != null) {
-				System.out.println("Going to " + parts[1] + " at " + dnode.x + "," + dnode.y);
-				destX = dnode.x;
-				destY = dnode.y;
+				System.out.println("Going to " + parts[1] + " at " + dnode.pos);
+				dest = new Point(dnode.pos);
+			    }
+			} else if (parts[0].equals("NAVTOLOC")) {
+			    MapNode dnode = RobotMap.getNode(parts[1]);
+			    if (dnode != null) {
+				List<MapNode> path = aStar(dnode);
+				if (path == null)
+				    System.err.println("Path search failed!");
+				else {
+				    System.out.println("Going to " + parts[1] + " using the path:");
+				    for (MapNode n : path) {
+					System.out.println(n.name + " at " + n.pos);
+					dests.add(new Point(n.pos));
+				    }
+				}
 			    }
 			} else if (parts[0].equals("QUERY_ARRIVE")) {
 			    // wait here since if we loop we will block
 			    // until next message.
-			    double waitX = destX, waitY = destY;
-			    while (!atDestination()) {
+			    Point waitFor = dest;
+			    // if we're navigating, wait until the end of the navigation
+			    if (!dests.isEmpty()) {
+				waitFor = dests.getLast();
+			    }
+			    // if crashing, will be at destination and further dests deleted
+			    // so even if crashing along a plan, this will become false
+			    while (!atDestination() || dests.contains(waitFor)) {
 				try {
 				    Thread.sleep(1000);
 				} catch (InterruptedException e) { }
 			    }
 			    // if crashed, destination will have changed
-			    if (waitX == destX && waitY == destY)
+			    // otherwise, the current destination will be the one we waited for
+			    //   (whether the only or the last of several)
+			    if (dest == waitFor)
 				out.println("ARRIVE");
 			    else
 				out.println("GOTOFAIL");
@@ -243,8 +366,8 @@ public class SimpleSim extends Thread {
 		    PrintWriter out = new PrintWriter(s.getOutputStream());
 		    while(s.isConnected()) {
 			// send position to monitor
-			out.println("POS " + rX + " " + rY);
-			out.println("DEST " + destX + " " + destY);
+			out.println("POS " + rPos.getX() + " " + rPos.getY());
+			out.println("DEST " + dest.getX() + " " + dest.getY());
 			out.flush();
 			// sleep
 			try {
