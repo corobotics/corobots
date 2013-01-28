@@ -13,7 +13,7 @@
 typedef struct {
     int x;
     int y;
-    double a;
+    float a;
 } GridPose;
 
 class LaserLocalization {
@@ -30,8 +30,7 @@ private:
     int8_t gridLookup(int x, int y);
     int8_t gridLookup(GridPose pose);
     float findObstacle(int x1, int y2, float a);
-    float* poseToRanges(GridPose pose, sensor_msgs::LaserScan scan);
-    float compareScans(sensor_msgs::LaserScan s1, sensor_msgs::LaserScan s2);
+    float comparePoseToScan(GridPose pose, sensor_msgs::LaserScan scan);
     corobot_msgs::Pose find(sensor_msgs::LaserScan scan);
 };
 

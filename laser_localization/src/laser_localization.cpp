@@ -105,19 +105,30 @@ float LaserLocalization::findObstacle(int x1, int y1, float a) {
     return -1.0;
 }
 
-float* LaserLocalization::poseToRanges(GridPose pose, LaserScan scan) {
-    int n = (int)((scan.angle_max - scan.angle_min) / scan.angle_increment) + 1;
-    float* ranges = new float[n];
-    float a = scan.angle_min;
-    for (int i = 0; i < n; i++) {
-        ranges[i] = findObstacle(pose.x, pose.y, pose.a + a);
-        a += scan.angle_increment;
+float rangeProbability(float d1, float d2) {
+    float d = d1 - d2;
+    if (d1 < -0.1) {
+
     }
-    return ranges;
+    return d;
 }
 
-float LaserLocalization::compareScans(LaserScan s1, LaserScan s2) {
-    return 0.0;
+float LaserLocalization::comparePoseToScan(GridPose pose, LaserScan scan) {
+    int n = (int)((scan.angle_max - scan.angle_min) / scan.angle_increment) + 1;
+    float a = scan.angle_min;
+    float p = 1.0;
+    float d1, d2;
+    for (int i = 0; i < n; i++) {
+        // Assume independence and just multiply the probabilities.
+        d1 = findObstacle(pose.x, pose.y, pose.a + a);
+        d2 = scan.ranges[i];
+        // TODO: Should we ignore unknown values? Or do something else?
+        if (d1 >= 0 && d2 >= scan.range_min && d2 <= scan.range_max) {
+            p *= rangeProbability(d1, d2);
+        }
+        a += scan.angle_increment;
+    }
+    return p;
 }
 
 Pose LaserLocalization::find(LaserScan scan) {
