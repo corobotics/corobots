@@ -97,8 +97,6 @@ class EKF(object):
                     continue
                 # if it's different, transform the coords.
                 y = EKF.coord_transform(y, frame_offset)
-            v = ?
-            theta = y[0][2]
             R = P * (P + W).I
             x = x + R * (y - x)
             P = P - R * P
