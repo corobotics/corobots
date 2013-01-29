@@ -7,38 +7,44 @@ from nav_msgs.srv import *
 from corobot_msgs.msg import Waypoint
 from corobot_msgs.srv import *
 
-wploc = roslib.packages.get_pkg_dir('corobot_map') + "/map/waypoints.csv"
+wpfile = roslib.packages.get_pkg_dir('corobot_map') + "/map/waypoints.csv"
 wps = {}
 
 def handle_get_map(req):
 	return map_server_client()
 def handle_get_waypoints(req):
-	return get_waypoints()
+	return GetWaypointsResponse(get_waypoints())
 def handle_get_neighbor(req):
-	return get_neighbors(req)
+	return GetNeighborsResponse(get_neighbors(req.name))
 
 def map_server_client():
 	rospy.wait_for_service('static_map')
 	try:
 		static_map = rospy.ServiceProxy('static_map', GetMap)
 		resp = static_map()
-		return GetMapResponse(resp.map)
+		return GetMapResponse(resp.map,get_waypoints())
 	except rospy.ServiceException, e:
 		print "Service call failed: %s"%e
 
+#Builds and returns Waypoint[] from the graph data, no neighbor data included.
 def get_waypoints():
-	return None
+	wpList = []
+	for k in wps.getKeys():
+		wpList.append( Waypoint(wps[k][0],wps[k][1],k) )
+	return wpList
 
-def get_neighbors(req):
-	neighbors = wps[req.name][2]
+#Builds and returns Waypoint[] of neighbors to the given waypoint name.
+def get_neighbors(nodeName):
+	neighbors = wps[nodeName][2]
 	waypoints = []
 	for neighbor in neighbors:
 		node = wps[neighbor]
 		waypoints.append( Waypoint(node[0],node[1],neighbor) )
-	return GetNeighborsResponse(waypoints)
+	return waypoints
 
+#Parses waypoint "graph" data and builds a dictionary out of the info.
 def loadWaypoints():
-	with open(wploc, 'r') as wpFile:
+	with open(wpfile, 'r') as wpFile:
 		first = True
 		for line in wpFile:
 			if first:
@@ -49,12 +55,12 @@ def loadWaypoints():
 			for neighbor in vals[6:]:
 				if neighbor != "":
 					neighborList.append(neighbor)
+			#wps[wp_name] = (X_Meters,Y_Meters,[neighbor0,neighbor1,...])
 			wps[vals[0]]=float(vals[3]),float(vals[4]),neighborList
 
 '''This node is acting as a relay for image-driven map data and then
 ties in our waypoint/location data'''
 def main():
-	#locations.csv parsing.
 	loadWaypoints()
 
 	rospy.init_node('corobot_map_server')
