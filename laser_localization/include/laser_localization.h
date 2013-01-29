@@ -12,21 +12,34 @@
 
 #define NUM_GUESSES 10000
 
+#define GUESS_ACCEPT 0.80
+
+/**
+ * Represents a pose on the OccupancyGrid.
+ */
 typedef struct {
     int x;
     int y;
+    /** Angle counter-clockwise from +x, in rads. */
     float a;
 } GridPose;
 
+/**
+ * Represents a GridPose with an added probability field.
+ */
 typedef struct GridPoseP {
     int x;
     int y;
     float a;
+    /** A probability (0 <= p <= 1). */
     float p;
     GridPoseP() {}
     GridPoseP(GridPose pose, float p) : x(pose.x), y(pose.y), a(pose.a), p(p) {}
 } GridPoseP;
 
+/**
+ * Attempts to generate a Pose from a map and a LaserScan.
+ */
 class LaserLocalization {
 public:
     LaserLocalization(nav_msgs::OccupancyGrid grid);
