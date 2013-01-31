@@ -1,3 +1,5 @@
 */bin/*
 */build/*
 */*.class
+*/*.pyc
+__pycache__
