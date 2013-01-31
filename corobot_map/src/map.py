@@ -14,8 +14,8 @@ def handle_get_map(req):
 	return map_server_client()
 def handle_get_waypoints(req):
 	return GetWaypointsResponse(get_waypoints())
-def handle_get_neighbor(req):
-	return GetNeighborsResponse(get_neighbors(req.name))
+def handle_get_neighbors(req):
+	return GetNeighborsResponse(get_neighbors(req.curr.name))
 
 def map_server_client():
 	rospy.wait_for_service('static_map')
@@ -29,7 +29,7 @@ def map_server_client():
 #Builds and returns Waypoint[] from the graph data, no neighbor data included.
 def get_waypoints():
 	wpList = []
-	for k in wps.getKeys():
+	for k in wps.keys():
 		wpList.append( Waypoint(wps[k][0],wps[k][1],k) )
 	return wpList
 
