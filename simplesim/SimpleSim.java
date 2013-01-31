@@ -37,10 +37,15 @@ public class SimpleSim extends Thread {
     private Point dest;
     private double rV = 0.1; // robot velocity, meters per second
     private int ticklen = 100; // simulation cycle time, millisec
+
     private long lastUpdate = 0; // time of last server update
     private String myName;
     private ResponseHandler<String> responseHandler;
     private HttpClient httpclient;
+
+    private String monitorText = "";
+    private boolean monitorConfirm = false, monitorConfirmed = false;
+    private long monitorTime = 0;
 
     public SimpleSim(String paramfile) throws Exception {
 	myName = InetAddress.getLocalHost().getHostName() + "-sim-" + (System.currentTimeMillis()%10000);
@@ -292,6 +297,12 @@ public class SimpleSim extends Thread {
 			if (parts[0].equals("GETPOS")) {
 			    out.println("POS " + rPos.getX() + " " + rPos.getY());
 			    out.flush();
+			} else if (parts[0].equals("DISPLAY")) {
+			    monitorText = message;
+			} else if (parts[0].equals("CONFIRM")) {
+			    monitorConfirm = true;
+			    int waiting = Integer.parseInt(parts[1]);
+			    monitorTime = System.currentTimeMillis() + 1000 * waiting;
 			} else if (parts[0].equals("GOTOXY")) {
 			    double newX = Double.parseDouble(parts[1]);
 			    double newY = Double.parseDouble(parts[2]);
@@ -363,12 +374,20 @@ public class SimpleSim extends Thread {
 		    System.out.println("Waiting for monitor connection");
 		    Socket s = ss.accept();
 		    // make sure it's localhost
+		    System.out.println("Obtained monitor connection");
 		    PrintWriter out = new PrintWriter(s.getOutputStream());
 		    while(s.isConnected()) {
 			// send position to monitor
 			out.println("POS " + rPos.getX() + " " + rPos.getY());
 			out.println("DEST " + dest.getX() + " " + dest.getY());
 			out.flush();
+			if (monitorText != "") {
+			    out.println(monitorText);
+			    monitorText = "";
+			}
+			if (monitorConfirm) {
+			    out.println("CONFIRM"); // this needs to be asynchronous...
+			}
 			// sleep
 			try {
 			    sleep(1000);

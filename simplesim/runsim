@@ -1,1 +1,2 @@
-java -cp .:httpcore-4.2.2.jar:httpclient-4.2.2.jar:commons-logging-1.1.1.jar SimpleSim
+java -cp .:httpcore-4.2.2.jar:httpclient-4.2.2.jar:commons-logging-1.1.1.jar SimpleSim &
+java SimMonitor
