@@ -1,1 +1,1 @@
-javac -cp .:httpcore-4.2.2.jar:httpclient-4.2.2.jar:commons-logging-1.1.1.jar SimpleSim.java
+javac -cp .:httpcore-4.2.2.jar:httpclient-4.2.2.jar:commons-logging-1.1.1.jar *.java

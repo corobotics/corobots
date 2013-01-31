@@ -9,6 +9,7 @@ public class SimpleExample {
 	//	String loc = robot.getClosestLoc();
 	//	System.out.println("Closest location is " + loc);
 	//	robot.goToLocation(loc, true);
+	robot.displayMessage("I'm heading to the Atrium!");
 	robot.navigateToLocation("AtriumS3",true);
 	if (robot.goToXY(p.getX() - 1.5, p.getY() + 1.0, true)) 
 	    System.out.println("Made it!");

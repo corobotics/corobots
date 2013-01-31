@@ -67,7 +67,7 @@ public class Robot {
      * @param block specifies whether this call blocks until location reached or some failure condition.
      * @return return whether location has been reached (if blocking)
      */
-    boolean navigateToLocation(String location, boolean block) {
+    public boolean navigateToLocation(String location, boolean block) {
 	location = location.toUpperCase();
 	if (RobotMap.isNode(location)) {
 	    out.println("NAVTOLOC " + location.toUpperCase());
@@ -89,7 +89,7 @@ public class Robot {
      * @param block specifies whether this call blocks until location reached or some failure condition.
      * @return return whether location has been reached (if blocking)
      */
-    boolean goToLocation(String location, boolean block) {
+    public boolean goToLocation(String location, boolean block) {
 	location = location.toUpperCase();
 	if (RobotMap.isNode(location)) {
 	    out.println("GOTOLOC " + location.toUpperCase());
@@ -110,7 +110,7 @@ public class Robot {
      * @param block specifies whether this call blocks until location reached or some failure condition.
      * @return return whether location has been reached (if blocking)
      */
-    boolean goToXY(double x, double y, boolean block) {
+    public boolean goToXY(double x, double y, boolean block) {
 	out.println("GOTOXY " + x + " " + y);
 	out.flush();
 	if (block) 
@@ -142,7 +142,7 @@ public class Robot {
      * Queries the robot for its current position in map coordinates
      * @return position
      */
-    Point getPos() {
+    public Point getPos() {
 	out.println("GETPOS");
 	out.flush();
 	String strpos = "";
@@ -164,7 +164,7 @@ public class Robot {
      *
      * @return Name of location
      */
-    String getClosestLoc() {
+    public String getClosestLoc() {
 	Point p = getPos();
 	return RobotMap.getClosestNode(p.getX(),p.getY());
     }
@@ -177,7 +177,7 @@ public class Robot {
      *
      * @return list of nearby location names
      */
-    List<String> getAllCloseLocs() {
+    public List<String> getAllCloseLocs() {
 	throw new UnsupportedOperationException();
     }
 
@@ -186,21 +186,26 @@ public class Robot {
      * @param msg Message to display (&lt; 256 chars suggested)
      */
     // show a message on the laptop GUI
-    void displayMessage(String msg) {
+    public void displayMessage(String msg) {
 	if (msg.length() > 255)
 	    msg = msg.substring(0,255);
 	out.println("DISPLAY " + msg);
+	out.flush();
     }
     
     /**
      * pops up an OK button on the laptop GUI.
      * Note that any timeout longer than 2 minutes will be set to 2 minutes
-     * Currently unsupported
+     * Currently unsupported by simulated or real robots
      * @param timeout Amount of time to wait for a response (in seconds) 
      * @return whether confirmed (true) or timed out (false)
      */
-    boolean waitForConfirm(int timeout) {
-    	throw new UnsupportedOperationException();
+    public boolean waitForConfirm(int timeout) {
+	if (timeout > 120)
+	    timeout = 120;
+	out.println("CONFIRM " + timeout);
+	out.flush();
+	return true;
     }
 	
     // RobotMap class contains a dictionary of String->MapNode
@@ -212,7 +217,7 @@ public class Robot {
      * @param whichCamera Which camera to use: 0 = left, 1 = fwd, 2 = right
      * @return some image in some format?
      */
-    Image getImage(int whichCamera) {	
+    public Image getImage(int whichCamera) {	
 	throw new UnsupportedOperationException();
     }
 
