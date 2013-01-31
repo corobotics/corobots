@@ -35,6 +35,13 @@ GridPose LaserLocalization::randomPose() {
     return pose;
 }
 
+GridPoseP LaserLocalization::randomPoseP(LaserScan scan) {
+    GridPose guess = randomPose();
+    float p = comparePoseToScan(guess, scan);
+    GridPoseP guessP(guess, p);
+    return guessP;
+}
+
 int8_t LaserLocalization::gridLookup(int x, int y) {
     return grid.data[y * w + x];
 }
@@ -145,18 +152,25 @@ int gridPoseCmp(GridPoseP p1, GridPoseP p2) {
 }
 
 Pose LaserLocalization::find(LaserScan scan) {
-    Pose pose;
     std::vector<GridPoseP> guesses(NUM_GUESSES);
-    GridPose guess;
-    float p;
     for (int i = 0; i < NUM_GUESSES; i++) {
-        guess = randomPose();
-        p = comparePoseToScan(guess, scan);
-        GridPoseP guessP(guess, p);
-        guesses[i] = guessP;
+        guesses[i] = randomPoseP(scan);
     }
     std::sort(guesses.begin(), guesses.end(), gridPoseCmp);
-    return pose;
+    while (guesses[0].p < GUESS_ACCEPT) {
+        for (int i = NUM_GUESSES / 2; i < NUM_GUESSES; i++) {
+            guesses[i] = randomPoseP(scan);
+        }
+        std::sort(guesses.begin(), guesses.end(), gridPoseCmp);
+    }
+    SimplePose sp = {guesses[0].x, guesses[0].y, guesses[0].a};
+    SimplePose transformedPose = coordTransform(sp, geomPoseToSimplePose(grid.info.origin));
+    Pose result;
+    result.header = scan.header;
+    result.x = transformedPose.x;
+    result.y = transformedPose.y;
+    result.theta = transformedPose.a;
+    return result;
 }
 
 int main(int argc, char** argv) {

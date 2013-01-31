@@ -12,7 +12,8 @@
 
 #define NUM_GUESSES 10000
 
-#define GUESS_ACCEPT 0.80
+// TODO: I have no idea what this value should be.
+#define GUESS_ACCEPT 0.00001
 
 /**
  * Represents a pose on the OccupancyGrid.
@@ -51,6 +52,7 @@ private:
     int h;
 
     GridPose randomPose();
+    GridPoseP randomPoseP(sensor_msgs::LaserScan scan);
     int8_t gridLookup(int x, int y);
     int8_t gridLookup(GridPose pose);
     float findObstacle(int x1, int y2, float a);
