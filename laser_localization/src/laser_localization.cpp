@@ -115,18 +115,35 @@ float LaserLocalization::findObstacle(int x1, int y1, float a) {
     return -1.0;
 }
 
-float rangeProbability(float d1, float d2) {
-    float d = d1 - d2;
-    if (d1 < -0.1) {
-
+double LaserLocalization::rangeProbability(float obsv_d, float map_d) {
+    const static float X1 = 0.5;
+    const static float X2 = 0.1;
+    const static float P1 = 0.25;
+    const static float P2 = 0.75;
+    const static float P3 = 0.1;
+    const static float M1 = (P2 - P1) / (X1 - X2);
+    const static float M2 = (P3 - P2) / (X2 - X1);
+    float b;
+    float d = obsv_d - map_d;
+    if (d < -X1) {
+        return P1;
+    } else if (d < -X2) {
+        b = P2 - M1 * (map_d - X2);
+        return M1 * obsv_d + b;
+    } else if (d < X2) {
+        return P2;
+    } else if (d < X1) {
+        b = P2 - M2 * (map_d + X2);
+        return M2 * obsv_d + b;
+    } else {
+        return P3;
     }
-    return d;
 }
 
-float LaserLocalization::comparePoseToScan(GridPose pose, LaserScan scan) {
+double LaserLocalization::comparePoseToScan(GridPose pose, LaserScan scan) {
     int n = (int)((scan.angle_max - scan.angle_min) / scan.angle_increment) + 1;
     float a = scan.angle_min;
-    float p = 1.0;
+    double p = 1.0;
     float d1, d2;
     for (int i = 0; i < n; i++) {
         // Assume independence and just multiply the probabilities.

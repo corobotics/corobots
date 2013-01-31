@@ -56,7 +56,21 @@ private:
     int8_t gridLookup(int x, int y);
     int8_t gridLookup(GridPose pose);
     float findObstacle(int x1, int y2, float a);
-    float comparePoseToScan(GridPose pose, sensor_msgs::LaserScan scan);
+
+    /**
+     * A piecewise function with the following values:
+     *
+     *     P1 when x < -X1
+     *     P2 when -X2 < x < X2
+     *     P3 when X1 < x
+     *     and line segments between -X1/-X2 and X2/X1.
+     *
+     * @param obsv_d    The observed distance; x.
+     * @param map_d     The distance the map indicates; shifts the function.
+     * @return          The probability of seeing obsv_d when you should see map_d.
+     */
+    double rangeProbability(float obsv_d, float map_d);
+    double comparePoseToScan(GridPose pose, sensor_msgs::LaserScan scan);
     corobot_msgs::Pose find(sensor_msgs::LaserScan scan);
 };
 
