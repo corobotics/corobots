@@ -36,11 +36,11 @@ public class Robot {
      * Constructor, starts connection to a robot...
      */
     public Robot() {
-	// offloaded to another function for now mostly so that
-	// Javadocs can be hidden 
-	System.err.println("Connecting to robot...");
-	openSocket();
-	// can't think of anything else to do here?
+        // offloaded to another function for now mostly so that
+        // Javadocs can be hidden 
+        System.err.println("Connecting to robot...");
+        openSocket();
+        // can't think of anything else to do here?
     }
 
     /**
@@ -49,15 +49,15 @@ public class Robot {
      * Environment var maybe?
      */
     private void openSocket() {
-	try {
-	    String robotName = System.getenv("ROBOT");
-	    sock = new Socket(robotName, USER_PORT);
-	    out = new PrintWriter(sock.getOutputStream());
-	    in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-	} catch (IOException e) {
-	    System.err.println("Error connecting to assigned robot.  Please try again.");
-	    throw new RobotConnectionException("in constructor");
-	}
+        try {
+            String robotName = System.getenv("ROBOT");
+            sock = new Socket(robotName, USER_PORT);
+            out = new PrintWriter(sock.getOutputStream());
+            in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+        } catch (IOException e) {
+            System.err.println("Error connecting to assigned robot.  Please try again.");
+            throw new RobotConnectionException("in constructor");
+        }
     }
 
     /**
@@ -68,17 +68,17 @@ public class Robot {
      * @return return whether location has been reached (if blocking)
      */
     public boolean navigateToLocation(String location, boolean block) {
-	location = location.toUpperCase();
-	if (RobotMap.isNode(location)) {
-	    out.println("NAVTOLOC " + location.toUpperCase());
-	    out.flush();
-	    if (block)
-		return queryArrive();
-	    return true;
-	}
-	else {
-	    return false;
-	}
+        location = location.toUpperCase();
+        if (RobotMap.isNode(location)) {
+            out.println("NAVTOLOC " + location.toUpperCase());
+            out.flush();
+            if (block)
+                return queryArrive();
+            return true;
+        }
+        else {
+            return false;
+        }
     }
     
     /**
@@ -90,17 +90,17 @@ public class Robot {
      * @return return whether location has been reached (if blocking)
      */
     public boolean goToLocation(String location, boolean block) {
-	location = location.toUpperCase();
-	if (RobotMap.isNode(location)) {
-	    out.println("GOTOLOC " + location.toUpperCase());
-	    out.flush();
-	    if (block)
-		return queryArrive();
-	    return true;
-	}
-	else {
-	    return false;
-	}
+        location = location.toUpperCase();
+        if (RobotMap.isNode(location)) {
+            out.println("GOTOLOC " + location.toUpperCase());
+            out.flush();
+            if (block)
+                return queryArrive();
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
     /**
@@ -111,31 +111,31 @@ public class Robot {
      * @return return whether location has been reached (if blocking)
      */
     public boolean goToXY(double x, double y, boolean block) {
-	out.println("GOTOXY " + x + " " + y);
-	out.flush();
-	if (block) 
-	    return queryArrive();
-	else
-	    // if non-blocking, be optimistic.
-	    return true;
+        out.println("GOTOXY " + x + " " + y);
+        out.flush();
+        if (block) 
+            return queryArrive();
+        else
+            // if non-blocking, be optimistic.
+            return true;
     }
 
     /**
      * Used by goto functions to wait for ack from robot
      */
     private boolean queryArrive() {
-	out.println("QUERY_ARRIVE");
-	out.flush();
-	String line = "";
-	try {
-	    do {
-		line = in.readLine();
-	    } while (!line.equals("ARRIVE") && !line.equals("GOTOFAIL"));
-	} catch (IOException e) {
-	    System.err.println("Lost connection with robot!");
-	    throw new RobotConnectionException("while waiting for robot to reach destination");
-	}
-	return line.equals("ARRIVE");
+        out.println("QUERY_ARRIVE");
+        out.flush();
+        String line = "";
+        try {
+            do {
+                line = in.readLine();
+            } while (!line.equals("ARRIVE") && !line.equals("GOTOFAIL"));
+        } catch (IOException e) {
+            System.err.println("Lost connection with robot!");
+            throw new RobotConnectionException("while waiting for robot to reach destination");
+        }
+        return line.equals("ARRIVE");
     }
 
     /**
@@ -143,20 +143,20 @@ public class Robot {
      * @return position
      */
     public Point getPos() {
-	out.println("GETPOS");
-	out.flush();
-	String strpos = "";
-	try {
-	    strpos = in.readLine();
-	} catch (IOException e) {
-	    System.err.println("Lost connection with robot!");
-	    throw new RobotConnectionException("in getPos()");
-	}
-	Scanner inscan = new Scanner(strpos);
-	if (!(inscan.next().equals("POS")))
-	    // trouble, crossed signals, what to do?
-	    return null;
-	return new Point(inscan.nextDouble(), inscan.nextDouble());
+        out.println("GETPOS");
+        out.flush();
+        String strpos = "";
+        try {
+            strpos = in.readLine();
+        } catch (IOException e) {
+            System.err.println("Lost connection with robot!");
+            throw new RobotConnectionException("in getPos()");
+        }
+        Scanner inscan = new Scanner(strpos);
+        if (!(inscan.next().equals("POS")))
+            // trouble, crossed signals, what to do?
+            return null;
+        return new Point(inscan.nextDouble(), inscan.nextDouble());
     }
 
     /** 
@@ -165,8 +165,8 @@ public class Robot {
      * @return Name of location
      */
     public String getClosestLoc() {
-	Point p = getPos();
-	return RobotMap.getClosestNode(p.getX(),p.getY());
+        Point p = getPos();
+        return RobotMap.getClosestNode(p.getX(),p.getY());
     }
 
     /**
@@ -178,7 +178,7 @@ public class Robot {
      * @return list of nearby location names
      */
     public List<String> getAllCloseLocs() {
-	throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -187,10 +187,10 @@ public class Robot {
      */
     // show a message on the laptop GUI
     public void displayMessage(String msg) {
-	if (msg.length() > 255)
-	    msg = msg.substring(0,255);
-	out.println("DISPLAY " + msg);
-	out.flush();
+        if (msg.length() > 255)
+            msg = msg.substring(0,255);
+        out.println("DISPLAY " + msg);
+        out.flush();
     }
     
     /**
@@ -201,13 +201,13 @@ public class Robot {
      * @return whether confirmed (true) or timed out (false)
      */
     public boolean waitForConfirm(int timeout) {
-	if (timeout > 120)
-	    timeout = 120;
-	out.println("CONFIRM " + timeout);
-	out.flush();
-	return true;
+        if (timeout > 120)
+            timeout = 120;
+        out.println("CONFIRM " + timeout);
+        out.flush();
+        return true;
     }
-	
+        
     // RobotMap class contains a dictionary of String->MapNode
     // MapNode contains String name, double x,y, List<String> neighbors(?)
 
@@ -217,8 +217,8 @@ public class Robot {
      * @param whichCamera Which camera to use: 0 = left, 1 = fwd, 2 = right
      * @return some image in some format?
      */
-    public Image getImage(int whichCamera) {	
-	throw new UnsupportedOperationException();
+    public Image getImage(int whichCamera) {    
+        throw new UnsupportedOperationException();
     }
 
     // may want other access to robot data but not sure what yet.
