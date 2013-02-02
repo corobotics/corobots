@@ -27,7 +27,7 @@ GridPose LaserLocalization::randomPose() {
     GridPose pose;
     pose.x = rand() % w;
     pose.y = rand() % h;
-    while (gridLookup(pose) > 20) {
+    while (gridLookup(pose) > OCCUPANCY_THRESH) {
         pose.x = rand() % w;
         pose.y = rand() % h;
     }
@@ -166,6 +166,42 @@ int gridPoseCmp(GridPoseP p1, GridPoseP p2) {
     } else {
         return 1;
     }
+}
+
+SimplePose LaserLocalization::calculateStats(std::vector<GridPoseP> poses, float* cov) {
+    // The mean values.
+    SimplePose m;
+    float pTotal = 0.0;
+    float pSquareTotal = 0.0;
+    for (std::vector<GridPoseP>::iterator i = poses.begin(); i != poses.end(); i++) {
+        pTotal += i->p;
+        pSquareTotal += i->p * i->p;
+    }
+    const float W = pTotal / (pTotal * pTotal - pSquareTotal);
+    for (std::vector<GridPoseP>::iterator i = poses.begin(); i != poses.end(); i++) {
+        m.x += i->p / pTotal * i->x;
+        m.y += i->p / pTotal * i->y;
+        m.a += i->p / pTotal * i->a;
+    }
+    for (unsigned int i = 0; i < 9; i++) {
+        cov[i] = 0.0;
+    }
+    for (std::vector<GridPoseP>::iterator i = poses.begin(); i != poses.end(); i++) {
+        GridPoseP p = *i;
+        cov[0] += p.p * (p.x - m.x) * (p.x - m.x);
+        cov[1] += p.p * (p.x - m.x) * (p.y - m.y);
+        cov[2] += p.p * (p.x - m.x) * (p.a - m.a);
+        cov[3] += p.p * (p.y - m.y) * (p.x - m.x);
+        cov[4] += p.p * (p.y - m.y) * (p.y - m.y);
+        cov[5] += p.p * (p.y - m.y) * (p.a - m.a);
+        cov[6] += p.p * (p.a - m.a) * (p.x - m.x);
+        cov[7] += p.p * (p.a - m.a) * (p.y - m.y);
+        cov[8] += p.p * (p.a - m.a) * (p.a - m.a);
+    }
+    for (unsigned int i = 0; i < 9; i++) {
+        cov[i] *= W;
+    }
+    return m;
 }
 
 Pose LaserLocalization::find(LaserScan scan) {

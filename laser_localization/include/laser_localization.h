@@ -1,10 +1,14 @@
 #ifndef laser_localization_h
 #define laser_localization_h
 
+#include <vector>
+
 #include "ros/ros.h"
 #include "corobot_msgs/Pose.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "sensor_msgs/LaserScan.h"
+
+#include "corobot.h"
 
 #define PI 3.14159265
 
@@ -71,6 +75,7 @@ private:
      */
     double rangeProbability(float obsv_d, float map_d);
     double comparePoseToScan(GridPose pose, sensor_msgs::LaserScan scan);
+    corobot::SimplePose calculateStats(std::vector<GridPoseP> poses, float* cov);
     corobot_msgs::Pose find(sensor_msgs::LaserScan scan);
 };
 
