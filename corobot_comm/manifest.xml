@@ -1,0 +1,14 @@
+<package>
+  <description brief="corobot_comm">
+
+     corobot_comm
+
+  </description>
+  <author>Karl Berger</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/corobot_comm</url>
+
+</package>
+
+
