@@ -4,6 +4,10 @@ import rospy
 import socket
 from geometry_msgs.msg import Point
 from corobot_msgs.srv import GetLocation
+from corobot_msgs.msg import Pose
+
+def pose_callback(pose):
+    myPose = pose
 
 def clientComm(socket,addr):
     rospy.init_node('corobot_client_comm')
@@ -11,6 +15,7 @@ def clientComm(socket,addr):
     clOut = socket.makefile('w')
     #Publisher for obstacle_avoidance
     pointPub = rospy.Publisher('waypoints',Point)
+    rospy.Subscriber('pose',Pose,pose_callback)
     
     while True:
         cmd = client.readline()
@@ -21,7 +26,12 @@ def clientComm(socket,addr):
         rospy.loginfo("Command recieved from client %n: %s", addr, cmd)
         cmd = cmd.split(' ')
         if cmd[0] == 'GETPOS':
-            clOut.write("POS {} {}\n".format(str(0),str(0)))
+            if myPose is None:
+                clOut.write("POS {} {}\n".format(str(0),str(0)))
+                clOut.flush()
+            else:
+                clOut.write("POS {} {}\n".format(str(myPose.x),str(myPose.y)))
+                clOut.flush()
         elif cmd[0] == 'GOTOXY':
             #Add dest point!
             pointPub.publish(x=float(cmd[1]),y=float(cmd[2]))
@@ -45,6 +55,8 @@ def main():
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.bind( (socket.getHostname(),15001) )
     serversocket.listen( 1 )
+
+    global myPose = None
 
     while True:
         (client, clAddr) = serversocket.accept()
