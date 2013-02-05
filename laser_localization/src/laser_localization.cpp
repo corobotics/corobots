@@ -84,7 +84,7 @@ float LaserLocalization::findObstacle(int x1, int y1, float a) {
         incDiag = 2 * dy - 2 * dx;
         d = 2 * dy - dx;
         y = y1;
-        for (x = x1; x <= x2; x += incX) {
+        for (x = x1; incX > 0 ? x <= x2 : x >= x2; x += incX) {
             if (gridLookup(x, y) > OCCUPANCY_THRESH) {
                 return dist(x - x1, y - y1);
             }
@@ -100,7 +100,7 @@ float LaserLocalization::findObstacle(int x1, int y1, float a) {
         incDiag = 2 * dx - 2 * dy;
         d = 2 * dx - dy;
         x = x1;
-        for (y = y1; y <= y2; y += incY) {
+        for (y = y1; incY > 0 ? y <= y2 : y >= y2; y += incY) {
             if (gridLookup(x, y) > OCCUPANCY_THRESH) {
                 return dist(x - x1, y - y1);
             }
