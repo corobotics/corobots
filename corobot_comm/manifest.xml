@@ -8,6 +8,9 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/corobot_comm</url>
+  <depend package="rospy"/>
+  <depend package="geometry_msgs"/>
+  <depend package="corobot_msgs"/>
 
 </package>
 
