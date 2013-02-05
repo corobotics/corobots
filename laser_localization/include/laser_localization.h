@@ -49,6 +49,7 @@ class LaserLocalization {
 public:
     LaserLocalization(nav_msgs::OccupancyGrid grid);
     void updateGrid(nav_msgs::OccupancyGrid grid);
+    float findObstacle(int x1, int y2, float a);
 
 private:
     nav_msgs::OccupancyGrid grid;
@@ -59,7 +60,6 @@ private:
     GridPoseP randomPoseP(sensor_msgs::LaserScan scan);
     int8_t gridLookup(int x, int y);
     int8_t gridLookup(GridPose pose);
-    float findObstacle(int x1, int y2, float a);
 
     /**
      * A piecewise function with the following values:
