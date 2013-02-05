@@ -183,23 +183,25 @@ SimplePose LaserLocalization::calculateStats(std::vector<GridPoseP> poses, float
         m.y += i->p / pTotal * i->y;
         m.a += i->p / pTotal * i->a;
     }
-    for (unsigned int i = 0; i < 9; i++) {
-        cov[i] = 0.0;
-    }
-    for (std::vector<GridPoseP>::iterator i = poses.begin(); i != poses.end(); i++) {
-        GridPoseP p = *i;
-        cov[0] += p.p * (p.x - m.x) * (p.x - m.x);
-        cov[1] += p.p * (p.x - m.x) * (p.y - m.y);
-        cov[2] += p.p * (p.x - m.x) * (p.a - m.a);
-        cov[3] += p.p * (p.y - m.y) * (p.x - m.x);
-        cov[4] += p.p * (p.y - m.y) * (p.y - m.y);
-        cov[5] += p.p * (p.y - m.y) * (p.a - m.a);
-        cov[6] += p.p * (p.a - m.a) * (p.x - m.x);
-        cov[7] += p.p * (p.a - m.a) * (p.y - m.y);
-        cov[8] += p.p * (p.a - m.a) * (p.a - m.a);
-    }
-    for (unsigned int i = 0; i < 9; i++) {
-        cov[i] *= W;
+    if (cov != NULL) {
+        for (unsigned int i = 0; i < 9; i++) {
+            cov[i] = 0.0;
+        }
+        for (std::vector<GridPoseP>::iterator i = poses.begin(); i != poses.end(); i++) {
+            GridPoseP p = *i;
+            cov[0] += p.p * (p.x - m.x) * (p.x - m.x);
+            cov[1] += p.p * (p.x - m.x) * (p.y - m.y);
+            cov[2] += p.p * (p.x - m.x) * (p.a - m.a);
+            cov[3] += p.p * (p.y - m.y) * (p.x - m.x);
+            cov[4] += p.p * (p.y - m.y) * (p.y - m.y);
+            cov[5] += p.p * (p.y - m.y) * (p.a - m.a);
+            cov[6] += p.p * (p.a - m.a) * (p.x - m.x);
+            cov[7] += p.p * (p.a - m.a) * (p.y - m.y);
+            cov[8] += p.p * (p.a - m.a) * (p.a - m.a);
+        }
+        for (unsigned int i = 0; i < 9; i++) {
+            cov[i] *= W;
+        }
     }
     return m;
 }
