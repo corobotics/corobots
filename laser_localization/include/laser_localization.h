@@ -14,10 +14,9 @@
 
 #define OCCUPANCY_THRESH 30
 
-#define NUM_GUESSES 10000
-
-// TODO: I have no idea what this value should be.
-#define GUESS_ACCEPT 0.00001
+#define SAMPLE_XY_COUNT 100
+#define SAMPLE_THETA_COUNT 20
+#define SAMPLE_XY_GRANULARITY 0.02
 
 /**
  * Represents a pose on the OccupancyGrid.
@@ -56,6 +55,7 @@ private:
     int w;
     int h;
 
+    GridPoseP makeGridPoseP(GridPose pose, sensor_msgs::LaserScan scan);
     GridPose randomPose();
     GridPoseP randomPoseP(sensor_msgs::LaserScan scan);
     int8_t gridLookup(int x, int y);
@@ -76,7 +76,8 @@ private:
     double rangeProbability(float obsv_d, float map_d);
     double comparePoseToScan(GridPose pose, sensor_msgs::LaserScan scan);
     corobot::SimplePose calculateStats(std::vector<GridPoseP> poses, float* cov);
-    corobot_msgs::Pose find(sensor_msgs::LaserScan scan);
+    std::vector<GridPoseP> generateSamples(const corobot_msgs::Pose& pose, const sensor_msgs::LaserScan& scan);
+    corobot_msgs::Pose find(const corobot_msgs::Pose& pose, const sensor_msgs::LaserScan& scan);
 };
 
 #endif /* laser_localization_h */

@@ -23,6 +23,12 @@ void LaserLocalization::updateGrid(OccupancyGrid grid_) {
     h = grid.info.height;
 }
 
+GridPoseP LaserLocalization::makeGridPoseP(GridPose pose, LaserScan scan) {
+    float p = comparePoseToScan(pose, scan);
+    GridPoseP poseP(pose, p);
+    return poseP;
+}
+
 GridPose LaserLocalization::randomPose() {
     GridPose pose;
     pose.x = rand() % w;
@@ -36,10 +42,7 @@ GridPose LaserLocalization::randomPose() {
 }
 
 GridPoseP LaserLocalization::randomPoseP(LaserScan scan) {
-    GridPose guess = randomPose();
-    float p = comparePoseToScan(guess, scan);
-    GridPoseP guessP(guess, p);
-    return guessP;
+    return makeGridPoseP(randomPose(), scan);
 }
 
 int8_t LaserLocalization::gridLookup(int x, int y) {
@@ -206,25 +209,45 @@ SimplePose LaserLocalization::calculateStats(std::vector<GridPoseP> poses, float
     return m;
 }
 
-Pose LaserLocalization::find(LaserScan scan) {
-    std::vector<GridPoseP> guesses(NUM_GUESSES);
-    for (int i = 0; i < NUM_GUESSES; i++) {
-        guesses[i] = randomPoseP(scan);
-    }
-    std::sort(guesses.begin(), guesses.end(), gridPoseCmp);
-    while (guesses[0].p < GUESS_ACCEPT) {
-        for (int i = NUM_GUESSES / 2; i < NUM_GUESSES; i++) {
-            guesses[i] = randomPoseP(scan);
+std::vector<GridPoseP> LaserLocalization::generateSamples(const Pose& pose, const LaserScan& scan) {
+    float step = SAMPLE_XY_GRANULARITY / grid.info.resolution;
+    float thetaStep = 2.0 * PI / SAMPLE_THETA_COUNT;
+    std::vector<GridPoseP> samples(SAMPLE_XY_COUNT * SAMPLE_XY_COUNT * SAMPLE_THETA_COUNT);
+    GridPose p;
+    float x = pose.x - step * SAMPLE_XY_COUNT / 2;
+    for (int i = 0; i < SAMPLE_XY_COUNT; i++) {
+        float y = pose.y - step * SAMPLE_XY_COUNT / 2;
+        for (int j = 0; j < SAMPLE_XY_COUNT; j++) {
+            float theta = pose.theta - thetaStep * SAMPLE_THETA_COUNT / 2;
+            for(int k = 0; k < SAMPLE_THETA_COUNT; k++) {
+                p.x = (int)x;
+                p.y = (int)y;
+                p.a = theta;
+                samples.push_back(makeGridPoseP(p, scan));
+                theta += thetaStep;
+            }
+            y += step;
         }
-        std::sort(guesses.begin(), guesses.end(), gridPoseCmp);
+        x += step;
     }
-    SimplePose sp = {guesses[0].x, guesses[0].y, guesses[0].a};
-    SimplePose transformedPose = coordTransform(sp, geomPoseToSimplePose(grid.info.origin));
+    return samples;
+}
+
+Pose LaserLocalization::find(const Pose& pose, const LaserScan& scan) {
+    std::vector<GridPoseP> samples = generateSamples(pose, scan);
+    float cov[9];
+    SimplePose sp = calculateStats(samples, cov);
+    SimplePose offset = geomPoseToSimplePose(grid.info.origin);
+    SimplePose transformedPose = coordTransform(sp, offset);
+    covTransform(cov, offset);
     Pose result;
     result.header = scan.header;
     result.x = transformedPose.x;
     result.y = transformedPose.y;
     result.theta = transformedPose.a;
+    for (int i = 0; i < 9; i++) {
+        result.cov[i] = cov[i];
+    }
     return result;
 }
 
