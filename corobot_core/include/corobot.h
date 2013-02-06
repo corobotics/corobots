@@ -47,6 +47,26 @@ namespace corobot {
      */
     SimplePose coordTransform(SimplePose state, SimplePose offset);
 
+    /**
+     * Perform a matrix multiplication with matrices stored as flat arrays.
+     *
+     * @param a     An n*m length array representing the first matrix.
+     * @param b     An m*p length array representing the second matrix.
+     * @param c     An n*p length array to store the result in.
+     * @param n     Number of rows in A.
+     * @param m     Number of cols in A and rows in B.
+     * @param p     Number of cols in B.
+     */
+    void matProd(float* a, float* b, float* c, int n, int m, int p);
+
+    /**
+     * Transform a covariance matrix to a different coordinate frame.
+     *
+     * @param cov   The covariance matrix in and out.
+     * @param offset    The location of the origin of the new reference frame.
+     */
+    void covTransform(float* cov, SimplePose offset);
+
 }
 
 #endif /* corobot_h */

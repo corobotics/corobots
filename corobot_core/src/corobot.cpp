@@ -31,4 +31,33 @@ namespace corobot {
         return result;
     }
 
+    void matProd(float* a, float* b, float* c, int n, int m, int p) {
+        for (int i = 0; i < n * p; i++) {
+            c[i] = 0;
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < p; j++) {
+                for (int k = 0; k < m; k++) {
+                    c[i * p + j] += a[i * m + k] * b[k * p + j];
+                }
+            }
+        }
+    }
+
+    void covTransform(float* cov, SimplePose offset) {
+        float c[9];
+        float sa = sin(offset.a);
+        float ca = cos(offset.a);
+        float rotation[9] = {
+            ca, -sa, 0,
+            sa,  ca, 0,
+             0,   0, 1};
+        float rotationTranspose[9] = {
+             ca, sa, 0,
+            -sa, ca, 0,
+              0,  0, 1};
+        matProd(rotationTranspose, cov, c, 3, 3, 3);
+        matProd(c, rotation, cov, 3, 3, 3);
+    }
+
 }
