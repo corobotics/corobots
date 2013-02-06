@@ -17,7 +17,7 @@ def handle_get_waypoints(req):
 def handle_get_neighbors(req):
     return GetNeighborsResponse(get_neighbors(req.curr.name.upper()))
 def handle_get_location(req):
-    return GetLocationResponse(x=wps[req.name][1],y=wps[req.name][2])
+    return GetLocationResponse(Waypoint(x=wps[req.name][0],y=wps[req.name][1],req.name))
 
 def map_server_client():
     rospy.wait_for_service('static_map')
