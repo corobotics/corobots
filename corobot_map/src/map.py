@@ -9,24 +9,32 @@ from corobot_msgs.srv import *
 
 wpfile = roslib.packages.get_pkg_dir('corobot_map') + "/map/waypoints.csv"
 wps = {}
-
+occMap = None
 def handle_get_map(req):
-    return map_server_client()
+    if occMap == None:
+        load_map()
+    return GetMapResponse(occMap)
 def handle_get_waypoints(req):
     return GetWaypointsResponse(get_waypoints())
 def handle_get_neighbors(req):
     return GetNeighborsResponse(get_neighbors(req.curr.name.upper()))
 def handle_get_location(req):
-    return GetLocationResponse(Waypoint(x=wps[req.name][0],y=wps[req.name][1],req.name))
+    return GetLocationResponse(Waypoint(x=wps[req.name][0],y=wps[req.name][1],name=req.name))
+def handle_get_pixel_occupancy(req):
+    if occMap == None:
+        load_map()
+    return GetPixelOccupancyResponse(occMap.data[req.x][req.y])
 
-def map_server_client():
+def load_map():
     rospy.wait_for_service('static_map')
     try:
         static_map = rospy.ServiceProxy('static_map', GetMap)
-        resp = static_map()
-        return GetMapResponse(resp.map,get_waypoints())
-    except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+        occMap = static_map().map
+    except rospy.ServiceException as e:
+        print("Service call failed: {}".format(e))
+
+def map_server_client():
+
 
 #Builds and returns Waypoint[] from the graph data, no neighbor data included.
 def get_waypoints():
@@ -70,7 +78,7 @@ def main():
     rospy.Service('get_waypoints', GetWaypoints, handle_get_waypoints)
     rospy.Service('get_neighbors', GetNeighbors, handle_get_neighbors)
     rospy.Server('get_location', GetLocation, handle_get_location)
-    print "Ready to serve map."
+    print("Ready to serve map.")
     rospy.spin()
 
 if __name__ == "__main__":
