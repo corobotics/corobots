@@ -1,0 +1,17 @@
+<package>
+  <description brief="barcode">
+
+     barcode
+
+  </description>
+  <author>Ravdeep</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/barcode</url>
+  <depend package="std_msgs"/>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+
+</package>
+
+
