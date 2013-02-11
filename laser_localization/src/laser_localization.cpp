@@ -1,6 +1,9 @@
 #include <algorithm>
 #include <vector>
 
+#include "ros/ros.h"
+#include "corobot_msgs/Pose.h"
+#include "nav_msgs/GetMap.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "sensor_msgs/LaserScan.h"
 
@@ -8,13 +11,23 @@
 #include "laser_localization.h"
 
 using corobot_msgs::Pose;
+using nav_msgs::GetMap;
 using nav_msgs::OccupancyGrid;
 using sensor_msgs::LaserScan;
 
 using namespace corobot;
 
-LaserLocalization::LaserLocalization(OccupancyGrid grid) {
+LaserLocalization::LaserLocalization(OccupancyGrid grid) : _hasScan(false) {
     updateGrid(grid);
+}
+
+bool LaserLocalization::hasScan() {
+    return _hasScan;
+}
+
+void LaserLocalization::updateScan(LaserScan scan_) {
+    scan = scan_;
+    _hasScan = true;
 }
 
 void LaserLocalization::updateGrid(OccupancyGrid grid_) {
@@ -23,8 +36,8 @@ void LaserLocalization::updateGrid(OccupancyGrid grid_) {
     h = grid.info.height;
 }
 
-GridPoseP LaserLocalization::makeGridPoseP(GridPose pose, LaserScan scan) {
-    float p = comparePoseToScan(pose, scan);
+GridPoseP LaserLocalization::makeGridPoseP(GridPose pose) {
+    float p = comparePoseToScan(pose);
     GridPoseP poseP(pose, p);
     return poseP;
 }
@@ -41,8 +54,8 @@ GridPose LaserLocalization::randomPose() {
     return pose;
 }
 
-GridPoseP LaserLocalization::randomPoseP(LaserScan scan) {
-    return makeGridPoseP(randomPose(), scan);
+GridPoseP LaserLocalization::randomPoseP() {
+    return makeGridPoseP(randomPose());
 }
 
 int8_t LaserLocalization::gridLookup(int x, int y) {
@@ -145,7 +158,7 @@ double LaserLocalization::rangeProbability(float obsv_d, float map_d) {
     }
 }
 
-double LaserLocalization::comparePoseToScan(GridPose pose, LaserScan scan) {
+double LaserLocalization::comparePoseToScan(GridPose pose) {
     int n = (int)((scan.angle_max - scan.angle_min) / scan.angle_increment) + 1;
     pose.a += scan.angle_min;
     double p = 1.0;
@@ -211,7 +224,7 @@ SimplePose LaserLocalization::calculateStats(std::vector<GridPoseP> poses, float
     return m;
 }
 
-std::vector<GridPoseP> LaserLocalization::generateSamples(const Pose& pose, const LaserScan& scan) {
+std::vector<GridPoseP> LaserLocalization::generateSamples(Pose pose) {
     float step = SAMPLE_XY_GRANULARITY / grid.info.resolution;
     float thetaStep = 2.0 * PI / SAMPLE_THETA_COUNT;
     std::vector<GridPoseP> samples(SAMPLE_XY_COUNT * SAMPLE_XY_COUNT * SAMPLE_THETA_COUNT);
@@ -225,7 +238,7 @@ std::vector<GridPoseP> LaserLocalization::generateSamples(const Pose& pose, cons
                 p.x = (int)x;
                 p.y = (int)y;
                 p.a = theta;
-                samples.push_back(makeGridPoseP(p, scan));
+                samples.push_back(makeGridPoseP(p));
                 theta += thetaStep;
             }
             y += step;
@@ -235,8 +248,8 @@ std::vector<GridPoseP> LaserLocalization::generateSamples(const Pose& pose, cons
     return samples;
 }
 
-Pose LaserLocalization::find(const Pose& pose, const LaserScan& scan) {
-    std::vector<GridPoseP> samples = generateSamples(pose, scan);
+Pose LaserLocalization::find(Pose pose) {
+    std::vector<GridPoseP> samples = generateSamples(pose);
     float cov[9];
     SimplePose sp = calculateStats(samples, cov);
     SimplePose offset = geomPoseToSimplePose(grid.info.origin);
@@ -253,6 +266,32 @@ Pose LaserLocalization::find(const Pose& pose, const LaserScan& scan) {
     return result;
 }
 
+ros::Publisher laserLocPub;
+
+LaserLocalization* ll;
+
+void scanCallback(LaserScan scan) {
+    ll->updateScan(scan);
+}
+
+void poseCallback(Pose pose) {
+    if (ll->hasScan()) {
+        laserLocPub.publish(ll->find(pose));
+    }
+}
+
 int main(int argc, char** argv) {
+    ros::init(argc, argv, "obstacle_avoidance");
+    ros::NodeHandle n;
+    ros::ServiceClient client = n.serviceClient<GetMap>("get_map");
+    GetMap getMap;
+    if (!client.call(getMap)) {
+        ROS_ERROR("Failed to get map data from service get_map");
+    }
+    ll = new LaserLocalization(getMap.response.map);
+    ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
+    ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);
+    ros::spin();
+    delete ll;
     return 0;
 }

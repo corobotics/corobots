@@ -56,6 +56,16 @@ public:
     LaserLocalization(nav_msgs::OccupancyGrid grid);
 
     /**
+     * @return      Whether a scan has been received or not.
+     */
+    bool hasScan();
+
+    /**
+     * @param scan  A new laser scan.
+     */
+    void updateScan(sensor_msgs::LaserScan scan);
+
+    /**
      * @param grid  An updated grid.
      */
     void updateGrid(nav_msgs::OccupancyGrid grid);
@@ -68,7 +78,20 @@ public:
      */
     float findObstacle(GridPose pose);
 
+    /**
+     * Try to place the laser scan in the area near the given pose.
+     *
+     * @param pose  The estimated pose of the robot.
+     * @param scan  A laser scan to place.
+     * @return      A best-guess of where the laser scan goes in the area around
+     *              the pose.
+     */
+    corobot_msgs::Pose find(corobot_msgs::Pose pose);
+
 private:
+
+    /** The most recent scan. */
+    sensor_msgs::LaserScan scan;
 
     /** The map data. */
     nav_msgs::OccupancyGrid grid;
@@ -79,6 +102,9 @@ private:
     /** The height of the occupancy grid. */
     int h;
 
+    /** Sentinel value to indicate that a scan has been received. */
+    bool _hasScan;
+
     /**
      * Use a laser scan to calculate the probability of a GridPose.
      * This is done by simulating what a robot at the given pose would
@@ -88,7 +114,7 @@ private:
      * @param scan  The sensor input.
      * @return      A GridPoseP object with the calculated p value.
      */
-    GridPoseP makeGridPoseP(GridPose pose, sensor_msgs::LaserScan scan);
+    GridPoseP makeGridPoseP(GridPose pose);
 
     /**
      * Generate a random pose on the grid.
@@ -104,7 +130,7 @@ private:
      * @param scan  The laser scan to use.
      * @return      A random pose with corresponding probability.
      */
-    GridPoseP randomPoseP(sensor_msgs::LaserScan scan);
+    GridPoseP randomPoseP();
 
     /**
      * Retrieve the value for a specific point in the map reference frame.
@@ -141,7 +167,7 @@ private:
      * @param scan  A real laser scan from the robot.
      * @return      The probability of pose given scan.
      */
-    double comparePoseToScan(GridPose pose, sensor_msgs::LaserScan scan);
+    double comparePoseToScan(GridPose pose);
 
     /**
      * Calculate the mean vector and covariance matrix of a list of poses.
@@ -159,17 +185,7 @@ private:
      * @param scan  Used to calculate the probability of each sample.
      * @return      A list of GridPoseP objects.
      */
-    std::vector<GridPoseP> generateSamples(const corobot_msgs::Pose& pose, const sensor_msgs::LaserScan& scan);
-
-    /**
-     * Try to place the laser scan in the area near the given pose.
-     *
-     * @param pose  The estimated pose of the robot.
-     * @param scan  A laser scan to place.
-     * @return      A best-guess of where the laser scan goes in the area around
-     *              the pose.
-     */
-    corobot_msgs::Pose find(const corobot_msgs::Pose& pose, const sensor_msgs::LaserScan& scan);
+    std::vector<GridPoseP> generateSamples(corobot_msgs::Pose pose);
 
 };
 
