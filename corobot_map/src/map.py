@@ -10,21 +10,28 @@ from corobot_msgs.srv import *
 wpfile = roslib.packages.get_pkg_dir('corobot_map') + "/map/waypoints.csv"
 wps = {}
 occMap = None
+
+#Service callbacks
 def handle_get_map(req):
     if occMap == None:
         load_map()
     return GetMapResponse(occMap)
+
 def handle_get_waypoints(req):
     return GetWaypointsResponse(get_waypoints())
+
 def handle_get_neighbors(req):
     return GetNeighborsResponse(get_neighbors(req.curr.name.upper()))
+
 def handle_get_location(req):
     return GetLocationResponse(Waypoint(x=wps[req.name][0],y=wps[req.name][1],name=req.name))
+
 def handle_get_pixel_occupancy(req):
     if occMap == None:
         load_map()
     return GetPixelOccupancyResponse(occMap.data[req.x][req.y])
 
+#Utility methods.
 def load_map():
     rospy.wait_for_service('static_map')
     try:
@@ -32,9 +39,6 @@ def load_map():
         occMap = static_map().map
     except rospy.ServiceException as e:
         print("Service call failed: {}".format(e))
-
-def map_server_client():
-
 
 #Builds and returns Waypoint[] from the graph data, no neighbor data included.
 def get_waypoints():
