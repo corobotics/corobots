@@ -3,7 +3,7 @@ import roslib; roslib.load_manifest('corobot_comm')
 import rospy
 import socket
 from geometry_msgs.msg import Point
-from corobot_msgs.srv import GetLocation,GetWaypoints
+from corobot_msgs.srv import GetLocation,GetWaypoints,GetPixelOccupancy
 from corobot_msgs.msg import Pose
 from queue import PriorityQueue
 
@@ -31,7 +31,7 @@ def navigableTo(wp):
         incy = sdy/2
         incx = dx/(dy/incy)
     mapAt = rospy.ServiceProxy('get_pixel_occupancy',GetPixelOccupancy,persistent=True)
-    while(sdx*dx > 0 || sdy*dy > 0):
+    while(sdx*dx > 0 or sdy*dy > 0):
         #Service request
         occ = mapAt(cx+dx,cy+dy).occupancy
         if(occ == 0):
@@ -90,13 +90,14 @@ def aStar(dest,wps):
                 path.insert(0,pnode)
                 pnode = preds[pnode]
             return path
+
         openSet.remove(cnode)
         visited.append(cnode)
-        for nbr in getNeighbors(cnode)
+        for nbr in getNeighbors(cnode):
             if(nbr in visited):
                 continue
             tentG = curr[1]+pointDistance(cnode.x,cnode.y,nbr.x,nbr.y)
-            if(not(neighbor in openSet)||(tentG<gScores[nbr])):
+            if(not(neighbor in openSet)or(tentG<gScores[nbr])):
                 preds[nbr]=cnode
                 gScores[nbr]=tentG
                 pg.put((gScores[nbr]+pointDistance(nbr.x,nbr.y,dest.x,dest.y),nbr))
