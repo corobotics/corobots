@@ -81,7 +81,7 @@ def main():
     rospy.Service('get_map', GetMap, handle_get_map)
     rospy.Service('get_waypoints', GetWaypoints, handle_get_waypoints)
     rospy.Service('get_neighbors', GetNeighbors, handle_get_neighbors)
-    rospy.Server('get_location', GetLocation, handle_get_location)
+    rospy.Service('get_location', GetLocation, handle_get_location)
     print("Ready to serve map.")
     rospy.spin()
 
