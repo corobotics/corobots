@@ -156,7 +156,7 @@ def clientComm(socket,addr):
                 getWps = rospy.ServiceProxy('get_waypoints',GetWaypoints)
                 #Gets waypoints, no neighbor data...maybe I should change that ~Karl
                 # wps is a Waypoint[]
-                wps = getWps()
+                wps = getWps().allWPs
                 start = getLoc(cmd[1])
                 path = aStar(start,wps)
                 for node in path:
