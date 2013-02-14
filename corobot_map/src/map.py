@@ -6,7 +6,7 @@ import math
 
 from nav_msgs.srv import GetMap
 from corobot_msgs.msg import Waypoint
-from corobot_msgs.srv import GetCoMap,GetWaypoints,GetNeighbors,GetLocation,GetPixelOccupancy
+from corobot_msgs.srv import *
 
 wpfile = roslib.packages.get_pkg_dir('corobot_map') + "/map/waypoints.csv"
 wps = {}
