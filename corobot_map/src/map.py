@@ -2,20 +2,24 @@
 import roslib; roslib.load_manifest('corobot_map')
 import rospy
 import sys
+import math
 
-from nav_msgs.srv import *
+from nav_msgs.srv import GetMap
 from corobot_msgs.msg import Waypoint
-from corobot_msgs.srv import *
+from corobot_msgs.srv import GetCoMap,GetWaypoints,GetNeighbors,GetLocation,GetPixelOccupancy
 
 wpfile = roslib.packages.get_pkg_dir('corobot_map') + "/map/waypoints.csv"
 wps = {}
 occMap = None
 
 #Service callbacks
-def handle_get_map(req):
+def handle_get_co_map(req):
     if occMap == None:
         load_map()
-    return GetMapResponse(occMap)
+    points = []
+    for key in wps.getKeys():
+        points.append(Waypoint(wps[key][0],wps[key][1],key))
+    return GetCoMapResponse(occMap,points)
 
 def handle_get_waypoints(req):
     return GetWaypointsResponse(get_waypoints())
@@ -29,10 +33,14 @@ def handle_get_location(req):
 def handle_get_pixel_occupancy(req):
     if occMap == None:
         load_map()
-    return GetPixelOccupancyResponse(occMap.data[req.x][req.y])
+    pX = int(math.floor(req.x/occMap.info.resolution))
+    pY = int(math.floor(req.y/occMap.info.resolution))
+    off = pY*occMap.info.width + pX
+    return GetPixelOccupancyResponse(occMap.data[off])
 
 #Utility methods.
 def load_map():
+    global occMap
     rospy.wait_for_service('static_map')
     try:
         static_map = rospy.ServiceProxy('static_map', GetMap)
@@ -59,6 +67,7 @@ def get_neighbors(nodeName):
 #Parses waypoint "graph" data and builds a dictionary out of the info.
 def loadWaypoints():
     with open(wpfile, 'r') as wpFile:
+        global wps
         first = True
         for line in wpFile:
             if first:
@@ -78,10 +87,11 @@ def main():
     loadWaypoints()
 
     rospy.init_node('corobot_map_server')
-    rospy.Service('get_map', GetMap, handle_get_map)
+    rospy.Service('get_map', GetCoMap, handle_get_co_map)
     rospy.Service('get_waypoints', GetWaypoints, handle_get_waypoints)
     rospy.Service('get_neighbors', GetNeighbors, handle_get_neighbors)
     rospy.Service('get_location', GetLocation, handle_get_location)
+    rospy.Service('get_pixel_occupancy', GetPixelOccupancy, handle_get_pixel_occupancy)
     print("Ready to serve map.")
     rospy.spin()
 

@@ -2,8 +2,10 @@
 import roslib; roslib.load_manifest('corobot_comm')
 import rospy
 import socket
+import math
+
 from geometry_msgs.msg import Point
-from corobot_msgs.srv import GetLocation,GetWaypoints,GetPixelOccupancy
+from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLocation,GetWaypoints
 from corobot_msgs.msg import Pose
 from Queue import PriorityQueue
 
@@ -42,6 +44,10 @@ def navigableTo(wp):
     return True
 
 def pointDistance(wp1x,wp1y,wp2x,wp2y):
+    print("wp1x: "+str(wp1x))
+    print("wp1y: "+str(wp1y))
+    print("wp2x: "+str(wp2x))
+    print("wp2y: "+str(wp2y))
     return math.fabs((wp2y-wp1y)/(wp2x-wp1x))
 
 '''
@@ -51,10 +57,10 @@ def findNearestNavigable(wps):
     closest = None
     for wp in wps:
         if closest == None and navigableTo(wp):
-            closest = (waypointDistance(myPose,wp),wp)
+            closest = (pointDistance(myPose.x,myPose.y,wp.x,wp.y),wp)
             continue
-        dist = waypointDistance(myPose,wp)
-        if dist < closest[0] and navigableTo(wp):
+        dist = pointDistance(myPose.x,myPose.y,wp.x,wp.y)
+        if not closest == None and dist < closest[0] and navigableTo(wp):
             closest = (dist,wp)
     return closest[1]
 
@@ -71,6 +77,8 @@ def aStar(dest,wps):
     pq = PriorityQueue()
     openSet = [near]
     visited = []
+    print(near)
+    print(dest)
     gScores = {near:pointDistance(myPose.x,myPose.y,near.x,near.y)}
     #pq elements are (g+h,node)
     pq.put((gScores[near]+pointDistance(near.x,near.y,dest.x,dest.y),
@@ -94,7 +102,7 @@ def aStar(dest,wps):
 
         openSet.remove(cnode)
         visited.append(cnode)
-        for nbr in getNeighbors(cnode):
+        for nbr in getNeighbors(cnode).neighbors:
             if(nbr in visited):
                 continue
             tentG = curr[1]+pointDistance(cnode.x,cnode.y,nbr.x,nbr.y)
@@ -158,7 +166,7 @@ def clientComm(socket,addr):
                 # wps is a Waypoint[]
                 wps = getWps().allWPs
                 start = getLoc(cmd[1])
-                path = aStar(start,wps)
+                path = aStar(start.wp,wps)
                 for node in path:
                     pointPub.publish(x=node.x,y=node.y)
             except rospy.ServiceException as e:
