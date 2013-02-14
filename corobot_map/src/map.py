@@ -16,10 +16,7 @@ occMap = None
 def handle_get_co_map(req):
     if occMap == None:
         load_map()
-    points = []
-    for key in wps.getKeys():
-        points.append(Waypoint(wps[key][0],wps[key][1],key))
-    return GetCoMapResponse(occMap,points)
+    return GetCoMapResponse(occMap, get_waypoints())
 
 def handle_get_waypoints(req):
     return GetWaypointsResponse(get_waypoints())
