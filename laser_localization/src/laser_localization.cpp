@@ -3,7 +3,7 @@
 
 #include "ros/ros.h"
 #include "corobot_msgs/Pose.h"
-#include "nav_msgs/GetMap.h"
+#include "corobot_msgs/GetMap.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "sensor_msgs/LaserScan.h"
 
@@ -11,7 +11,7 @@
 #include "laser_localization.h"
 
 using corobot_msgs::Pose;
-using nav_msgs::GetMap;
+using corobot_msgs::GetMap;
 using nav_msgs::OccupancyGrid;
 using sensor_msgs::LaserScan;
 
