@@ -3,7 +3,7 @@
 
 #include "ros/ros.h"
 #include "corobot_msgs/Pose.h"
-#include "corobot_msgs/GetMap.h"
+#include "corobot_msgs/GetCoMap.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "sensor_msgs/LaserScan.h"
 
@@ -11,7 +11,7 @@
 #include "laser_localization.h"
 
 using corobot_msgs::Pose;
-using corobot_msgs::GetMap;
+using corobot_msgs::GetCoMap;
 using nav_msgs::OccupancyGrid;
 using sensor_msgs::LaserScan;
 
@@ -283,8 +283,8 @@ void poseCallback(Pose pose) {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "obstacle_avoidance");
     ros::NodeHandle n;
-    ros::ServiceClient client = n.serviceClient<GetMap>("get_map");
-    GetMap getMap;
+    ros::ServiceClient client = n.serviceClient<GetCoMap>("get_map");
+    GetCoMap getMap;
     if (!client.call(getMap)) {
         ROS_ERROR("Failed to get map data from service get_map");
     }
