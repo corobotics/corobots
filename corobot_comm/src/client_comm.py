@@ -44,11 +44,7 @@ def navigableTo(wp):
     return True
 
 def pointDistance(wp1x,wp1y,wp2x,wp2y):
-    print("wp1x: "+str(wp1x))
-    print("wp1y: "+str(wp1y))
-    print("wp2x: "+str(wp2x))
-    print("wp2y: "+str(wp2y))
-    return math.fabs((wp2y-wp1y)/(wp2x-wp1x))
+    return math.sqrt(math.pow(wp2x-wp1x,2)+math.pow(wp2y-wp1y,2))
 
 '''
 Find nearest Waypoint to the current value of myPose
@@ -77,8 +73,6 @@ def aStar(dest,wps):
     pq = PriorityQueue()
     openSet = [near]
     visited = []
-    print(near)
-    print(dest)
     gScores = {near:pointDistance(myPose.x,myPose.y,near.x,near.y)}
     #pq elements are (g+h,node)
     pq.put((gScores[near]+pointDistance(near.x,near.y,dest.x,dest.y),
@@ -105,11 +99,11 @@ def aStar(dest,wps):
         for nbr in getNeighbors(cnode).neighbors:
             if(nbr in visited):
                 continue
-            tentG = curr[1]+pointDistance(cnode.x,cnode.y,nbr.x,nbr.y)
-            if(not(neighbor in openSet)or(tentG<gScores[nbr])):
+            tentG = gScores[cnode]+pointDistance(cnode.x,cnode.y,nbr.x,nbr.y)
+            if(not(nbr in openSet)or(tentG<gScores[nbr])):
                 preds[nbr]=cnode
                 gScores[nbr]=tentG
-                pg.put((gScores[nbr]+pointDistance(nbr.x,nbr.y,dest.x,dest.y),nbr))
+                pq.put((gScores[nbr]+pointDistance(nbr.x,nbr.y,dest.x,dest.y),nbr))
                 if(not(nbr in openSet)):
                     openSet.append(nbr)
     getNeighbors.close()
