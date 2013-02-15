@@ -266,7 +266,7 @@ Pose LaserLocalization::find(Pose pose) {
     return result;
 }
 
-ros::Publisher laserLocPub;
+ros::Publisher laserPosePub;
 
 LaserLocalization* ll;
 
@@ -276,7 +276,8 @@ void scanCallback(LaserScan scan) {
 
 void poseCallback(Pose pose) {
     if (ll->hasScan()) {
-        laserLocPub.publish(ll->find(pose));
+        Pose laserPose = ll->find(pose);
+        laserPosePub.publish(laserPose);
     }
 }
 
@@ -289,6 +290,7 @@ int main(int argc, char** argv) {
         ROS_ERROR("Failed to get map data from service get_map");
     }
     ll = new LaserLocalization(getMap.response.map);
+    laserPosePub = n.advertise<Pose>("laser_pose", 1000);
     ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);
     ros::spin();
