@@ -5,6 +5,7 @@
 #include <cmath>
 #include <string>
 #include "std_msgs/String.h"
+#include "CSVReader.h"
 
 #define PI 3.14159265
 
@@ -25,7 +26,9 @@ class MyHandler:public Image::Handler {
     ros::Publisher test;
     pt point[4];
     int lengthPixelL,lengthPixelR;
-    float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg;
+    float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg;
+    int barcodeX, barcodeY;
+    CSVReader bla;
     
 
     MyHandler(ros::Publisher & chatter_pub) {
@@ -43,6 +46,14 @@ class MyHandler:public Image::Handler {
 		point[i].y=symbol->get_location_y(i);
 	    }
 	
+	bla.init();
+        bla.readFile();
+        
+        istringstream ( bla.getX(symbol->get_data()) ) >> barcodeX;
+	istringstream ( bla.getY(symbol->get_data()) ) >> barcodeY;
+	
+	
+	
 	// focal length( calculated before) and test distance 	
 	float f = 270,D=25;
 
@@ -55,8 +66,7 @@ class MyHandler:public Image::Handler {
 	//Calculating the distance from the barcode to camera
 	distanceL=(f*D)/lengthPixelL;
 	distanceR=(f*D)/lengthPixelR;
-	cout<<"Distance left"<<distanceL<<endl;
-	cout<<"Distance right="<<distanceR<<endl;
+	
 
 	squareDistanceL=pow(distanceL,2);
 	squareDistanceR=pow(distanceR,2);
@@ -64,12 +74,23 @@ class MyHandler:public Image::Handler {
 	//Calculating the angle from the barcode to camera
 	angleR=acos ((squareDistanceR+25-squareDistanceL)/(2*distanceR*5)) * 180.0 / PI ;
 	angleL=180 - (acos ((squareDistanceL+25-squareDistanceR)/(2*distanceL*5)) * 180.0 / PI);
-	angleAvg= (angleR + angleL)/2;
+	
+	angleAvg= (angleR + angleL) / 2;
+
+	// Calculate Average and convert to meters 
+	distanceAvg= ((distanceL + distanceR) / 2) / 39.3701;
+	
+
+	float realx, realy;
+	realx= (barcodeX) + distanceAvg * cos (angleAvg);
+	realy= (barcodeY) + distanceAvg * sin (angleAvg);
+	
+
 
 	//Publishing the msg
         std_msgs::String msg;
 	std::stringstream ss;
-	ss <<distanceL<<" "<<distanceR<<" "<<angleR<<" "<<angleL<<" "<<angleAvg;
+	ss <<distanceAvg<<" "<<angleAvg<<" Position: "<< realx <<" "<< realy;
 	msg.data = ss.str();
 	ROS_INFO("%s", msg.data.c_str());
 	test.publish(msg);
@@ -79,10 +100,13 @@ class MyHandler:public Image::Handler {
 
 int main(int argc, char **argv)
 {
+
+       
     ros::init(argc, argv, "talker");
     ros::NodeHandle n;
     ros::Publisher chatter_pub = n.advertise < std_msgs::String > ("chatter", 1000);
 
+     
     // create and initialize a Processor
     const char *device = "/dev/video0";
 

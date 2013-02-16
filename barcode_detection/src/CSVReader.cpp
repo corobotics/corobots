@@ -5,7 +5,8 @@
 void CSVReader::init()
 {
 
-    infile.open("barcodePoints.csv");
+    infile.open("src/barcodePoints.csv");
+
 
 }
 
@@ -18,7 +19,8 @@ void CSVReader::close()
 
 void CSVReader::readFile()
 {
-
+    data.clear();
+	
     while (infile) {
 	string s;
 	if (!getline(infile, s))
