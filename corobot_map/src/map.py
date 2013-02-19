@@ -56,9 +56,9 @@ def get_waypoints():
 def get_neighbors(nodeName):
     neighbors = wps[nodeName][2]
     waypoints = []
-    for neighbor in neighbors:
-        node = wps[neighbor]
-        waypoints.append( Waypoint(node[0],node[1],neighbor) )
+    for nbr in neighbors:
+        node = wps[nbr]
+        waypoints.append( Waypoint(node[0],node[1],nbr) )
     return waypoints
 
 #Parses waypoint "graph" data and builds a dictionary out of the info.
@@ -77,6 +77,7 @@ def loadWaypoints():
                     neighborList.append(neighbor.upper())
             #wps[wp_name] = (X_Meters,Y_Meters,[neighbor0,neighbor1,...])
             wps[vals[0].upper()]=float(vals[3]),float(vals[4]),neighborList
+    #rospy.logerr(wps)
 
 '''This node is acting as a relay for image-driven map data and then
 ties in our waypoint/location data'''

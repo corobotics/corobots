@@ -9,7 +9,7 @@ from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLocation,GetWaypo
 from corobot_msgs.msg import Pose
 from Queue import PriorityQueue
 
-myPose = Pose(x=0,y=0,theta=0)
+myPose = Pose(x=26.5352,y=-7.7736,theta=0)
 lastWP = None
 
 def pose_callback(pose):
@@ -69,13 +69,14 @@ wps  -- List of Waypoints (Waypoint[]) representing full list of map waypoints.
 '''
 def aStar(dest,wps):
     near = findNearestNavigable(wps)
-    preds = {near:None}
+    rospy.logdebug("WaypointClosestToMe: {}".format(near.name))
+    preds = {near.name:None}
     pq = PriorityQueue()
     openSet = [near]
     visited = []
-    gScores = {near:pointDistance(myPose.x,myPose.y,near.x,near.y)}
+    gScores = {near.name:pointDistance(myPose.x,myPose.y,near.x,near.y)}
     #pq elements are (g+h,node)
-    pq.put((gScores[near]+pointDistance(near.x,near.y,dest.x,dest.y),
+    pq.put((gScores[near.name]+pointDistance(near.x,near.y,dest.x,dest.y),
         near))
     #Set up persistent connection to the GetNeighbors service
     getNeighbors = rospy.ServiceProxy('get_neighbors',GetNeighbors,persistent=True)
@@ -89,8 +90,10 @@ def aStar(dest,wps):
             path = []
             pnode = dest
             while(not(pnode==None)):
+                pname = pnode.name
                 path.insert(0,pnode)
-                pnode = preds[pnode]
+                pnode = preds[pname]
+            print("Path: ")
             print(path)
             return path
 
@@ -99,11 +102,11 @@ def aStar(dest,wps):
         for nbr in getNeighbors(cnode).neighbors:
             if(nbr in visited):
                 continue
-            tentG = gScores[cnode]+pointDistance(cnode.x,cnode.y,nbr.x,nbr.y)
-            if(not(nbr in openSet)or(tentG<gScores[nbr])):
-                preds[nbr]=cnode
-                gScores[nbr]=tentG
-                pq.put((gScores[nbr]+pointDistance(nbr.x,nbr.y,dest.x,dest.y),nbr))
+            tentG = gScores[cnode.name]+pointDistance(cnode.x,cnode.y,nbr.x,nbr.y)
+            if(not(nbr in openSet)or(tentG<gScores[nbr.name])):
+                preds[nbr.name]=cnode
+                gScores[nbr.name]=tentG
+                pq.put((gScores[nbr.name]+pointDistance(nbr.x,nbr.y,dest.x,dest.y),nbr))
                 if(not(nbr in openSet)):
                     openSet.append(nbr)
     getNeighbors.close()
@@ -123,19 +126,13 @@ def clientComm(socket,addr):
             clIn.close()
             clOut.close()
             break
-        rospy.loginfo("Command recieved from client %s: %s", addr, cmd)
         cmd = cmd.strip().split(' ')
+        rospy.logdebug("Command recieved from client %s: %s", addr, cmd)
 
         #Command processing
-        rospy.loginfo("Command recieved from client is: %s", cmd[0])
         if cmd[0] == 'GETPOS':
-
-            if myPose is None:
-                clOut.write("POS {} {} {}\n".format(str(0),str(0),str(0)))
-                clOut.flush()
-            else:
-                clOut.write("POS {} {} {}\n".format(str(myPose.x),str(myPose.y),str(myPose.theta)))
-                clOut.flush()
+            clOut.write("POS {} {} {}\n".format(str(myPose.x),str(myPose.y),str(myPose.theta)))
+            clOut.flush()
         elif cmd[0] == 'GOTOXY':
             #Add dest point!
             pointPub.publish(x=float(cmd[1]),y=float(cmd[2]))
