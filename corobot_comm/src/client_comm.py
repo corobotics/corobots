@@ -9,15 +9,21 @@ from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLocation,GetWaypo
 from corobot_msgs.msg import Pose
 from Queue import PriorityQueue
 
+#Robot's current position.  Defaults to a test position.
 myPose = Pose(x=26.5352,y=-7.7736,theta=0)
+
+#Used to track last set goal from a user.
 lastWP = None
 
+'''
+Pose subscription callback
+'''
 def pose_callback(pose):
     global myPose
     myPose = pose
 
 '''
-Can I straight line nav to this wp from current pos?
+Can I straight line nav to this wp from current position?
 '''
 def navigableTo(wp):
     cx = myPose.x
@@ -32,6 +38,7 @@ def navigableTo(wp):
     else:
         incy = sdy/2
         incx = dx/(dy/incy)
+    rospy.wait_for_service('get_pixel_occupancy')
     mapAt = rospy.ServiceProxy('get_pixel_occupancy',GetPixelOccupancy,persistent=True)
     while(sdx*dx > 0 or sdy*dy > 0):
         #Service request
@@ -43,11 +50,27 @@ def navigableTo(wp):
     mapAt.close()
     return True
 
+'''
+Distance between two points
+
+Arguments:
+wp1x -- X value of the first point
+wp1y -- Y value of the first point
+wp2x -- X value of the second point
+wp2y -- Y value of the second point
+'''
 def pointDistance(wp1x,wp1y,wp2x,wp2y):
     return math.sqrt(math.pow(wp2x-wp1x,2)+math.pow(wp2y-wp1y,2))
 
 '''
 Find nearest Waypoint to the current value of myPose
+
+Arguments:
+wps -- Waypoint[] with all waypoints in the graph/map
+
+Returns a 2-tuple (float,Waypoint):
+    (distance from current position to nearest navigable Waypoint, nearest navigable Waypoint)
+    None if no nearby waypoint can be found
 '''
 def findNearestNavigable(wps):
     closest = None
@@ -58,6 +81,9 @@ def findNearestNavigable(wps):
         dist = pointDistance(myPose.x,myPose.y,wp.x,wp.y)
         if not closest == None and dist < closest[0] and navigableTo(wp):
             closest = (dist,wp)
+    if closest == None:
+        rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
+        return None
     return closest[1]
 
 '''
@@ -66,25 +92,34 @@ Perform A* to produce path of waypoints to given dest from nearest map waypoint.
 Arguments:
 dest -- Destination Waypoint
 wps  -- List of Waypoints (Waypoint[]) representing full list of map waypoints.
+
+Returns:
+    Waypoint[] representing path to follow to the destination.
+    Empty list if no path can be found.
 '''
 def aStar(dest,wps):
     near = findNearestNavigable(wps)
+    if near == None:
+        rospy.logerr("AStar navigation failed, couldn't find a starting node.")
+        return []
     rospy.logdebug("WaypointClosestToMe: {}".format(near.name))
     preds = {near.name:None}
     pq = PriorityQueue()
     openSet = [near]
     visited = []
+    #dict holding {waypoint name:distance from robot to waypoint} pairs
     gScores = {near.name:pointDistance(myPose.x,myPose.y,near.x,near.y)}
     #pq elements are (g+h,node)
+    # g=distRobotWp, h=distWpGoal
     pq.put((gScores[near.name]+pointDistance(near.x,near.y,dest.x,dest.y),
         near))
     #Set up persistent connection to the GetNeighbors service
+    rospy.wait_for_service('get_neighbors')
     getNeighbors = rospy.ServiceProxy('get_neighbors',GetNeighbors,persistent=True)
-    #Build path from dest back to me.
-    #Use distRobotWp+distWpGoal as priority weight
     while(not(pq.empty())):
         curr = pq.get()
         cnode = curr[1]
+        
         if(cnode.name==dest.name):
             #Found the path! Now build it.
             path = []
@@ -93,8 +128,6 @@ def aStar(dest,wps):
                 pname = pnode.name
                 path.insert(0,pnode)
                 pnode = preds[pname]
-            print("Path: ")
-            print(path)
             return path
 
         openSet.remove(cnode)
@@ -109,9 +142,17 @@ def aStar(dest,wps):
                 pq.put((gScores[nbr.name]+pointDistance(nbr.x,nbr.y,dest.x,dest.y),nbr))
                 if(not(nbr in openSet)):
                     openSet.append(nbr)
+    #Cleanup persistent service connection.
     getNeighbors.close()
-    return None
+    return []
 
+'''
+Begin client API communication
+
+Arguments:
+socket -- Active socket to a connected client
+addr -- Client's IP address
+'''
 def clientComm(socket,addr):
     rospy.init_node('corobot_client_comm')
     clIn = socket.makefile('r')
