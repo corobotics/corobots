@@ -13,7 +13,7 @@ class EKF(object):
     def __init__(self, dt):
 
         # Time delta between updates in seconds.
-        self.dt = dt
+        self.dt = float(dt)
 
         # x(k|k); the system state column vector.
         x = matrix([[0.0], [0.0], [0.0]])
@@ -61,13 +61,25 @@ class EKF(object):
         return rotation * state + offset
 
     def data_received(self, sensor, pose):
+        if sensor in self.old_data:
+            self.old_data[sensor] = self.new_data[sensor]
         self.new_data[sensor] = pose
+
+    def get_pose(self):
+        s, P = self.state
+        pose = Pose()
+        pose.header.frame_id = "world"
+        pose.x = s[0][0]
+        pose.y = s[0][1]
+        pose.theta = s[0][2]
+        pose.cov = tuple(P.flat)
+        return pose
 
     def update(self):
         """Perform an EKF state update."""
         # store the old state
         old_x, old_P = self.state
-        # Velocity is a special case; if we have it perform a prediction based
+        # Velocity is a special case; if we have it, perform a prediction based
         # on the old state before continuing.
         if "velocity" in self.new_data:
             u, V = self.new_data.pop("velocity")
@@ -101,6 +113,10 @@ class EKF(object):
             x = x + R * (y - x)
             P = P - R * P
             self.state = x, P
+            self.old_data[sensor] = pose
+
+        # Clear the new data dict.
+        self.new_data.clear()
 
     def predict(self, u, V):
         # state vector, covariance matrix
@@ -118,6 +134,3 @@ class EKF(object):
         # covariance prediction
         PP = F * P * F.transpose() + V
         return sp, PP
-
-    def R():
-        pass
