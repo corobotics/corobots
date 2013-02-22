@@ -8,6 +8,8 @@ import rospy
 from corobot_msgs.msg import Pose
 from nav_msgs.msg import Odometry
 
+from EKF import EKF
+
 # Expected frequency of odom updates, in Hz.
 ODOM_FREQ = 10.0
 

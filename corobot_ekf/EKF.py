@@ -2,6 +2,8 @@ from math import cos, sin
 
 from numpy import matrix
 
+from corobot_msgs.msg import Pose
+
 class EKF(object):
 
     """Implements an Extended Kalman Filter.
@@ -43,7 +45,7 @@ class EKF(object):
     @staticmethod
     def column_vector(*args):
         """Utility function to construct a column vector (single-column matrix)."""
-        return matrix([e] for e in args)
+        return matrix([[e] for e in args])
 
     @staticmethod
     def coord_transform(state, offset):
@@ -53,7 +55,7 @@ class EKF(object):
         offset: a column vector of dx, dy, dtheta
 
         """
-        dt = offset[0][2]
+        dt = offset.item(2, 0)
         rotation = matrix([
             [cos(dt), -sin(dt), 0],
             [sin(dt),  cos(dt), 0],
@@ -61,7 +63,7 @@ class EKF(object):
         return rotation * state + offset
 
     def data_received(self, sensor, pose):
-        if sensor in self.old_data:
+        if sensor in self.new_data:
             self.old_data[sensor] = self.new_data[sensor]
         self.new_data[sensor] = pose
 
@@ -69,9 +71,9 @@ class EKF(object):
         s, P = self.state
         pose = Pose()
         pose.header.frame_id = "world"
-        pose.x = s[0][0]
-        pose.y = s[0][1]
-        pose.theta = s[0][2]
+        pose.x = s.item(0, 0)
+        pose.y = s.item(1, 0)
+        pose.theta = s.item(2, 0)
         pose.cov = tuple(P.flat)
         return pose
 
@@ -93,7 +95,7 @@ class EKF(object):
             # sensor output
             y = EKF.column_vector(pose.x, pose.y, pose.theta)
             # sensor covariance
-            W = pose.cov
+            W = matrix(pose.cov).reshape(3, 3)
             # check if this sensor accumulates error over time.
             if sensor in self.old_data:
                 old_pose = self.old_data[sensor]
@@ -122,14 +124,15 @@ class EKF(object):
         # state vector, covariance matrix
         s, P = self.state
         # x, y, theta
-        x, y, t = s[0][0], s[1][0], s[2][0]
+        x, y, t = s.item(0, 0), s.item(1, 0), s.item(2, 0)
         # velocity, angular velocity (omega)
         v, w = u
+        V = matrix(V).reshape(3, 3)
         # state prediction
         sp = EKF.column_vector(x + v * cos(t), y + self.dt * v * sin(t), t + self.dt * w)
         F = matrix([
             [1, 0, -self.dt * v * sin(t)],
-            [0, 1, selt.dt * v * cos(t)],
+            [0, 1, self.dt * v * cos(t)],
             [0, 0, 1]])
         # covariance prediction
         PP = F * P * F.transpose() + V
