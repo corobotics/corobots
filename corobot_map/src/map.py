@@ -33,6 +33,7 @@ def handle_get_pixel_occupancy(req):
     pX = int(math.floor(req.x/occMap.info.resolution))
     pY = int(math.floor(req.y/occMap.info.resolution))
     off = pY*occMap.info.width + pX
+    #rospy.logerr("Occupancy of requested pixel X:{} Y:{} Occ:{}".format(pX,pY,occMap.data[off]))
     return GetPixelOccupancyResponse(occMap.data[off])
 
 #Utility methods.

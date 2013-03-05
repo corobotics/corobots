@@ -8,12 +8,14 @@ from geometry_msgs.msg import Point
 from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLocation,GetWaypoints
 from corobot_msgs.msg import Pose
 from Queue import PriorityQueue
+from collections import deque
+import time
 
 #Robot's current position.  Defaults to a test position.
-myPose = Pose(x=26.5352,y=-7.7736,theta=0)
+myPose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
 
-#Used to track last set goal from a user.
-lastWP = None
+#Used to track set goals from a user.
+wpQueue = deque()
 
 '''
 Pose subscription callback
@@ -21,6 +23,10 @@ Pose subscription callback
 def pose_callback(pose):
     global myPose
     myPose = pose
+
+def dest_arrive_callback(wp):
+    if wpQueue[0] == wp.name:
+        wpQueue.popleft()
 
 '''
 Can I straight line nav to this wp from current position?
@@ -40,6 +46,7 @@ def navigableTo(wp):
         incx = dx/(dy/incy)
     rospy.wait_for_service('get_pixel_occupancy')
     mapAt = rospy.ServiceProxy('get_pixel_occupancy',GetPixelOccupancy,persistent=True)
+    #rospy.logerr("Occupancy of curr location X:{} Y:{} Occ:{}".format(cx,cy,mapAt(cx,cy).occupancy))
     while(sdx*dx > 0 or sdy*dy > 0):
         #Service request
         occ = mapAt(cx+dx,cy+dy).occupancy
@@ -185,6 +192,7 @@ def clientComm(socket,addr):
                 #returns Waypoint
                 resp = getLoc(cmd[1])
                 pointPub.publish(x=resp.wp.x,y=resp.wp.y)
+                wpQueue.append(cmd[1])
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
         elif cmd[0] == 'NAVTOLOC':
@@ -201,11 +209,15 @@ def clientComm(socket,addr):
                 path = aStar(start.wp,wps)
                 for node in path:
                     pointPub.publish(x=node.x,y=node.y)
+                wpQueue.append(cmd[1])
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
         elif cmd[0] == 'QUERY_ARRIVE':
-            print("Query_Arrive")
-            #How to figure this out?!
+            if cmd[1] in wpQueue:
+                while cmd[1] in wpQueue:
+                    time.sleep(1)
+                clOut.write("ARRIVED {}\n".format(cmd[1]))
+
 
 def main():
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
