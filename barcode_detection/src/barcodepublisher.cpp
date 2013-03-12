@@ -5,98 +5,16 @@
 #include <cmath>
 #include <string>
 #include "std_msgs/String.h"
-#include "CSVReader.h"
+#include "../include/CSVReader.h"
+#include "corobot_msgs/Pose.h"
+#include "barcodeHandler.h"
+
 
 #define PI 3.14159265
 
 using namespace std;
 using namespace zbar;
-
-class pt{
-	public: 
-	 int x,y;
-};
-
-
-
-class MyHandler:public Image::Handler {
-
-    public:
-
-    ros::Publisher test;
-    pt point[4];
-    int lengthPixelL,lengthPixelR;
-    float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg;
-    int barcodeX, barcodeY;
-    CSVReader bla;
-    
-
-    MyHandler(ros::Publisher & chatter_pub) {
-
-	test = chatter_pub;
-
-    } 
-    void image_callback(Image & image) {
-
-
-	for (SymbolIterator symbol = image.symbol_begin(); symbol != image.symbol_end(); ++symbol) {
-
-	    for(int i=0;i<4;i++){
-		point[i].x=symbol->get_location_x(i);
-		point[i].y=symbol->get_location_y(i);
-	    }
-	
-	bla.init();
-        bla.readFile();
-        
-        istringstream ( bla.getX(symbol->get_data()) ) >> barcodeX;
-	istringstream ( bla.getY(symbol->get_data()) ) >> barcodeY;
-	
-	
-	
-	// focal length( calculated before) and test distance 	
-	float f = 270,D=25;
-
-	//Length of pixels top left and bottom left
-	lengthPixelL=abs (point[1].y-point[0].y);
-
-	//Length of pixels top right and bottom right
-	lengthPixelR=abs (point[3].y-point[2].y);
-
-	//Calculating the distance from the barcode to camera
-	distanceL=(f*D)/lengthPixelL;
-	distanceR=(f*D)/lengthPixelR;
-	
-
-	squareDistanceL=pow(distanceL,2);
-	squareDistanceR=pow(distanceR,2);
-
-	//Calculating the angle from the barcode to camera
-	angleR=acos ((squareDistanceR+25-squareDistanceL)/(2*distanceR*5)) * 180.0 / PI ;
-	angleL=180 - (acos ((squareDistanceL+25-squareDistanceR)/(2*distanceL*5)) * 180.0 / PI);
-	
-	angleAvg= (angleR + angleL) / 2;
-
-	// Calculate Average and convert to meters 
-	distanceAvg= ((distanceL + distanceR) / 2) / 39.3701;
-	
-
-	float realx, realy;
-	realx= (barcodeX) + distanceAvg * cos (angleAvg);
-	realy= (barcodeY) + distanceAvg * sin (angleAvg);
-	
-
-
-	//Publishing the msg
-        std_msgs::String msg;
-	std::stringstream ss;
-	ss <<distanceAvg<<" "<<angleAvg<<" Position: "<< realx <<" "<< realy;
-	msg.data = ss.str();
-	ROS_INFO("%s", msg.data.c_str());
-	test.publish(msg);
-	}
-    }
-};
+using corobot_msgs::Pose;
 
 int main(int argc, char **argv)
 {
@@ -104,9 +22,9 @@ int main(int argc, char **argv)
        
     ros::init(argc, argv, "talker");
     ros::NodeHandle n;
-    ros::Publisher chatter_pub = n.advertise < std_msgs::String > ("chatter", 1000);
+    ros::Publisher chatter_pub = n.advertise <Pose> ("chatter", 1000);
 
-     
+    // std_msgs::String 
     // create and initialize a Processor
     const char *device = "/dev/video0";
 
@@ -119,7 +37,7 @@ int main(int argc, char **argv)
     proc.set_config(ZBAR_NONE, ZBAR_CFG_ENABLE, 1);
 
     // setup a callback
-    MyHandler my_handler(chatter_pub);
+    BarcodeHandler my_handler(chatter_pub);
     proc.set_handler(my_handler);
 
     // enable the preview window
