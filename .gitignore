@@ -6,3 +6,4 @@
 *.class
 *.pyc
 __pycache__
+*/build/*
