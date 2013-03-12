@@ -59,6 +59,19 @@ def main():
     rospy.Subscriber("barcode_pose", Pose, barcode_callback)
     rospy.spin()
 
+def test():
+    from math import pi
+    import numpy
+    # pose in frame A
+    a = EKF.column_vector(1, 2, pi / 2)
+    # pose in frame B
+    b = EKF.column_vector(1, 1, 0)
+    # get the origin of B in A
+    o = EKF.get_offset(a, b)
+    # use it to convert b into a
+    t = EKF.coord_transform(b, o)
+    assert numpy.equal(t, a).all()
+
 if __name__ == "__main__":
     try:
         main()

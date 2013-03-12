@@ -27,7 +27,6 @@ class EKF(object):
             [0.0, 0.0, 10000.0]])
 
         self.state = (x, P)
-        self.velocity = None
 
         # Collects updated sensor data for the next update call.
         self.new_data = {}
@@ -38,14 +37,17 @@ class EKF(object):
             "odom": None
         }
 
-        self.frame_offset = {
-            "base": None
-        }
-
     @staticmethod
     def column_vector(*args):
         """Utility function to construct a column vector (single-column matrix)."""
         return matrix([[e] for e in args])
+
+    @staticmethod
+    def rotation_matrix(theta):
+        return matrix([
+            [cos(theta), -sin(theta), 0],
+            [sin(theta),  cos(theta), 0],
+            [         0,           0, 1]])
 
     @staticmethod
     def coord_transform(state, offset):
@@ -56,11 +58,15 @@ class EKF(object):
 
         """
         dt = offset.item(2, 0)
-        rotation = matrix([
-            [cos(dt), -sin(dt), 0],
-            [sin(dt),  cos(dt), 0],
-            [      0,        0, 1]])
+        rotation = EKF.rotation_matrix(dt)
         return rotation * state + offset
+
+    @staticmethod
+    def get_offset(state_a, state_b):
+        """Get the origin of reference frame B in A."""
+        dt = state_a.item(2, 0) - state_b.item(2, 0)
+        rotation = EKF.rotation_matrix(dt)
+        return state_a - rotation * state_b
 
     def data_received(self, sensor, pose):
         if sensor in self.new_data:
@@ -79,13 +85,16 @@ class EKF(object):
 
     def update(self):
         """Perform an EKF state update."""
+
         # store the old state
         old_x, old_P = self.state
+
         # Velocity is a special case; if we have it, perform a prediction based
         # on the old state before continuing.
         if "velocity" in self.new_data:
             u, V = self.new_data.pop("velocity")
             self.state = self.predict(u, V)
+
         # For each sensor, modify the EKF state.
         # TODO: See if these need to be combined somehow instead of applying
         # them on top of the previous results.
@@ -96,21 +105,31 @@ class EKF(object):
             y = EKF.column_vector(pose.x, pose.y, pose.theta)
             # sensor covariance
             W = matrix(pose.cov).reshape(3, 3)
-            # check if this sensor accumulates error over time.
-            if sensor in self.old_data:
+
+            # odom accumulates error over time, so use the diff from last time.
+            if sensor == "odom":
                 old_pose = self.old_data[sensor]
+                # can't do anything with the first odom measurement.
                 if old_pose is None:
+                    # Store the data for next time.
+                    self.old_data[sensor] = pose
                     continue
-                # if it does, use the difference from its previous pose applied to the old state.
+                # remember, x is the EKF state and y is the sensor state.
                 old_y = EKF.column_vector(old_pose.x, old_pose.y, old_pose.theta)
-                y = y - old_y + old_x
-            # check if the sensor's coordinate frame is different from the global map's.
-            if pose.header.frame_id in self.frame_offset:
-                frame_offset = self.frame_offset[pose.header.frame_id]
-                if frame_offset is None:
-                    continue
-                # if it's different, transform the coords.
-                y = EKF.coord_transform(y, frame_offset)
+                old_W = matrix(pose.cov).reshape(3, 3)
+                # get the odom frame origin in the map frame.
+                odom_offset = EKF.get_offset(old_x, old_y)
+                # transform both sensors states into the map frame.
+                y_map = EKF.coord_transform(y, odom_offset)
+                old_y_map = EKF.coord_transform(old_y, odom_offset)
+                W_map = EKF.coord_transform(W, odom_offset)
+                old_W_map = EKF.coord_transform(old_w, odom_offset)
+                # apply the difference between them to the old state.
+                y = y_map - old_y_map + old_x
+                W = W_map - old_W_map + old_P
+            else:
+                assert pose.header.frame_id == "map"
+
             R = P * (P + W).I
             x = x + R * (y - x)
             P = P - R * P
