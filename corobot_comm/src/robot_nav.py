@@ -5,28 +5,46 @@ import math
 
 from geometry_msgs.msg import Point
 from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLocation,GetWaypoints
-from corobot_msgs.msg import Pose
+from corobot_msgs.msg import Pose,Goal
 from Queue import PriorityQueue
 from collections import deque
 
 #Robot's current position.  Defaults to a test position.
 myPose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
 
+#Used to track set goals from a user.
+# Queue of (node,isGoal?) pairs
+wpQueue = deque()
+
+def pose_callback(pose):
 '''
 Pose subscription callback
 '''
-def pose_callback(pose):
     global myPose
     myPose = pose
 
-#Used to track set goals from a user.
-wpQueue = deque()
+def waypoints_reached_callback(wp):
+'''
+Wayoints Reached subscription callback
+'''
+    top = wpQueue[0]
+    if top[0].x == wp.x && top[0].y == wp.y:
+        wpQueue.popleft()
+        if top[1] == True:
+            goalReachedPub = rospy.Publisher('goals_reached',Goal)
+            goalReachedPub.publish(Goal(top[0].name))
 
 def goals_callback(new_goal):
-    #Navigate to location
+'''
+Goals subscription callback.
+'''
     rospy.wait_for_service('get_waypoints')
     rospy.wait_for_service('get_location')
+
     try:
+        #Publisher to obstacle_avoidance
+        pointPub = rospy.Publisher('waypoints',Point)
+        
         getLoc = rospy.ServiceProxy('get_location',GetLocation)
         getWps = rospy.ServiceProxy('get_waypoints',GetWaypoints)
         #Gets waypoints, no neighbor data...maybe I should change that ~Karl
@@ -37,16 +55,15 @@ def goals_callback(new_goal):
         for node in path:
             pointPub.publish(x=node.x,y=node.y)
             if node.name == end.name:
-                wpQueue.append((node.name,True))
-            wpQueue.append((node.name,False))
-        wpQueue.append(cmd[1])
+                wpQueue.append((node,True))
+            wpQueue.append((node,False))
     except rospy.ServiceException as e:
         rospy.logerr("Service call failed: {}".format(e))
 
+def navigableTo(wp):
 '''
 Can I straight line nav to this wp from current position?
 '''
-def navigableTo(wp):
     cx = myPose.x
     cy = myPose.y
     dx = wp.x-cx
@@ -72,6 +89,7 @@ def navigableTo(wp):
     mapAt.close()
     return True
 
+def pointDistance(wp1x,wp1y,wp2x,wp2y):
 '''
 Distance between two points
 
@@ -81,9 +99,9 @@ wp1y -- Y value of the first point
 wp2x -- X value of the second point
 wp2y -- Y value of the second point
 '''
-def pointDistance(wp1x,wp1y,wp2x,wp2y):
     return math.sqrt(math.pow(wp2x-wp1x,2)+math.pow(wp2y-wp1y,2))
 
+def findNearestNavigable(wps):
 '''
 Find nearest Waypoint to the current value of myPose
 
@@ -94,7 +112,6 @@ Returns a 2-tuple (float,Waypoint):
     (distance from current position to nearest navigable Waypoint, nearest navigable Waypoint)
     None if no nearby waypoint can be found
 '''
-def findNearestNavigable(wps):
     closest = None
     for wp in wps:
         if closest == None and navigableTo(wp):
@@ -108,6 +125,7 @@ def findNearestNavigable(wps):
         return None
     return closest[1]
 
+def aStar(dest,wps):
 '''
 Perform A* to produce path of waypoints to given dest from nearest map waypoint.
 
@@ -119,7 +137,6 @@ Returns:
     Waypoint[] representing path to follow to the destination.
     Empty list if no path can be found.
 '''
-def aStar(dest,wps):
     near = findNearestNavigable(wps)
     if near == None:
         rospy.logerr("AStar navigation failed, couldn't find a starting node.")

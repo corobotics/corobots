@@ -2,12 +2,10 @@
 import roslib; roslib.load_manifest('corobot_comm')
 import rospy
 import socket
-import math
 
 from geometry_msgs.msg import Point
-from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLocation,GetWaypoints
-from corobot_msgs.msg import Pose
-from Queue import PriorityQueue
+from corobot_msgs.srv import GetLocation
+from corobot_msgs.msg import Pose,Goal
 from collections import deque
 import time
 
@@ -16,18 +14,21 @@ myPose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
 
 goalQueue = deque()
 
+def pose_callback(pose):
 '''
 Pose subscription callback
 '''
-def pose_callback(pose):
     global myPose
     myPose = pose
 
 def goals_reached_callback(reached):
-    if goalQueue[0][0] == reached.name:
+'''
+Goals Reached subscription callback
+'''
+    if goalQueue[0] == reached.name:
         goalQueue.popleft()
 
-
+def clientComm(socket,addr):
 '''
 Begin client API communication
 
@@ -35,22 +36,26 @@ Arguments:
 socket -- Active socket to a connected client
 addr -- Client's IP address
 '''
-def clientComm(socket,addr):
     rospy.init_node('corobot_client_comm')
     clIn = socket.makefile('r')
     clOut = socket.makefile('w')
-    #Publisher to obstacle_avoidance
+    
+    #Publisher to obstacle_avoidance, for GOTO* commands
     pointPub = rospy.Publisher('waypoints',Point)
+    #Publisher to robot_nav, for NAVTO* commands
     goalPub = rospy.Publisher('goals',Goal)
+
     rospy.Subscriber('goals_reached',Goal,goals_reached_callback)
     rospy.Subscriber('pose',Pose,pose_callback)
     
     while True:
         cmd = clIn.readline()
+        #Communication terminated?
         if len(cmd) == 0:
             clIn.close()
             clOut.close()
             break
+
         cmd = cmd.strip().split(' ')
         rospy.logdebug("Command recieved from client %s: %s", addr, cmd)
 
@@ -64,16 +69,18 @@ def clientComm(socket,addr):
         elif cmd[0] == 'GOTOLOC':
             #Goto location, no navigation
             rospy.wait_for_service('get_location')
+            dest = cmd[1].upper()
             try:
                 getLoc = rospy.ServiceProxy('get_location',GetLocation)
                 #returns Waypoint
-                resp = getLoc(cmd[1])
+                resp = getLoc(dest)
                 pointPub.publish(x=resp.wp.x,y=resp.wp.y)
-                goalQueue.append(cmd[1],True)
+                goalQueue.append(dest)
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
         elif cmd[0] == 'NAVTOLOC':
-            
+                goalPub.publish(dest)
+                goalQueue.append(dest)
         elif cmd[0] == 'QUERY_ARRIVE':
             if cmd[1] in goalQueue:
                 while cmd[1] in goalQueue:
