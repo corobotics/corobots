@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import roslib; roslib.load_manifest('robot_nav')
+import roslib; roslib.load_manifest('corobot_comm')
 import rospy
 import math
 
@@ -17,27 +17,27 @@ myPose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
 wpQueue = deque()
 
 def pose_callback(pose):
-'''
-Pose subscription callback
-'''
+    '''
+    Pose subscription callback
+    '''
     global myPose
     myPose = pose
 
 def waypoints_reached_callback(wp):
-'''
-Wayoints Reached subscription callback
-'''
+    '''
+    Wayoints Reached subscription callback
+    '''
     top = wpQueue[0]
-    if top[0].x == wp.x && top[0].y == wp.y:
+    if top[0].x == wp.x and top[0].y == wp.y:
         wpQueue.popleft()
         if top[1] == True:
             goalReachedPub = rospy.Publisher('goals_reached',Goal)
             goalReachedPub.publish(Goal(top[0].name))
 
 def goals_callback(new_goal):
-'''
-Goals subscription callback.
-'''
+    '''
+    Goals subscription callback.
+    '''
     rospy.wait_for_service('get_waypoints')
     rospy.wait_for_service('get_location')
 
@@ -61,9 +61,9 @@ Goals subscription callback.
         rospy.logerr("Service call failed: {}".format(e))
 
 def navigableTo(wp):
-'''
-Can I straight line nav to this wp from current position?
-'''
+    '''
+    Can I straight line nav to this wp from current position?
+    '''
     cx = myPose.x
     cy = myPose.y
     dx = wp.x-cx
@@ -90,28 +90,28 @@ Can I straight line nav to this wp from current position?
     return True
 
 def pointDistance(wp1x,wp1y,wp2x,wp2y):
-'''
-Distance between two points
+    '''
+    Distance between two points
 
-Arguments:
-wp1x -- X value of the first point
-wp1y -- Y value of the first point
-wp2x -- X value of the second point
-wp2y -- Y value of the second point
-'''
+    Arguments:
+    wp1x -- X value of the first point
+    wp1y -- Y value of the first point
+    wp2x -- X value of the second point
+    wp2y -- Y value of the second point
+    '''
     return math.sqrt(math.pow(wp2x-wp1x,2)+math.pow(wp2y-wp1y,2))
 
 def findNearestNavigable(wps):
-'''
-Find nearest Waypoint to the current value of myPose
+    '''
+    Find nearest Waypoint to the current value of myPose
 
-Arguments:
-wps -- Waypoint[] with all waypoints in the graph/map
+    Arguments:
+    wps -- Waypoint[] with all waypoints in the graph/map
 
-Returns a 2-tuple (float,Waypoint):
-    (distance from current position to nearest navigable Waypoint, nearest navigable Waypoint)
-    None if no nearby waypoint can be found
-'''
+    Returns a 2-tuple (float,Waypoint):
+        (distance from current position to nearest navigable Waypoint, nearest navigable Waypoint)
+        None if no nearby waypoint can be found
+    '''
     closest = None
     for wp in wps:
         if closest == None and navigableTo(wp):
@@ -126,17 +126,17 @@ Returns a 2-tuple (float,Waypoint):
     return closest[1]
 
 def aStar(dest,wps):
-'''
-Perform A* to produce path of waypoints to given dest from nearest map waypoint.
+    '''
+    Perform A* to produce path of waypoints to given dest from nearest map waypoint.
 
-Arguments:
-dest -- Destination Waypoint
-wps  -- List of Waypoints (Waypoint[]) representing full list of map waypoints.
+    Arguments:
+    dest -- Destination Waypoint
+    wps  -- List of Waypoints (Waypoint[]) representing full list of map waypoints.
 
-Returns:
-    Waypoint[] representing path to follow to the destination.
-    Empty list if no path can be found.
-'''
+    Returns:
+        Waypoint[] representing path to follow to the destination.
+        Empty list if no path can be found.
+    '''
     near = findNearestNavigable(wps)
     if near == None:
         rospy.logerr("AStar navigation failed, couldn't find a starting node.")
@@ -189,9 +189,10 @@ def main():
     rospy.init_node('robot_navigator')
     #Publisher to obstacle_avoidance
     pointPub = rospy.Publisher('waypoints',Point)
-    goalPub = rospy.Publisher('goals',Goal)
-    rospy.Subscriber('goals_reached',Goal,goals_reached_callback)
+    rospy.Subscriber('goals',Goal,goals_callback)
     rospy.Subscriber('pose',Pose,pose_callback)
+
+    rospy.spin()
 
 if __name__ == '__main__':
     main()

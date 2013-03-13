@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="corobot_comm" type="robot_nav.py" name="robot_nav"/>
+    <node pkg="corobot_comm" type="client_comm.py" name="client_comm"/>
+</launch>

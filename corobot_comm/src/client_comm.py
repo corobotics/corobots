@@ -15,27 +15,27 @@ myPose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
 goalQueue = deque()
 
 def pose_callback(pose):
-'''
-Pose subscription callback
-'''
+    '''
+    Pose subscription callback
+    '''
     global myPose
     myPose = pose
 
 def goals_reached_callback(reached):
-'''
-Goals Reached subscription callback
-'''
+    '''
+    Goals Reached subscription callback
+    '''
     if goalQueue[0] == reached.name:
         goalQueue.popleft()
 
 def clientComm(socket,addr):
-'''
-Begin client API communication
+    '''
+    Begin client API communication
 
-Arguments:
-socket -- Active socket to a connected client
-addr -- Client's IP address
-'''
+    Arguments:
+    socket -- Active socket to a connected client
+    addr -- Client's IP address
+    '''
     rospy.init_node('corobot_client_comm')
     clIn = socket.makefile('r')
     clOut = socket.makefile('w')
