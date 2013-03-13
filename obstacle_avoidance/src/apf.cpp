@@ -138,15 +138,18 @@ list<Polar> APF::findObjects(list<Polar> points) {
     return objects;
 }
 
-double vectorLength(double x, double y) {
-    return sqrt(x*x + y*y);
-}
-
 /**
  * {@inheritDoc}
  */
 Point APF::nav(LaserScan scan) {
-    // The goal is the head of the waypoint queue. TODO: Handle empty queue?
+
+    // Can't do anything without a goal.
+    if (waypointQueue.empty()) {
+        Point p;
+        return p;
+    }
+
+    // The goal is the head of the waypoint queue.
     Point goal = waypointQueue.front();
 
     cout << "Goal: (" << goal.x << ", " << goal.y << ")" << endl;
@@ -181,13 +184,6 @@ Point APF::nav(LaserScan scan) {
     Point res;
     res.x = kg * cos(theta) - sum.x;
     res.y = kg * sin(theta) - sum.y;
-
-    // Since we're only guaranteed there's one point in the queue coming into
-    // this function, we pop nearby waypoints at the end...
-    while (!waypointQueue.empty() && vectorLength(pose.x - goal.x, pose.y - goal.y) < 0.2) {
-        waypointQueue.pop();
-        goal = waypointQueue.front();
-    }
 
     return res;
 }

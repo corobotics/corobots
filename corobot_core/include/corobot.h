@@ -16,13 +16,13 @@ namespace corobot {
     } SimplePose;
 
     /**
-     * Calculates the distance from the origin to a point at (x, y).
+     * Calculates the length of the vector <x, y>.
      *
      * @param x     The x coordinate.
      * @param y     The y coordinate.
      * @return      The straight-line distance from (0, 0) to (x, y).
      */
-    double dist(double x, double y);
+    double length(double x, double y);
 
     /**
      * @param q     A unit quaternion (x and y should be 0).

@@ -6,6 +6,7 @@
 #include "geometry_msgs/Twist.h"
 #include "sensor_msgs/LaserScan.h"
 
+#include "corobot.h"
 #include "obstacle_avoidance.h"
 #include "apf.h"
 
@@ -15,7 +16,11 @@
 /** The obstacle constant to use for APF. */
 #define KOBS 0.5
 
+// How close in meters to get to a waypoint before considered arrived.
+#define ARRIVED_DISTANCE 0.2
+
 using namespace std;
+using corobot::length;
 using corobot_msgs::Pose;
 using geometry_msgs::Point;
 using geometry_msgs::Twist;
@@ -24,16 +29,17 @@ using sensor_msgs::LaserScan;
 /**
  * {@inheritDoc}
  */
-bool ObstacleAvoider::hasWaypoint() {
-    return !waypointQueue.empty();
-}
-
-/**
- * {@inheritDoc}
- */
 void ObstacleAvoider::updatePose(Pose newPose) {
     pose = newPose;
-    // Check if reached waypoint.
+    if (!waypointQueue.empty()) {
+        Point goal = waypointQueue.front();
+        while (!waypointQueue.empty() &&
+                length(pose.x - goal.x, pose.y - goal.y) < ARRIVED_DISTANCE) {
+            waypointQueue.pop();
+            arrivedQueue.push(goal);
+            goal = waypointQueue.front();
+        }
+    }
 }
 
 /**
@@ -49,6 +55,11 @@ void ObstacleAvoider::addWaypoint(Point waypoint) {
 ros::Publisher cmdVelPub;
 
 /**
+ * The publisher for waypoints the robot has reached.
+ */
+ros::Publisher waypointsReachedPub;
+
+/**
  * The obstacle avoider to use.
  */
 ObstacleAvoider* oa;
@@ -58,7 +69,7 @@ ObstacleAvoider* oa;
  */
 void scanCallback(LaserScan scan) {
     Twist t;
-    if (!oa->hasWaypoint()) {
+    if (oa->waypointQueue.empty()) {
         cout << "No waypoints; returning." << endl;
         cmdVelPub.publish(t);
         return;
@@ -76,6 +87,10 @@ void scanCallback(LaserScan scan) {
  */
 void poseCallback(Pose pose) {
     oa->updatePose(pose);
+    while (!oa->arrivedQueue.empty()) {
+        waypointsReachedPub.publish(oa->arrivedQueue.front());
+        oa->arrivedQueue.pop();
+    }
 }
 
 /**
@@ -89,6 +104,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "obstacle_avoidance");
     ros::NodeHandle n;
     cmdVelPub = n.advertise<Twist>("cmd_vel", 1000);
+    waypointsReachedPub = n.advertise<Point>("waypoints_reached", 1000);
     oa = new APF(KOBS, KGOAL);
     ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);

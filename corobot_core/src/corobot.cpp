@@ -7,7 +7,7 @@
 
 namespace corobot {
 
-    double dist(double x, double y) {
+    double length(double x, double y) {
         return sqrt(x * x + y * y);
     }
 

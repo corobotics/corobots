@@ -104,7 +104,7 @@ float LaserLocalization::findObstacle(GridPose pose) {
         y = y1;
         for (x = x1; incX > 0 ? x <= x2 : x >= x2; x += incX) {
             if (gridLookup(x, y) > OCCUPANCY_THRESH) {
-                return dist(x - x1, y - y1);
+                return length(x - x1, y - y1);
             }
             if (d <= 0) {
                 d += incSide;
@@ -120,7 +120,7 @@ float LaserLocalization::findObstacle(GridPose pose) {
         x = x1;
         for (y = y1; incY > 0 ? y <= y2 : y >= y2; y += incY) {
             if (gridLookup(x, y) > OCCUPANCY_THRESH) {
-                return dist(x - x1, y - y1);
+                return length(x - x1, y - y1);
             }
             if (d <= 0) {
                 d += incSide;
