@@ -20,6 +20,7 @@ def reduce_covariance(cov):
             cov[30], cov[31], cov[35])
 
 def odom_to_pose(odom):
+    """Utility function to convert an Odometry message into a Pose message."""
     pose = Pose()
     pose.header = odom.header
     pose.x = odom.pose.pose.position.x
@@ -40,6 +41,7 @@ def odom_to_velocity(odom):
 def odom_callback(odom):
     ekf.data_received("odom", odom_to_pose(odom))
     ekf.update()
+    # we want the previous velocity during the update so the prediction makes sense
     ekf.data_received("velocity", odom_to_velocity(odom))
     pub.publish(ekf.get_pose())
 
@@ -66,11 +68,15 @@ def test():
     a = EKF.column_vector(1, 2, pi / 2)
     # pose in frame B
     b = EKF.column_vector(1, 1, 0)
-    # get the origin of B in A
-    o = EKF.get_offset(a, b)
+    # actual origin of B in A
+    B = EKF.column_vector(2, 1, pi / 2)
+    # calculated origin of B in A
+    BB = EKF.get_offset(a, b)
     # use it to convert b into a
-    t = EKF.coord_transform(b, o)
-    assert numpy.equal(t, a).all()
+    aa = EKF.coord_transform(b, BB)
+    # assert that things match
+    assert numpy.equal(B, BB).all()
+    assert numpy.equal(a, aa).all()
 
 if __name__ == "__main__":
     try:
