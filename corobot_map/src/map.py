@@ -38,6 +38,7 @@ def handle_get_pixel_occupancy(req):
 
 #Utility methods.
 def load_map():
+    """Pulls map data from static_map service provided by map_server"""
     global occMap
     rospy.wait_for_service('static_map')
     try:
@@ -46,15 +47,15 @@ def load_map():
     except rospy.ServiceException as e:
         print("Service call failed: {}".format(e))
 
-#Builds and returns Waypoint[] from the graph data, no neighbor data included.
 def get_waypoints():
+    """Builds and returns a Waypoint[] from the graph data, no neighbor data included."""
     wpList = []
     for k in wps.keys():
         wpList.append( Waypoint(wps[k][0],wps[k][1],k) )
     return wpList
 
-#Builds and returns Waypoint[] of neighbors to the given waypoint name.
 def get_neighbors(nodeName):
+    """Builds and returns Waypoint[] of neighbors to the given waypoint name."""
     neighbors = wps[nodeName][2]
     waypoints = []
     for nbr in neighbors:
@@ -62,8 +63,8 @@ def get_neighbors(nodeName):
         waypoints.append( Waypoint(node[0],node[1],nbr) )
     return waypoints
 
-#Parses waypoint "graph" data and builds a dictionary out of the info.
-def loadWaypoints():
+def load_waypoints():
+    """Parses waypoint "graph" data and builds a dictionary out of the info."""
     with open(wpfile, 'r') as wpFile:
         global wps
         first = True
@@ -80,10 +81,11 @@ def loadWaypoints():
             wps[vals[0].upper()]=float(vals[3]),float(vals[4]),neighborList
     #rospy.logerr(wps)
 
-'''This node is acting as a relay for image-driven map data and then
-ties in our waypoint/location data'''
 def main():
-    loadWaypoints()
+    """This node is acting as a relay for image-driven map data and then
+    ties in our waypoint/location data
+    """
+    load_waypoints()
 
     rospy.init_node('corobot_map_server')
     rospy.Service('get_map', GetCoMap, handle_get_co_map)
