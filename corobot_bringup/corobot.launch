@@ -45,6 +45,9 @@
     </node>
 
     <!-- Map -->
-    <include file="$(find corobot_bringup)/map.launch" />
+    <include file="$(find corobot_bringup)/map.launch"/>
+
+    <!-- Client communication and navigations (server-side of the API) -->
+    <include file="$(find corobot_bringup)/serverAPI.launch/>
 
 </launch>
