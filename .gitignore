@@ -1,9 +1,5 @@
 */bin/*
-*/CMakeCache.txt
-*/CMakeFiles/*
-*/Makefile
-*/cmake_install.cmake
+*/build/*
 *.class
 *.pyc
 __pycache__
-*/build/*
