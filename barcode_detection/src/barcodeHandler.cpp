@@ -80,15 +80,12 @@
 	//Publishing the msg
         std_msgs::String msg;
 
-	Pose pose;
-	pose.x=5;
-	pose.y=6;
-	
+
 	std::stringstream ss;
 	ss <<distanceAvg<<" "<<angleAvg<<" Position: "<< realx <<" "<< realy;
 	msg.data = ss.str();
 	ROS_INFO("%s", msg.data.c_str());
-	test.publish(pose);
+	test.publish(msg);
 	}
     }
 

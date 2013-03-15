@@ -14,12 +14,13 @@ class CSVReader {
 
   public:
 
-    vector < vector < string > >data;
+    vector < vector < string > > data;
     void init();
     void close();
     void readFile();
     string getX(string url);
     string getY(string url);
+    string getOrientation(string url);
 };
 
 #endif

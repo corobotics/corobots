@@ -8,8 +8,9 @@
 #include <cmath>
 #include <string>
 #include "std_msgs/String.h"
-#include "corobot_msgs/Pose.h"
 #include "../include/CSVReader.h"
+
+
 
 #define PI 3.14159265
 
@@ -21,7 +22,7 @@ class pt{
 
 using namespace std;
 using namespace zbar;
-using corobot_msgs::Pose;
+
 
 class BarcodeHandler:public Image::Handler {
 

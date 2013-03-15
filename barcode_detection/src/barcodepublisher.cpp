@@ -6,8 +6,8 @@
 #include <string>
 #include "std_msgs/String.h"
 #include "../include/CSVReader.h"
-#include "corobot_msgs/Pose.h"
 #include "barcodeHandler.h"
+#include "corobot_msgs/Pose.h"
 
 
 #define PI 3.14159265
@@ -16,13 +16,14 @@ using namespace std;
 using namespace zbar;
 using corobot_msgs::Pose;
 
+
 int main(int argc, char **argv)
 {
-
+    
        
     ros::init(argc, argv, "talker");
     ros::NodeHandle n;
-    ros::Publisher chatter_pub = n.advertise <Pose> ("chatter", 1000);
+    ros::Publisher chatter_pub = n.advertise <std_msgs::String > ("chatter", 1000);
 
     // std_msgs::String 
     // create and initialize a Processor

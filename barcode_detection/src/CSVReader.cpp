@@ -1,4 +1,4 @@
-#include "CSVReader.h"
+#include "../include/CSVReader.h"
 
 
 
@@ -39,7 +39,7 @@ void CSVReader::readFile()
 	data.push_back(record);
     }
     if (!infile.eof()) {
-	cerr << "Error!!!n";
+	cerr << "Error!!!";
     }
 }
 
@@ -47,7 +47,7 @@ string CSVReader::getX(string url)
 {
     string temp;
     for (int i = 1; i < data.size(); i++) {
-	temp = data[i][5];
+	temp = data[i][6];
 	if (url.compare(temp) == 0)
 	    return data[i][1];
     }
@@ -58,9 +58,20 @@ string CSVReader::getY(string url)
 {
     string temp;
     for (int i = 1; i < data.size(); i++) {
-	temp = data[i][5];
+	temp = data[i][6];
 	if (url.compare(temp) == 0)
 	    return data[i][2];
+    }
+    return "";
+}
+
+string CSVReader::getOrientation(string url)
+{
+    string temp;
+    for (int i = 1; i < data.size(); i++) {
+	temp = data[i][6];
+	if (url.compare(temp) == 0)
+	    return data[i][5];
     }
     return "";
 }

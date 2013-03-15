@@ -1,16 +1,18 @@
 <package>
-  <description brief="barcode">
+  <description brief="barcode_detection">
 
-     barcode
+     barcode_detection
 
   </description>
   <author>Ravdeep</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/barcode</url>
+  <url>http://ros.org/wiki/barcode_detection</url>
   <depend package="std_msgs"/>
   <depend package="rospy"/>
   <depend package="roscpp"/>
+  <depend package="corobot_msgs"/>
+ 
 
 </package>
 
