@@ -4,7 +4,7 @@ import rospy
 import math
 
 from geometry_msgs.msg import Point
-from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLocation,GetWaypoints
+from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLandmark,GetWaypoints
 from corobot_msgs.msg import Pose,Waypoint
 from Queue import PriorityQueue
 from collections import deque
@@ -33,19 +33,17 @@ def waypoints_reached_callback(wp):
 def goals_callback(new_goal):
     """Goals subscription callback."""
     rospy.wait_for_service('get_waypoints')
-    rospy.wait_for_service('get_location')
 
     try:
         #Publisher to obstacle_avoidance
         pointPub = rospy.Publisher('waypoints',Point)
         
-        getLoc = rospy.ServiceProxy('get_location',GetLocation)
         getWps = rospy.ServiceProxy('get_waypoints',GetWaypoints)
         #Gets waypoints, no neighbor data...maybe I should change that ~Karl
         # wps is a Waypoint[]
         wps = getWps().allWPs
-        end = getLoc(new_goal.name)
-        path = a_star(end.wp,wps)
+        end = new_goal
+        path = a_star(end,wps)
         for node in path:
             pointPub.publish(x=node.x,y=node.y)
             if node.name == end.name:

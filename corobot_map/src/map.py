@@ -24,8 +24,8 @@ def handle_get_waypoints(req):
 def handle_get_neighbors(req):
     return GetNeighborsResponse(get_neighbors(req.curr.name.upper()))
 
-def handle_get_location(req):
-    return GetLocationResponse(Waypoint(x=wps[req.name][0],y=wps[req.name][1],name=req.name))
+def handle_get_landmark(req):
+    return GetLandmarkResponse(Waypoint(x=wps[req.name][0],y=wps[req.name][1],name=req.name))
 
 def handle_get_pixel_occupancy(req):
     if occMap == None:
@@ -91,7 +91,7 @@ def main():
     rospy.Service('get_map', GetCoMap, handle_get_co_map)
     rospy.Service('get_waypoints', GetWaypoints, handle_get_waypoints)
     rospy.Service('get_neighbors', GetNeighbors, handle_get_neighbors)
-    rospy.Service('get_location', GetLocation, handle_get_location)
+    rospy.Service('get_landmark', GetLandmark, handle_get_landmark)
     rospy.Service('get_pixel_occupancy', GetPixelOccupancy, handle_get_pixel_occupancy)
     print("Ready to serve map.")
     rospy.spin()

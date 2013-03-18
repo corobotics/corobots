@@ -6,7 +6,7 @@ import time
 import thread
 
 from geometry_msgs.msg import Point
-from corobot_msgs.srv import GetLocation
+from corobot_msgs.srv import GetLandmark
 from corobot_msgs.msg import Pose,Waypoint
 from collections import deque
 
@@ -57,21 +57,22 @@ def client_comm(socket,addr,point_pub,goal_pub):
             point_pub.publish(x=float(cmd[1]),y=float(cmd[2]))
         elif cmd[0] == 'GOTOLOC':
             #Goto location, no navigation
-            rospy.wait_for_service('get_location')
+            rospy.wait_for_service('get_landmark')
             dest = cmd[1].upper()
             try:
-                getLoc = rospy.ServiceProxy('get_location',GetLocation)
+                get_lmark = rospy.ServiceProxy('get_landmark',GetLandmark)
                 #returns Waypoint
-                resp = getLoc(dest)
+                resp = get_lmark(dest)
                 point_pub.publish(x=resp.wp.x,y=resp.wp.y)
                 goal_queue.append(resp.wp.name)
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
         elif cmd[0] == 'NAVTOLOC':
+            rospy.wait_for_service('get_landmark')
             dest = cmd[1].upper()
             try:
-                getLoc = rospy.ServiceProxy('get_location',GetLocation)
-                resp = getLoc(dest)
+                get_lmark = rospy.ServiceProxy('get_landmark',GetLandmark)
+                resp = get_lmark(dest)
                 goal_pub.publish(resp.wp)
                 goal_queue.append(resp.wp.name)
             except rospy.ServiceException as e:
