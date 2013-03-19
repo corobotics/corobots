@@ -23,6 +23,13 @@ namespace corobot {
         return simplePose;
     }
 
+    geometry_msgs::Point coordTransform(geometry_msgs::Point point, corobot_msgs::Pose offset) {
+        geometry_msgs::Point result;
+        result.x = point.x * cos(offset.theta) - point.y * sin(offset.theta) + offset.x;
+        result.y = point.x * sin(offset.theta) + point.y * cos(offset.theta) + offset.y;
+        return result;
+    }
+
     SimplePose coordTransform(SimplePose state, SimplePose offset) {
         SimplePose result;
         result.x = state.x * cos(offset.a) - state.y * sin(offset.a) + offset.x;

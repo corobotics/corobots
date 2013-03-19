@@ -1,8 +1,11 @@
 #ifndef corobot_h
 #define corobot_h
 
+#include "corobot_msgs/Pose.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Quaternion.h"
+
+#define PI 3.14159265359
 
 namespace corobot {
 
@@ -45,6 +48,7 @@ namespace corobot {
      * @param offset    The origin of the second coord system in the first one.
      * @return          The state converted into the second coord system.
      */
+    geometry_msgs::Point coordTransform(geometry_msgs::Point point, corobot_msgs::Pose offset);
     SimplePose coordTransform(SimplePose state, SimplePose offset);
 
     /**

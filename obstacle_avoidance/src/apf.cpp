@@ -6,9 +6,11 @@
 #include "geometry_msgs/Point.h"
 #include "sensor_msgs/LaserScan.h"
 
+#include "corobot.h"
 #include "apf.h"
 
 using namespace std;
+using corobot::coordTransform;
 using corobot_msgs::Pose;
 using geometry_msgs::Point;
 using sensor_msgs::LaserScan;
@@ -141,49 +143,50 @@ list<Polar> APF::findObjects(list<Polar> points) {
 /**
  * {@inheritDoc}
  */
-Point APF::nav(LaserScan scan) {
+Polar APF::nav(LaserScan scan) {
 
     // Can't do anything without a goal.
     if (waypointQueue.empty()) {
-        Point p;
+        cout << "No waypoints in queue!" << endl;
+        Polar p;
         return p;
     }
 
     // The goal is the head of the waypoint queue.
     Point goal = waypointQueue.front();
+    // Convert the goal into the robot reference frame.
+    Point g = coordTransform(goal, pose);
 
-    cout << "Goal: (" << goal.x << ", " << goal.y << ")" << endl;
-    cout << "Pose: (" << pose.x << ", " << pose.y << ") " << pose.theta << endl;
+    cout << endl;
+    printf("Goal:\t%.2f, %.2f\n", g.x, g.y);
 
-    // The list of "objects" found.
+    // The list of "objects" found; already in the robot reference frame.
     list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
 
     // Stores the object force vector summation. z is ignored.
     Point sum;
-    sum.x = 0;
-    sum.y = 0;
-    double force;
+    sum.x = kg * g.x;
+    sum.y = kg * g.y;
 
-    cout << endl << endl;
     // Sum over all obstacles.
     for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
-        cout << "Obj: " << p->a << ", " << p->d << endl;
-        force = distForce->calc(p->d);
-        sum.x += force * cos(p->a);
-        sum.y += force * sin(p->a);
+        double force = distForce->calc(p->d);
+        printf("Obj:\t%.2f, %.2f (%.2f)\n", p->d * cos(p->a), p->d * sin(p->a), force);
+        sum.x -= ko * force * cos(p->a);
+        sum.y -= ko * force * sin(p->a);
     }
 
-    // Obstacle gain.
-    sum.x *= ko;
-    sum.y *= ko;
-
-    // Angle between the robot and the goal.
-    double theta = atan2(goal.y - pose.y, goal.x - pose.x) - pose.theta;
-
     // Resulting vector.
-    Point res;
-    res.x = kg * cos(theta) - sum.x;
-    res.y = kg * sin(theta) - sum.y;
+    Polar res;
+    res.d = sqrt(sum.x * sum.x + sum.y * sum.y);
+    res.a = atan2(sum.y, sum.x);
+
+    // Don't try to go forward if the angle is more than 45 degrees.
+    if (abs(res.a) > PI / 4) {
+        res.d = 0;
+    }
+
+    printf("Nav:\t<%+.2f, %.2f>\n", res.a, res.d);
 
     return res;
 }

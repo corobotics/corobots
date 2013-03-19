@@ -14,7 +14,7 @@
 #define KGOAL 1.8
 
 /** The obstacle constant to use for APF. */
-#define KOBS 0.5
+#define KOBS 1.0
 
 // How close in meters to get to a waypoint before considered arrived.
 #define ARRIVED_DISTANCE 0.2
@@ -69,16 +69,9 @@ ObstacleAvoider* oa;
  */
 void scanCallback(LaserScan scan) {
     Twist t;
-    if (oa->waypointQueue.empty()) {
-        cout << "No waypoints; returning." << endl;
-        cmdVelPub.publish(t);
-        return;
-    }
-    Point p = oa->nav(scan);
-    cout << "Nav vector: <" << p.x << ", " << p.y << ">" << endl;
-    // Publish.
-    t.linear.x = sqrt(p.x * p.x + p.y * p.y);
-    t.angular.z = atan2(p.y, p.x);
+    Polar p = oa->nav(scan);
+    t.linear.x = p.d;
+    t.angular.z = p.a;
     cmdVelPub.publish(t);
 }
 
@@ -98,6 +91,7 @@ void poseCallback(Pose pose) {
  */
 void waypointCallback(Point waypoint) {
     oa->addWaypoint(waypoint);
+    cout << "Waypoint added: " << waypoint.x << ", " << waypoint.y << endl;
 }
 
 int main(int argc, char** argv) {
