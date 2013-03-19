@@ -1,2 +1,11 @@
-Problem: The turtlebot upstart script couldn't access the USB port.
-Solution: http://answers.ros.org/question/11185/cant-access-turtlebot-through-ttyusb0/?answer=16585#answer-container-16585
+Problem:
+The turtlebot upstart script couldn't access the USB port.
+
+Solution:
+http://answers.ros.org/question/11185/cant-access-turtlebot-through-ttyusb0/?answer=16585#answer-container-16585
+
+Add the following line in the /etc/udev/rules.d/52-turtlebot.rules:
+
+ATTRS{idProduct}=="2008",ATTRS{idVendor}=="0557",MODE="666",GROUP="turtlebot"
+
+2008 and 0557 is either the vendor or product id. You can find that out from lsusb. The problem is that the ttyUSB0 does not have the approprite permission.
