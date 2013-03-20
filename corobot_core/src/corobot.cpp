@@ -23,19 +23,22 @@ namespace corobot {
         return simplePose;
     }
 
-    geometry_msgs::Point coordTransform(geometry_msgs::Point point, corobot_msgs::Pose offset) {
-        geometry_msgs::Point result;
-        result.x = point.x * cos(offset.theta) - point.y * sin(offset.theta) + offset.x;
-        result.y = point.x * sin(offset.theta) + point.y * cos(offset.theta) + offset.y;
-        return result;
+    SimplePose coordTransform(SimplePose aPose, SimplePose aOrigin) {
+        SimplePose bPose;
+        bPose.x = aPose.x * cos(aOrigin.a) - aPose.y * sin(aOrigin.a) + aOrigin.x;
+        bPose.y = aPose.x * sin(aOrigin.a) + aPose.y * cos(aOrigin.a) + aOrigin.y;
+        bPose.a = aPose.a + aOrigin.a;
+        return bPose;
     }
 
-    SimplePose coordTransform(SimplePose state, SimplePose offset) {
-        SimplePose result;
-        result.x = state.x * cos(offset.a) - state.y * sin(offset.a) + offset.x;
-        result.y = state.x * sin(offset.a) + state.y * cos(offset.a) + offset.y;
-        result.a = state.a + offset.a;
-        return result;
+    geometry_msgs::Point rCoordTransform(geometry_msgs::Point aPoint, corobot_msgs::Pose bOrigin) {
+        geometry_msgs::Point bPoint;
+        float dx = aPoint.x - bOrigin.x;
+        float dy = aPoint.y - bOrigin.y;
+        float theta = -bOrigin.theta;
+        bPoint.x = dx * cos(theta) - dy * sin(theta);
+        bPoint.y = dx * sin(theta) + dy * cos(theta);
+        return bPoint;
     }
 
     void matProd(float* a, float* b, float* c, int n, int m, int p) {

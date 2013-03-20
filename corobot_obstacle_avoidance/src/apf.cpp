@@ -10,7 +10,7 @@
 #include "apf.h"
 
 using namespace std;
-using corobot::coordTransform;
+using corobot::rCoordTransform;
 using corobot_msgs::Pose;
 using geometry_msgs::Point;
 using sensor_msgs::LaserScan;
@@ -155,7 +155,7 @@ Polar APF::nav(LaserScan scan) {
     // The goal is the head of the waypoint queue.
     Point goal = waypointQueue.front();
     // Convert the goal into the robot reference frame.
-    Point g = coordTransform(goal, pose);
+    Point g = rCoordTransform(goal, pose);
 
     cout << endl;
     printf("Goal:\t%.2f, %.2f\n", g.x, g.y);
