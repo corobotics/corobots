@@ -47,8 +47,15 @@ public class SimpleSim extends Thread {
     private boolean monitorConfirm = false, monitorConfirmed = false;
     private long monitorTime = 0;
 
+    /**
+     * Constructor, builds the simulated world from a file
+     *
+     * @param paramfile File name with simulation info
+     */
     public SimpleSim(String paramfile) throws Exception {
+        // try our best to create a unique name for this simulated robot
         myName = InetAddress.getLocalHost().getHostName() + "-sim-" + (System.currentTimeMillis()%10000);
+        // to send info back to the server
         responseHandler = new BasicResponseHandler();
         httpclient = new DefaultHttpClient();
         
@@ -58,6 +65,8 @@ public class SimpleSim extends Thread {
         if (!(s.next().equals("FILENAME")))
             throw new Exception ("Expected FILENAME");
         //  FileInputStream mapFile = new FileInputStream(s.next());
+        // Image reading is not guaranteed to be general; it should
+        //   work for Golisano 3rd floor image
         BufferedImage mapImage = ImageIO.read(new File(s.next()));
         if (!(s.next().equals("WIDTH")))
             throw new Exception ("Expected WIDTH");
@@ -90,6 +99,7 @@ public class SimpleSim extends Thread {
 
         mapWin.addColorBlob(rX,rY,Color.RED);
 
+        // We will draw the waypoints here for navigation clarity
         Set<String> mapNames = RobotMap.getNodeNames();
         for (String n : mapNames) {
             mapWin.setColorBlob(RobotMap.getNode(n).pos.getX(), RobotMap.getNode(n).pos.getY(), Color.BLUE);
@@ -99,8 +109,14 @@ public class SimpleSim extends Thread {
         mapWin.setVisible(true);
     }
 
-    // goes from world coordinates (meters, right-handed, 0 at center) 
-    // to image coordinates (pixels, left-handed, 0 at upper left)
+    /**
+     * Transforms a point from world coordinates 
+     *   (meters, right-handed, 0 at center) 
+     * to image coordinates (pixels, left-handed, 0 at upper left)
+     *
+     * @param x X location
+     * @param y Ylocation
+     */
     private int mapAt(double x, double y) {
         int mx = (int)(x/mpp + mapW/2);
             int my = (int)(mapH/2 - y/mpp);
@@ -109,6 +125,9 @@ public class SimpleSim extends Thread {
         return theWorld[mx][my];
     }
 
+    /**
+     * Opens sockets to the server (user) and monitor
+     */
     public void openSockets() throws Exception {
         ServerSocket userSock = new ServerSocket(USER_PORT);
         // if exception, will not get past here
@@ -120,6 +139,13 @@ public class SimpleSim extends Thread {
 
     }
 
+    /**
+     * Draws a straight line from robot's current position and
+     *  sees whether the straight line is obstacle-free
+     *
+     * @param n Node to draw the line to
+     * @return Navigable or not
+     */
     private boolean navigableTo(MapNode n) {
         double cx = rPos.getX(), cy = rPos.getY();
         double dx = n.pos.getX()-rPos.getX(), dy = n.pos.getY()-rPos.getY();
@@ -141,6 +167,9 @@ public class SimpleSim extends Thread {
         return true;
     }
 
+    /**
+     * Contains data needed to do the A* search
+     */
     class AStarNode implements Comparable<AStarNode>{
         double f,g,h;
         MapNode n;
@@ -155,6 +184,13 @@ public class SimpleSim extends Thread {
         }
     }
 
+    /**
+     * Standard A* search.  Search starts at any node visible from
+     *  robot's current location.
+     * 
+     * @param dest Destination of search
+     * @return List of nodes along the path
+     */
     private LinkedList<MapNode> aStar(MapNode dest) {
         // first find the start of the search
         System.out.println("Planning to " + dest.name);
@@ -171,6 +207,7 @@ public class SimpleSim extends Thread {
                 preds.put(n.name,null);
             }
         }
+        // should always have a node visible?
         if (queue.isEmpty())
             throw new RuntimeException("Crap, can't find a nearby waypoint to start A*");
         while (!queue.isEmpty()) {
@@ -218,12 +255,19 @@ public class SimpleSim extends Thread {
         return null;
     }
 
+    /**
+     * Just a test to see if the robot is at its current destination
+     */
     private boolean atDestination() {
         double deltaX = dest.getX() - rPos.getX();
         double deltaY = dest.getY() - rPos.getY();
         return (Math.abs(deltaX) < DEST_EPS && Math.abs(deltaY) < DEST_EPS);
     }
-
+    
+    /** 
+     * Main loop of simulation
+     *
+     */
     public void run() {
         // spin and update position based on data from user-comm thread
         while (true) {
@@ -271,148 +315,165 @@ public class SimpleSim extends Thread {
         }
     }
 
+    /**
+     * Class for listening to the user socket, where the commands come in.
+     */
     class UserListener extends Thread {
-    private ServerSocket ss;
-    public UserListener(ServerSocket ss) {
-        this.ss = ss;
-    }
+        private ServerSocket ss;
+        public UserListener(ServerSocket ss) {
+            this.ss = ss;
+        }
 
-    public void run() {
-        while (true) {
-        try {
-            System.out.println("Waiting for user connection");
-            Socket s = ss.accept();
-            // make sure it's localhost
-            PrintWriter out = new PrintWriter(s.getOutputStream());
-            BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            boolean tellArrive = false;
-            while(s.isConnected()) {
-            // get a message
-            // depending on its type, set a value or respond
-            String message = in.readLine();
-            if (message == null) break;
-            System.out.println(message);
-            String[] parts = message.split(" ");
-            System.out.println("New message: " + parts[0]);
-            if (parts[0].equals("GETPOS")) {
-                out.println("POS " + rPos.getX() + " " + rPos.getY());
-                out.flush();
-            } else if (parts[0].equals("DISPLAY")) {
-                monitorText = message;
-            } else if (parts[0].equals("CONFIRM")) {
-                monitorConfirm = true;
-                int waiting = Integer.parseInt(parts[1]);
-                monitorTime = System.currentTimeMillis() + 1000 * waiting;
-            } else if (parts[0].equals("GOTOXY")) {
-                double newX = Double.parseDouble(parts[1]);
-                double newY = Double.parseDouble(parts[2]);
-                // maybe do some sanity checking here
-                // but not right now
-                dest = new Point(newX, newY);
-            } else if (parts[0].equals("GOTOLOC")) {
-                MapNode dnode = RobotMap.getNode(parts[1]);
-                // should have been checked client-side, but to be safe:
-                if (dnode != null) {
-                System.out.println("Going to " + parts[1] + " at " + dnode.pos);
-                dest = new Point(dnode.pos);
-                }
-            } else if (parts[0].equals("NAVTOLOC")) {
-                MapNode dnode = RobotMap.getNode(parts[1]);
-                if (dnode != null) {
-                List<MapNode> path = aStar(dnode);
-                if (path == null)
-                    System.err.println("Path search failed!");
-                else {
-                    System.out.println("Going to " + parts[1] + " using the path:");
-                    for (MapNode n : path) {
-                    System.out.println(n.name + " at " + n.pos);
-                    dests.add(new Point(n.pos));
-                    }
-                }
-                }
-            } else if (parts[0].equals("QUERY_ARRIVE")) {
-                // wait here since if we loop we will block
-                // until next message.
-                Point waitFor = dest;
-                // if we're navigating, wait until the end of the navigation
-                if (!dests.isEmpty()) {
-                waitFor = dests.getLast();
-                }
-                // if crashing, will be at destination and further dests deleted
-                // so even if crashing along a plan, this will become false
-                while (!atDestination() || dests.contains(waitFor)) {
+        /**
+         * Main loop
+         */
+        public void run() {
+            while (true) {
                 try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) { }
+                    System.out.println("Waiting for user connection");
+                    Socket s = ss.accept();
+                    // make sure it's localhost
+                    PrintWriter out = new PrintWriter(s.getOutputStream());
+                    BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                    boolean tellArrive = false;
+                    while(s.isConnected()) {
+                        // get a message
+                        // depending on its type, set a value or respond
+                        String message = in.readLine();
+                        if (message == null) break;
+                        System.out.println(message);
+                        String[] parts = message.split(" ");
+                        System.out.println("New message: " + parts[0]);
+                        if (parts[0].equals("GETPOS")) {
+                            out.println("POS " + rPos.getX() + " " + rPos.getY());
+                            out.flush();
+                        } else if (parts[0].equals("DISPLAY")) {
+                            monitorText = message;
+                        } else if (parts[0].equals("CONFIRM")) {
+                            monitorConfirm = true;
+                            int waiting = Integer.parseInt(parts[1]);
+                            monitorTime = System.currentTimeMillis() + 1000 * waiting;
+                        } else if (parts[0].equals("GOTOXY")) {
+                            double newX = Double.parseDouble(parts[1]);
+                            double newY = Double.parseDouble(parts[2]);
+                            // maybe do some sanity checking here
+                            // but not right now
+                            dest = new Point(newX, newY);
+                        } else if (parts[0].equals("GOTOLOC")) {
+                            MapNode dnode = RobotMap.getNode(parts[1]);
+                            // should have been checked client-side, but to be safe:
+                            if (dnode != null) {
+                                System.out.println("Going to " + parts[1] + " at " + dnode.pos);
+                                dest = new Point(dnode.pos);
+                            }
+                        } else if (parts[0].equals("NAVTOLOC")) {
+                            MapNode dnode = RobotMap.getNode(parts[1]);
+                            if (dnode != null) {
+                                List<MapNode> path = aStar(dnode);
+                                if (path == null)
+                                    System.err.println("Path search failed!");
+                                else {
+                                    System.out.println("Going to " + parts[1] + " using the path:");
+                                    for (MapNode n : path) {
+                                        System.out.println(n.name + " at " + n.pos);
+                                        dests.add(new Point(n.pos));
+                                    }
+                                }
+                            }
+                        } else if (parts[0].equals("QUERY_ARRIVE")) {
+                            // wait here since if we loop we will block
+                            // until next message.
+                            Point waitFor = dest;
+                            // if we're navigating, wait until the end of the navigation
+                            if (!dests.isEmpty()) {
+                                waitFor = dests.getLast();
+                            }
+                            // if crashing, will be at destination and further dests deleted
+                            // so even if crashing along a plan, this will become false
+                            while (!atDestination() || dests.contains(waitFor)) {
+                                try {
+                                    Thread.sleep(1000);
+                                } catch (InterruptedException e) { }
+                            }
+                            // if crashed, destination will have changed
+                            // otherwise, the current destination will be the one we waited for
+                            //   (whether the only or the last of several)
+                            if (dest == waitFor)
+                                out.println("ARRIVE");
+                            else
+                                out.println("GOTOFAIL");
+                            out.flush();
+                        }
+                    }
+                } catch (IOException e) {
+                    System.err.println("Monitor socket failure: " + e);
                 }
-                // if crashed, destination will have changed
-                // otherwise, the current destination will be the one we waited for
-                //   (whether the only or the last of several)
-                if (dest == waitFor)
-                out.println("ARRIVE");
-                else
-                out.println("GOTOFAIL");
-                out.flush();
             }
-            }
-        } catch (IOException e) {
-            System.err.println("Monitor socket failure: " + e);
         }
-        }
-    }
     }
 
+    /**
+     * Class for communication with a monitor
+     */
     class MonitorListener extends Thread {
         private ServerSocket ss;
         public MonitorListener(ServerSocket ss) {
             this.ss = ss;
         }
-
+        
+        /**
+         * Main loop for monitor communication
+         */
         public void run() {
             while(true) {
-            try {
-                System.out.println("Waiting for monitor connection");
-                Socket s = ss.accept();
-                // make sure it's localhost
-                System.out.println("Obtained monitor connection");
-                PrintWriter out = new PrintWriter(s.getOutputStream());
-                while(s.isConnected()) {
-                // send position to monitor
-                out.println("POS " + rPos.getX() + " " + rPos.getY());
-                out.println("DEST " + dest.getX() + " " + dest.getY());
-                out.flush();
-                if (monitorText != "") {
-                    out.println(monitorText);
-                    monitorText = "";
-                }
-                if (monitorConfirm) {
-                    out.println("CONFIRM"); // this needs to be asynchronous...
-                }
-                // sleep
                 try {
-                    sleep(1000);
-                } catch (InterruptedException e) { }
+                    System.out.println("Waiting for monitor connection");
+                    Socket s = ss.accept();
+                    // make sure it's localhost
+                    System.out.println("Obtained monitor connection");
+                    PrintWriter out = new PrintWriter(s.getOutputStream());
+                    while(s.isConnected()) {
+                        // send position to monitor
+                        out.println("POS " + rPos.getX() + " " + rPos.getY());
+                        out.println("DEST " + dest.getX() + " " + dest.getY());
+                        out.flush();
+                        if (monitorText != "") {
+                            out.println(monitorText);
+                            monitorText = "";
+                        }
+                        if (monitorConfirm) {
+                            out.println("CONFIRM"); // this needs to be asynchronous...
+                        }
+                        // sleep
+                        try {
+                            sleep(1000);
+                        } catch (InterruptedException e) { }
+                    }
+                } catch (IOException e) {
+                    System.err.println("Monitor socket failure: " + e);
                 }
-            } catch (IOException e) {
-                System.err.println("Monitor socket failure: " + e);
-            }
             }
         }
     }
+    
 
+    /**
+     * Entry point
+     * @param args File name for simulation parameters (optional)
+     */
     public static void main(String[] args) {
-
+        
         try {
             String filename = "params.txt";
             if (args.length > 0)
-            filename = args[1];
-
+                filename = args[1];
+            
             SimpleSim theSim = new SimpleSim(filename);
             
             theSim.openSockets();
-
+            
             theSim.start(); 
-
+            
         } catch (IOException e) {
             System.out.println("IO Exception occurred: " + e);
         } catch (Exception e) {
@@ -420,5 +481,5 @@ public class SimpleSim extends Thread {
             e.printStackTrace();
         }
     }
-
+    
 }

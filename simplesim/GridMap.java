@@ -4,6 +4,8 @@ import java.awt.image.BufferedImage;
 
 /**
  * Simple poke-able grayscale image for displaying grid maps.
+ * Now does a sort of double-buffer with a background image so
+ *  that colored blobs can be drawn and erased.
  *
  * @author zjb 3/09
  */
@@ -68,6 +70,12 @@ public class GridMap extends JFrame {
 	setRGB(x,y,rgbval);
     }
 
+    /**
+     * Update the map with the given RGB value.
+     * @param x X location to update (global coords, in meters)
+     * @param y Y location to update (global coords, in meters)
+     * @param rgbval New map value (RGB)
+     */
     private void setRGB(double x, double y, int rgbval) {
         int imx = (int)(x/scale + imwidth/2);
         // flip y to go from right-handed world to left-handed image
@@ -79,10 +87,22 @@ public class GridMap extends JFrame {
 	}
     } 
 
+    /**
+     * Update the map with a particular color.
+     * @param x X location to update (global coords, in meters)
+     * @param y Y location to update (global coords, in meters)
+     * @param c Color to set 
+     */
     void setColor(double x, double y, Color c) {
 	setRGB(x,y,c.getRGB());
     }
 
+    /**
+     * Put a colored dot on the actual map
+     * @param x X loc of center of dot (global coords, in meters)
+     * @param y Y loc of center of dot (global coords, in meters)
+     * @param c Color to set 
+     */
     void setColorBlob(double x, double y, Color c) {
         int cx = (int)(x/scale + imwidth/2);
         // flip y to go from right-handed world to left-handed image
@@ -96,6 +116,12 @@ public class GridMap extends JFrame {
 		}
     }
 
+    /**
+     * Put a colored dot on top of the map (so that it can later be erased).
+     * @param x X loc of center of dot (global coords, in meters)
+     * @param y Y loc of center of dot (global coords, in meters)
+     * @param c Color to set 
+     */
     void addColorBlob(double x, double y, Color c) {
         int cx = (int)(x/scale + imwidth/2);
         // flip y to go from right-handed world to left-handed image
@@ -108,6 +134,11 @@ public class GridMap extends JFrame {
 		}
     }
 
+    /**
+     * Erase an area of the map (i.e. set it to the color of the background map)
+     * @param x X loc of center of area (global coords, in meters)
+     * @param y Y loc of center of area (global coords, in meters)
+     */
     void eraseBlob(double x, double y) {
         int cx = (int)(x/scale + imwidth/2);
         // flip y to go from right-handed world to left-handed image

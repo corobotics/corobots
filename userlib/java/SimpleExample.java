@@ -1,5 +1,16 @@
+/**
+ * Simple example to show some use of the corobot user API.
+ * 
+ * @author Zack Butler
+ *
+ */
 public class SimpleExample {
 
+    /**
+     * Main method (all the code(
+     * 
+     * @param args (ignored)
+     */
     public static void main(String[] args) {
         
         Robot robot = new Robot();
