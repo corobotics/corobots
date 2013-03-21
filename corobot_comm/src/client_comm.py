@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-import roslib; roslib.load_manifest('corobot_comm')
-import rospy
 import socket
 import time
 import threading
+from collections import deque
 
+import roslib; roslib.load_manifest('corobot_comm')
+import rospy
 from geometry_msgs.msg import Point
+
 from corobot_msgs.srv import GetLandmark
 from corobot_msgs.msg import Pose,Landmark
-from collections import deque
 
 #Robot's current position.  Defaults to a test position.
 my_pose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
@@ -92,9 +93,9 @@ def client_comm(addr,point_pub,goal_pub):
                 rospy.logerr("Service call failed: {}".format(e))
 
 def main():
-    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serversocket.bind((socket.gethostname(),15001))
-    serversocket.listen(1)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((socket.gethostname(),15001))
+    server_socket.listen(1)
 
     rospy.loginfo("Listening for client robots.")
     rospy.init_node('corobot_client_comm')
@@ -107,7 +108,7 @@ def main():
     rospy.Subscriber('goals_reached',Landmark,goals_reached_callback)
 
     while True:
-        (client, clAddr) = serversocket.accept()
+        (client, clAddr) = server_socket.accept()
         global cl_socket
         cl_socket = client
         #On connection accept, go into ROS node method

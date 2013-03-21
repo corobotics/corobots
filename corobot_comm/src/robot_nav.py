@@ -1,20 +1,21 @@
 #!/usr/bin/env python
-import roslib; roslib.load_manifest('corobot_comm')
-import rospy
 import math
-
-from geometry_msgs.msg import Point
-from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLandmark,GetLandmarks
-from corobot_msgs.msg import Pose,Landmark
 from Queue import PriorityQueue
 from collections import deque
+
+import roslib; roslib.load_manifest('corobot_comm')
+import rospy
+from geometry_msgs.msg import Point
+
+from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLandmark,GetLandmarks
+from corobot_msgs.msg import Pose,Landmark
 
 #Robot's current position.  Defaults to a test position.
 my_pose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
 
 #Used to track set goals from a user.
 # Queue of (node,isGoal?) pairs
-wpQueue = deque()
+wp_queue = deque()
 
 def pose_callback(pose):
     """Pose subscription callback"""
@@ -23,32 +24,32 @@ def pose_callback(pose):
 
 def waypoints_reached_callback(wp):
     """Wayoints Reached subscription callback"""
-    top = wpQueue[0]
+    top = wp_queue[0]
     if top[0].x == wp.x and top[0].y == wp.y:
-        wpQueue.popleft()
+        wp_queue.popleft()
         if top[1] == True:
             goalReachedPub = rospy.Publisher('goals_reached',Landmark)
             goalReachedPub.publish(wp)
 
 def goals_callback(new_goal):
     """Goals subscription callback."""
-    rospy.wait_for_service('get_waypoints')
+    rospy.wait_for_service('get_landmarks')
 
     try:
         #Publisher to obstacle_avoidance
-        pointPub = rospy.Publisher('waypoints',Point)
+        point_pub = rospy.Publisher('waypoints',Point)
         
-        getWps = rospy.ServiceProxy('get_waypoints',GetLandmarks)
+        get_wps_srv = rospy.ServiceProxy('get_landmarks',GetLandmarks)
         #Gets waypoints, no neighbor data...maybe I should change that ~Karl
         # wps is a Landmark[]
-        wps = getWps().allWPs
+        wps = get_wps_srv().allWPs
         end = new_goal
         path = a_star(end,wps)
         for node in path:
-            pointPub.publish(x=node.x,y=node.y)
+            point_pub.publish(x=node.x,y=node.y)
             if node.name == end.name:
-                wpQueue.append((node,True))
-            wpQueue.append((node,False))
+                wp_queue.append((node,True))
+            wp_queue.append((node,False))
     except rospy.ServiceException as e:
         rospy.logerr("Service call failed: {}".format(e))
 
@@ -131,17 +132,17 @@ def a_star(dest,wps):
     rospy.logdebug("LandmarkClosestToMe: {}".format(near.name))
     preds = {near.name:None}
     pq = PriorityQueue()
-    openSet = [near]
+    open_set = [near]
     visited = []
     #dict holding {waypoint name:distance from robot to waypoint} pairs
-    gScores = {near.name:point_distance(my_pose.x,my_pose.y,near.x,near.y)}
+    g_scores = {near.name:point_distance(my_pose.x,my_pose.y,near.x,near.y)}
     #pq elements are (g+h,node)
     # g=distRobotWp, h=distWpGoal
-    pq.put((gScores[near.name]+point_distance(near.x,near.y,dest.x,dest.y),
+    pq.put((g_scores[near.name]+point_distance(near.x,near.y,dest.x,dest.y),
         near))
     #Set up persistent connection to the GetNeighbors service
     rospy.wait_for_service('get_neighbors')
-    getNeighbors = rospy.ServiceProxy('get_neighbors',GetNeighbors,persistent=True)
+    get_nbrs_srv = rospy.ServiceProxy('get_neighbors',GetNeighbors,persistent=True)
     while(not(pq.empty())):
         curr = pq.get()
         cnode = curr[1]
@@ -156,26 +157,26 @@ def a_star(dest,wps):
                 pnode = preds[pname]
             return path
 
-        openSet.remove(cnode)
+        open_set.remove(cnode)
         visited.append(cnode)
-        for nbr in getNeighbors(cnode).neighbors:
+        for nbr in get_nbrs_srv(cnode).neighbors:
             if(nbr in visited):
                 continue
-            tentG = gScores[cnode.name]+point_distance(cnode.x,cnode.y,nbr.x,nbr.y)
-            if(not(nbr in openSet)or(tentG<gScores[nbr.name])):
+            tentG = g_scores[cnode.name]+point_distance(cnode.x,cnode.y,nbr.x,nbr.y)
+            if(not(nbr in open_set)or(tentG<g_scores[nbr.name])):
                 preds[nbr.name]=cnode
-                gScores[nbr.name]=tentG
-                pq.put((gScores[nbr.name]+point_distance(nbr.x,nbr.y,dest.x,dest.y),nbr))
-                if(not(nbr in openSet)):
-                    openSet.append(nbr)
+                g_scores[nbr.name]=tentG
+                pq.put((g_scores[nbr.name]+point_distance(nbr.x,nbr.y,dest.x,dest.y),nbr))
+                if(not(nbr in open_set)):
+                    open_set.append(nbr)
     #Cleanup persistent service connection.
-    getNeighbors.close()
+    get_nbrs_srv.close()
     return []
 
 def main():
     rospy.init_node('robot_navigator', log_level=rospy.DEBUG)
     #Publisher to obstacle_avoidance
-    pointPub = rospy.Publisher('waypoints',Point)
+    point_pub = rospy.Publisher('waypoints',Point)
     rospy.Subscriber('goals',Landmark,goals_callback)
     rospy.Subscriber('pose',Pose,pose_callback)
 
