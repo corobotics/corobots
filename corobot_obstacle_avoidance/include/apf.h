@@ -13,18 +13,6 @@
 #include "obstacle_avoidance.h"
 
 /**
- * Helper struct for 2D polar coordinates.
- */
-typedef struct {
-    /** Distance (radius) in meters. */
-    float d;
-    /** Angle in radians. */
-    float a;
-    /** Only positive distances are allowed by convention. */
-    bool isValid() const;
-} Polar;
-
-/**
  * Interface for a "force calculation", which is used to determine the
  * relationship between the distance of an object and its effect on the APF.
  */
@@ -83,7 +71,7 @@ public:
     /**
      * {@inheritDoc}
      */
-    virtual geometry_msgs::Point nav(sensor_msgs::LaserScan scan);
+    virtual Polar nav(sensor_msgs::LaserScan scan);
 
 private:
     /**

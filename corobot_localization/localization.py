@@ -2,7 +2,7 @@
 
 from math import atan2
 
-import roslib; roslib.load_manifest("corobot_ekf")
+import roslib; roslib.load_manifest("corobot_localization")
 import rospy
 
 from corobot_msgs.msg import Pose

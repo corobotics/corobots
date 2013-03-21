@@ -1,5 +1,5 @@
-#ifndef laser_localization_h
-#define laser_localization_h
+#ifndef corobot_laserloc_h
+#define corobot_laserloc_h
 
 #include <vector>
 
@@ -9,8 +9,6 @@
 #include "sensor_msgs/LaserScan.h"
 
 #include "corobot.h"
-
-#define PI 3.14159265
 
 #define OCCUPANCY_THRESH 30
 
@@ -189,4 +187,4 @@ private:
 
 };
 
-#endif /* laser_localization_h */
+#endif /* corobot_laserloc_h */

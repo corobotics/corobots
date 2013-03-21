@@ -1,8 +1,11 @@
 #ifndef corobot_h
 #define corobot_h
 
+#include "corobot_msgs/Pose.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Quaternion.h"
+
+#define PI 3.14159265359
 
 namespace corobot {
 
@@ -39,13 +42,22 @@ namespace corobot {
     SimplePose geomPoseToSimplePose(geometry_msgs::Pose p);
 
     /**
-     * Transforms a vector from one reference frame to another.
+     * Transforms a pose from one reference frame to another.
      *
-     * @param state     The original state in the first coordinate system.
-     * @param offset    The origin of the second coord system in the first one.
-     * @return          The state converted into the second coord system.
+     * @param aPose     The pose in frame A.
+     * @param aOrigin   The origin of frame A in frame B.
+     * @return          The pose converted into frame B.
      */
-    SimplePose coordTransform(SimplePose state, SimplePose offset);
+    SimplePose coordTransform(SimplePose aPose, SimplePose aOrigin);
+
+    /**
+     * Transforms a point from one reference frame to another.
+     *
+     * @param aPoint    The point in frame A.
+     * @param bOrigin   The origin of frame B in frame A.
+     * @return          The point converted into frame B.
+     */
+    geometry_msgs::Point rCoordTransform(geometry_msgs::Point aPoint, corobot_msgs::Pose bOrigin);
 
     /**
      * Perform a matrix multiplication with matrices stored as flat arrays.

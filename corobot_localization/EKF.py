@@ -123,7 +123,7 @@ class EKF(object):
                 y_map = EKF.coord_transform(y, odom_offset)
                 old_y_map = EKF.coord_transform(old_y, odom_offset)
                 W_map = EKF.coord_transform(W, odom_offset)
-                old_W_map = EKF.coord_transform(old_w, odom_offset)
+                old_W_map = EKF.coord_transform(old_W, odom_offset)
                 # apply the difference between them to the old state.
                 y = y_map - old_y_map + old_x
                 W = W_map - old_W_map + old_P

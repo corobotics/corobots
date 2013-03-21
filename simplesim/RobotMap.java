@@ -1,11 +1,19 @@
 import java.util.*;
 import java.io.*;
 
+/**
+ * Class to hold map data for use by the simulator 
+ *  (not the same as the map class in the user API)
+ */
 public class RobotMap {
 
+    // the map used in the methods (singleton)
     private static RobotMap theMap = new RobotMap();
     private HashMap<String,MapNode> nodes;
 
+    /**
+     * Private constructor for the singleton pattern.
+     */
     private RobotMap() {
 	try {
 	    Scanner input = new Scanner(new File("../corobot_map/map/waypoints.csv"));
@@ -32,6 +40,12 @@ public class RobotMap {
 	}
     }
     
+    /**
+     * For use in planning: all nodes, ordered by distance from given point
+     *  Does not consider obstacles.
+     * @param p Point to measure from
+     * @return Map of distance to node, including all nodes
+     */
     public static TreeMap<Double,MapNode> getNodesFromLoc(Point p) {
 	TreeMap<Double,MapNode> pts = new TreeMap<Double,MapNode>();
 	for (MapNode n : theMap.nodes.values()) {
@@ -41,18 +55,34 @@ public class RobotMap {
 	return pts;
     }
 
+    /**
+     * All the waypoint nodes
+     * @return Map of name -> node
+     */
     public static HashMap<String,MapNode> getNodes() {
 	return theMap.nodes;
     }
 
+    /**
+     * Just the names of the waypoints
+     * @return Set of names
+     */
     public static Set<String> getNodeNames() {
 	return theMap.nodes.keySet();
     }
 
+    /**
+     * Node by name
+     * @return node
+     */
     public static MapNode getNode(String name) {
 	return theMap.nodes.get(name);
     }
 }
+
+/**
+ * Map node for use internally
+ */
 class MapNode {
     String name;
     Point pos; // in meters
