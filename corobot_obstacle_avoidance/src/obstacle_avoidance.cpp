@@ -11,7 +11,7 @@
 #include "apf.h"
 
 /** The goal constant to use for APF. */
-#define KGOAL 1.8
+#define KGOAL 1.0
 
 /** The obstacle constant to use for APF. */
 #define KOBS 1.0
