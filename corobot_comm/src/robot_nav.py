@@ -4,8 +4,8 @@ import rospy
 import math
 
 from geometry_msgs.msg import Point
-from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLandmark,GetWaypoints
-from corobot_msgs.msg import Pose,Waypoint
+from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLandmark,GetLandmarks
+from corobot_msgs.msg import Pose,Landmark
 from Queue import PriorityQueue
 from collections import deque
 
@@ -27,7 +27,7 @@ def waypoints_reached_callback(wp):
     if top[0].x == wp.x and top[0].y == wp.y:
         wpQueue.popleft()
         if top[1] == True:
-            goalReachedPub = rospy.Publisher('goals_reached',Waypoint)
+            goalReachedPub = rospy.Publisher('goals_reached',Landmark)
             goalReachedPub.publish(wp)
 
 def goals_callback(new_goal):
@@ -38,9 +38,9 @@ def goals_callback(new_goal):
         #Publisher to obstacle_avoidance
         pointPub = rospy.Publisher('waypoints',Point)
         
-        getWps = rospy.ServiceProxy('get_waypoints',GetWaypoints)
+        getWps = rospy.ServiceProxy('get_waypoints',GetLandmarks)
         #Gets waypoints, no neighbor data...maybe I should change that ~Karl
-        # wps is a Waypoint[]
+        # wps is a Landmark[]
         wps = getWps().allWPs
         end = new_goal
         path = a_star(end,wps)
@@ -91,13 +91,13 @@ def point_distance(wp1x, wp1y, wp2x, wp2y):
     return math.sqrt(math.pow(wp2x-wp1x, 2)+math.pow(wp2y-wp1y, 2))
 
 def find_nearest_navigable(wps):
-    """Find nearest Waypoint to the current value of my_pose
+    """Find nearest Landmark to the current value of my_pose
 
     Arguments:
-    wps -- Waypoint[] with all waypoints in the graph/map
+    wps -- Landmark[] with all waypoints in the graph/map
 
-    Returns a 2-tuple (float,Waypoint):
-        (distance from current position to nearest navigable Waypoint, nearest navigable Waypoint)
+    Returns a 2-tuple (float,Landmark):
+        (distance from current position to nearest navigable Landmark, nearest navigable Landmark)
         None if no nearby waypoint can be found
     """
     closest = None
@@ -117,18 +117,18 @@ def a_star(dest,wps):
     """Perform A* to produce path of waypoints to given dest from nearest map waypoint.
 
     Arguments:
-    dest -- Destination Waypoint
-    wps  -- List of Waypoints (Waypoint[]) representing full list of map waypoints.
+    dest -- Destination Landmark
+    wps  -- List of Landmarks (Landmark[]) representing full list of map waypoints.
 
     Returns:
-        Waypoint[] representing path to follow to the destination.
+        Landmark[] representing path to follow to the destination.
         Empty list if no path can be found.
     """
     near = find_nearest_navigable(wps)
     if near == None:
         rospy.logerr("AStar navigation failed, couldn't find a starting node.")
         return []
-    rospy.logdebug("WaypointClosestToMe: {}".format(near.name))
+    rospy.logdebug("LandmarkClosestToMe: {}".format(near.name))
     preds = {near.name:None}
     pq = PriorityQueue()
     openSet = [near]
@@ -176,7 +176,7 @@ def main():
     rospy.init_node('robot_navigator', log_level=rospy.DEBUG)
     #Publisher to obstacle_avoidance
     pointPub = rospy.Publisher('waypoints',Point)
-    rospy.Subscriber('goals',Waypoint,goals_callback)
+    rospy.Subscriber('goals',Landmark,goals_callback)
     rospy.Subscriber('pose',Pose,pose_callback)
 
     rospy.spin()

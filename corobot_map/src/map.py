@@ -5,7 +5,7 @@ import sys
 import math
 
 from nav_msgs.srv import GetMap
-from corobot_msgs.msg import Waypoint
+from corobot_msgs.msg import Landmark
 from corobot_msgs.srv import *
 
 wpfile = roslib.packages.get_pkg_dir('corobot_map') + "/map/waypoints.csv"
@@ -19,13 +19,13 @@ def handle_get_co_map(req):
     return GetCoMapResponse(occMap, get_waypoints())
 
 def handle_get_waypoints(req):
-    return GetWaypointsResponse(get_waypoints())
+    return GetLandmarksResponse(get_waypoints())
 
 def handle_get_neighbors(req):
     return GetNeighborsResponse(get_neighbors(req.curr.name.upper()))
 
 def handle_get_landmark(req):
-    return GetLandmarkResponse(Waypoint(x=wps[req.name][0],y=wps[req.name][1],name=req.name))
+    return GetLandmarkResponse(Landmark(x=wps[req.name][0],y=wps[req.name][1],name=req.name))
 
 def handle_get_pixel_occupancy(req):
     if occMap == None:
@@ -48,19 +48,19 @@ def load_map():
         print("Service call failed: {}".format(e))
 
 def get_waypoints():
-    """Builds and returns a Waypoint[] from the graph data, no neighbor data included."""
+    """Builds and returns a Landmark[] from the graph data, no neighbor data included."""
     wpList = []
     for k in wps.keys():
-        wpList.append( Waypoint(wps[k][0],wps[k][1],k) )
+        wpList.append( Landmark(wps[k][0],wps[k][1],k) )
     return wpList
 
 def get_neighbors(nodeName):
-    """Builds and returns Waypoint[] of neighbors to the given waypoint name."""
+    """Builds and returns Landmark[] of neighbors to the given waypoint name."""
     neighbors = wps[nodeName][2]
     waypoints = []
     for nbr in neighbors:
         node = wps[nbr]
-        waypoints.append( Waypoint(node[0],node[1],nbr) )
+        waypoints.append( Landmark(node[0],node[1],nbr) )
     return waypoints
 
 def load_waypoints():
@@ -89,7 +89,7 @@ def main():
 
     rospy.init_node('corobot_map_server')
     rospy.Service('get_map', GetCoMap, handle_get_co_map)
-    rospy.Service('get_waypoints', GetWaypoints, handle_get_waypoints)
+    rospy.Service('get_waypoints', GetLandmarks, handle_get_waypoints)
     rospy.Service('get_neighbors', GetNeighbors, handle_get_neighbors)
     rospy.Service('get_landmark', GetLandmark, handle_get_landmark)
     rospy.Service('get_pixel_occupancy', GetPixelOccupancy, handle_get_pixel_occupancy)
