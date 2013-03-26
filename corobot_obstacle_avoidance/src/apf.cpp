@@ -10,36 +10,15 @@
 #include "apf.h"
 
 using namespace std;
+using corobot::length;
 using corobot::rCoordTransform;
 using corobot_msgs::Pose;
 using geometry_msgs::Point;
 using sensor_msgs::LaserScan;
 
-/**
- * {@inheritDoc}
- */
-float InversePowerForce::calc(const float& dist) {
-    return pow(dist, -exp);
-}
-
 bool Polar::isValid() const {
     return d >= 0.0;
 }
-
-/**
- * {@inheritDoc}
- */
-APF::APF(const float& ko, const float& kg) :
-    ko(ko), kg(kg)
-{
-    distForce = new InversePowerForce(2.0);
-};
-
-/**
- * {@inheritDoc}
- */
-APF::APF(const float& ko, const float& kg, ForceCalc* distForce) :
-    ko(ko), kg(kg), distForce(distForce) {};
 
 /**
  * {@inheritDoc}
@@ -153,54 +132,61 @@ Polar APF::nav(LaserScan scan) {
     }
 
     // The goal is the head of the waypoint queue.
-    Point goal = waypointQueue.front();
+    Point goalInMap = waypointQueue.front();
     // Convert the goal into the robot reference frame.
-    Point g = rCoordTransform(goal, pose);
+    Point goal = rCoordTransform(goalInMap, pose);
 
     cout << endl;
-    printf("GoalReal:\t%.2f, %.2f\n", goal.x, goal.y);
+    printf("GoalMap:\t%.2f, %.2f\n", goalInMap.x, goalInMap.y);
     printf("Pose:\t%.2f, %.2f, %+.2f\n", pose.x, pose.y, pose.theta);
-    printf("Goal:\t%.2f, %.2f\n", g.x, g.y);
+    printf("Goal:\t%.2f, %.2f\n", goal.x, goal.y);
 
     // The list of "objects" found; already in the robot reference frame.
     list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
 
     // Stores the object force vector summation. z is ignored.
-    Point sum;
-    double gDist = sqrt(g.x * g.x + g.y * g.y);
-    sum.x = kg * g.x / gDist;
-    sum.y = kg * g.y / gDist;
-    printf("gDist:\t%.2f\n", gDist);
+    Point netForce;
+    double goalDist = length(goal.x, goal.y);
+    if (goalDist <= D_GOAL) {
+        netForce.x = K_GOAL * goal.x;
+        netForce.y = K_GOAL * goal.y;
+    } else {
+        netForce.x = D_GOAL * K_GOAL * goal.x / goalDist;
+        netForce.y = D_GOAL * K_GOAL * goal.y / goalDist;
+    }
+    printf("GoalF:\t%.2f, %.2f\n", netForce.x, netForce.y);
 
     // Sum over all obstacles.
     for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
-        printf("Obj:\t%.2f, %.2f\n", p->d * cos(p->a), p->d * sin(p->a));
-        if (p->d < gDist) {
-            double force = distForce->calc(p->d);
-            printf("Objf:\t%.2f, %.2f\n", ko * force * cos(p->a), ko * force * sin(p->a));
-            sum.x -= ko * force * cos(p->a);
-            sum.y -= ko * force * sin(p->a);
+        Polar o = *p;
+        printf("Obj:\t%.2f, %.2f\n", o.d * cos(o.a), o.d * sin(o.a));
+        if (o.d <= D_OBS) {
+            // Principles of Robot Motion, pg. 83
+            double f = K_OBS * (1.0/D_OBS - 1.0/o.d) / (o.d * o.d);
+            netForce.x -= f * cos(o.a);
+            netForce.y -= f * sin(o.a);
+            printf("ObjF:\t%.2f, %.2f\n", f * cos(o.a), f * sin(o.a));
         }
     }
 
-    // Resulting vector.
-    Polar res;
-    res.d = sqrt(sum.x * sum.x + sum.y * sum.y);
-    res.a = atan2(sum.y, sum.x);
+    // Resulting command vector.
+    Polar cmd;
+    cmd.d = length(netForce.x, netForce.y);
+    cmd.a = atan2(netForce.y, netForce.x);
 
-    printf("Nav:\t%.2f, %.2f\n", sum.x, sum.y);
-    printf("Nav:\t<%+.2f, %.2f>\n", res.a, res.d);
+    printf("Nav:\t%.2f, %.2f\n", netForce.x, netForce.y);
+    printf("Nav:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
     // Don't try to go forward if the angle is more than 45 degrees.
-    if (res.a > PI / 2.0) {
-        res.d = 0.0;
-        res.a = PI / 2.0;
-    } else if (res.a < PI / -2.0) {
-        res.d = 0.0;
-        res.a = PI / -2.0;
+    if (cmd.a > PI / 2.0) {
+        cmd.d = 0.0;
+        cmd.a = PI / 2.0;
+    } else if (cmd.a < PI / -2.0) {
+        cmd.d = 0.0;
+        cmd.a = PI / -2.0;
     }
 
-    printf("Nav:\t<%+.2f, %.2f>\n", res.a, res.d);
+    printf("Nav:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
-    return res;
+    return cmd;
 }
