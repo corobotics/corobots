@@ -12,7 +12,7 @@ from corobot_msgs.srv import GetLandmark
 from corobot_msgs.msg import Pose,Landmark
 
 #Robot's current position.  Defaults to a test position.
-my_pose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
+my_pose = Pose(x=26.896,y=-9.7088,theta=0) # Class3435N
 
 goal_queue = deque()
 cl_socket = None
@@ -26,15 +26,17 @@ def pose_callback(pose):
 def goals_reached_callback(reached):
     """Goals Reached subscription callback"""
     global goal_queue
-    if len(goal_queue) > 0 and goal_queue[0] == reached.name:
+    if ((len(goal_queue) > 0) and 
+            (goal_queue[0].x == reached.x) and
+            (goal_queue[0].y == reached.y)):
         goal_queue.popleft()
         with sock_write_lock:
             cl_out = cl_socket.makefile('w')
-            cl_out.write("ARRIVED {}\n".format(reached.name))
+            cl_out.write("ARRIVED\n")
             cl_out.flush()
 
 
-def client_comm(addr,point_pub,goal_pub):
+def client_comm(addr, goals_pub, goals_nav_pub):
     """Begin client API communication
 
     Arguments:
@@ -67,8 +69,8 @@ def client_comm(addr,point_pub,goal_pub):
                 cl_out.flush()
         elif cmd[0] == 'GOTOXY':
             #Add dest point!
-            point_pub.publish(x=float(cmd[1]),y=float(cmd[2]))
-            goal_queue.append("{}{}".format(cmd[1],cmd[2]).upper())
+            goals_pub.publish(x=float(cmd[1]),y=float(cmd[2]))
+            goal_queue.append(Point(x=float(cmd[1]), y=float(cmd[2])))
         elif cmd[0] == 'GOTOLOC':
             #Goto location, no navigation
             rospy.wait_for_service('get_landmark')
@@ -77,8 +79,8 @@ def client_comm(addr,point_pub,goal_pub):
                 get_lmark = rospy.ServiceProxy('get_landmark',GetLandmark)
                 #returns Landmark
                 resp = get_lmark(dest)
-                point_pub.publish(x=resp.wp.x,y=resp.wp.y)
-                goal_queue.append(resp.wp.name)
+                goals_pub.publish(x=resp.wp.x,y=resp.wp.y)
+                goal_queue.append(Point(x=resp.wp.x, y=resp.wp.y))
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
         elif cmd[0] == 'NAVTOLOC':
@@ -87,32 +89,31 @@ def client_comm(addr,point_pub,goal_pub):
             try:
                 get_lmark = rospy.ServiceProxy('get_landmark',GetLandmark)
                 resp = get_lmark(dest)
-                goal_pub.publish(resp.wp)
-                goal_queue.append(resp.wp.name)
+                goals_nav_pub.publish(x=resp.wp.x,y=resp.wp.y)
+                goal_queue.append(Point(x=resp.wp.x, y=resp.wp.y))
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((socket.gethostname(),15001))
+    server_socket.bind((socket.gethostname(), 15001))
     server_socket.listen(1)
 
     rospy.loginfo("Listening for client robots.")
     rospy.init_node('corobot_client_comm')
-    rospy.Subscriber('pose',Pose,pose_callback)
+    rospy.Subscriber('pose', Pose,pose_callback)
 
-    #Publisher to obstacle_avoidance, for GOTO* commands
-    point_pub = rospy.Publisher('waypoints',Point)
-    #Publisher to robot_nav, for NAVTO* commands
-    goal_pub = rospy.Publisher('goals',Landmark)
-    rospy.Subscriber('goals_reached',Landmark,goals_reached_callback)
+    #Publishers to robot_nav
+    goals_pub = rospy.Publisher('goals', Point)
+    goals_nav_pub = rospy.Publisher('goals_nav', Point)
+    rospy.Subscriber('goals_reached', Point, goals_reached_callback)
 
     while True:
         (client, clAddr) = server_socket.accept()
         global cl_socket
         cl_socket = client
         #On connection accept, go into ROS node method
-        client_comm(clAddr,point_pub,goal_pub)
+        client_comm(clAddr, goals_pub, goals_nav_pub)
 
 if __name__ == '__main__':
     main()
