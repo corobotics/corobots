@@ -163,8 +163,8 @@ Polar APF::nav(LaserScan scan) {
         if (o.d <= D_OBS) {
             // Principles of Robot Motion, pg. 83
             double f = K_OBS * (1.0/D_OBS - 1.0/o.d) / (o.d * o.d);
-            netForce.x -= f * cos(o.a);
-            netForce.y -= f * sin(o.a);
+            netForce.x += f * cos(o.a);
+            netForce.y += f * sin(o.a);
             printf("ObjF:\t%.2f, %.2f\n", f * cos(o.a), f * sin(o.a));
         }
     }
@@ -178,12 +178,12 @@ Polar APF::nav(LaserScan scan) {
     printf("Nav:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
     // Don't try to go forward if the angle is more than 45 degrees.
-    if (cmd.a > PI / 2.0) {
+    if (cmd.a > PI / 4.0) {
         cmd.d = 0.0;
-        cmd.a = PI / 2.0;
-    } else if (cmd.a < PI / -2.0) {
+        cmd.a = PI / 4.0;
+    } else if (cmd.a < PI / -4.0) {
         cmd.d = 0.0;
-        cmd.a = PI / -2.0;
+        cmd.a = PI / -4.0;
     }
 
     printf("Nav:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
