@@ -7,6 +7,16 @@
 
 namespace corobot {
 
+    double bound(double n, double b, double r) {
+        if (n > b + r) {
+            return b + r;
+        } else if (n < b - r) {
+            return b - r;
+        } else {
+            return n;
+        }
+    }
+
     double length(double x, double y) {
         return sqrt(x * x + y * y);
     }

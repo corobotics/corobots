@@ -69,9 +69,7 @@ public:
 
 protected:
 
-    /**
-     * The current pose of the robot.
-     */
+    /** The current pose of the robot. */
     corobot_msgs::Pose pose;
 
 };

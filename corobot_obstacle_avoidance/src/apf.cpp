@@ -10,6 +10,7 @@
 #include "apf.h"
 
 using namespace std;
+using corobot::bound;
 using corobot::length;
 using corobot::rCoordTransform;
 using corobot_msgs::Pose;
@@ -174,8 +175,8 @@ Polar APF::nav(LaserScan scan) {
     cmd.d = length(netForce.x, netForce.y);
     cmd.a = atan2(netForce.y, netForce.x);
 
-    printf("Nav:\t%.2f, %.2f\n", netForce.x, netForce.y);
-    printf("Nav:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+    printf("NavF:\t%.2f, %.2f\n", netForce.x, netForce.y);
+    printf("Nav1:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
     // Don't try to go forward if the angle is more than 45 degrees.
     if (cmd.a > PI / 4.0) {
@@ -186,7 +187,14 @@ Polar APF::nav(LaserScan scan) {
         cmd.a = PI / -4.0;
     }
 
-    printf("Nav:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+    printf("Nav2:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
+    // Cap the accelerations to prevent jerky movements.
+    cmd.a = bound(cmd.a, cmdPrev.a, 1.0);
+    cmd.d = bound(cmd.d, cmdPrev.d, 0.15);
+
+    printf("Nav3:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+
+    cmdPrev = cmd;
     return cmd;
 }
