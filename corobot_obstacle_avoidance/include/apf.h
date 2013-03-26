@@ -12,82 +12,33 @@
 
 #include "obstacle_avoidance.h"
 
-/**
- * Interface for a "force calculation", which is used to determine the
- * relationship between the distance of an object and its effect on the APF.
- */
-class ForceCalc {
-public:
-    /**
-     * Performs a force calculation.
-     *
-     * @param dist  The distance of the object.
-     * @returns     A scalar for the weight of this object.
-     */
-    virtual float calc(const float& dist) = 0;
-};
+/** The distance at which to switch from conical to quadratic goal attraction. */
+#define D_GOAL 1.0
 
-/**
- * Implementation of ForceCalc that represents raising the distance to an
- * inverse power.
- */
-class InversePowerForce : public ForceCalc {
-public:
-    /**
-     * @param exp   The exponent of the inverse power (positive number).
-     */
-    InversePowerForce(float exp) : exp(exp) {};
+/** The distance at which to start paying attention to obstacles. */
+#define D_OBS 1.0
 
-    /**
-     * {@inheritDoc}
-     */
-    virtual float calc(const float& dist);
+/** Goal gain (constant factor). */
+#define K_GOAL 1.0
 
-private:
-    /**
-     * The exponent to use in the force calc.
-     */
-    float exp;
-};
+/** Obstacle gain (constant factor). */
+#define K_OBS 1.0
 
 /**
  * APF implementation of the ObstacleAvoider interface.
  */
 class APF : public ObstacleAvoider {
 public:
-    /**
-     * @param ko    Obstacle constant in the APF algorithm.
-     * @param kg    Goal constant in the APF algorithm.
-     */
-    APF(const float& ko, const float& kg);
-
-    /**
-     * @param ko    Obstacle constant in the APF algorithm.
-     * @param kg    Goal constant in the APF algorithm.
-     * @param distForce A custom force calculator.
-     */
-    APF(const float& ko, const float& kg, ForceCalc* distForce);
 
     /**
      * {@inheritDoc}
      */
     virtual Polar nav(sensor_msgs::LaserScan scan);
 
-private:
-    /**
-     * The object constant for this APF.
-     */
-    float ko;
+protected:
 
-    /**
-     * The goal constant for this APF.
-     */
-    float kg;
-
-    /**
-     * The force calculation to use for this APF.
-     */
-    ForceCalc* distForce;
+    /** The last command given by nav(). */
+    Polar cmdPrev;
 
     /**
      * Converts a laser scan to a list of polar coordinates.
@@ -116,6 +67,7 @@ private:
      * @returns         The nearest point of each object.
      */
     std::list<Polar> findObjects(std::list<Polar> points);
+
 };
 
 #endif /* corobots_apf_h */

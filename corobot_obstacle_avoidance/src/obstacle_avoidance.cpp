@@ -10,15 +10,6 @@
 #include "obstacle_avoidance.h"
 #include "apf.h"
 
-/** The goal constant to use for APF. */
-#define KGOAL 1.0
-
-/** The obstacle constant to use for APF. */
-#define KOBS 1.0
-
-// How close in meters to get to a waypoint before considered arrived.
-#define ARRIVED_DISTANCE 0.2
-
 using namespace std;
 using corobot::length;
 using corobot_msgs::Pose;
@@ -99,7 +90,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle n;
     cmdVelPub = n.advertise<Twist>("cmd_vel", 1000);
     waypointsReachedPub = n.advertise<Point>("waypoints_reached", 1000);
-    oa = new APF(KOBS, KGOAL);
+    oa = new APF();
     ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);
     ros::Subscriber waypointSub = n.subscribe("waypoints", 1000, waypointCallback);

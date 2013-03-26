@@ -12,6 +12,9 @@
 #include "geometry_msgs/Point.h"
 #include "sensor_msgs/LaserScan.h"
 
+/** How close in meters to get to a waypoint before considered arrived. */
+#define ARRIVED_DISTANCE 0.2
+
 /**
  * Helper struct for 2D polar coordinates.
  */
@@ -66,9 +69,7 @@ public:
 
 protected:
 
-    /**
-     * The current pose of the robot.
-     */
+    /** The current pose of the robot. */
     corobot_msgs::Pose pose;
 
 };

@@ -19,6 +19,16 @@ namespace corobot {
     } SimplePose;
 
     /**
+     * Bound n to within d of b.
+     *
+     * @param n     The original number.
+     * @param b     The number to force n closer to.
+     * @param r     How close to b to force n.
+     * @return      The value in [b - r, b + r] closest to n.
+     */
+    double bound(double n, double b, double r);
+
+    /**
      * Calculates the length of the vector <x, y>.
      *
      * @param x     The x coordinate.
