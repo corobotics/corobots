@@ -45,22 +45,22 @@ def goals_nav_callback(new_goal):
 
     try:
         #Publisher to obstacle_avoidance
-        point_pub = rospy.Publisher('waypoints',Point)
-        get_wps_srv = rospy.ServiceProxy('get_landmarks',GetLandmarks)
+        point_pub = rospy.Publisher('waypoints', Point)
+        get_wps_srv = rospy.ServiceProxy('get_landmarks', GetLandmarks)
         #Gets waypoints, no neighbor data...maybe I should change that ~Karl
         # wps is a Landmark[]
-        wps = get_wps_srv().allWPs
+        wps = get_wps_srv().all_wps
         end = new_goal
         #Will return a path of Landmarks from the 
         #   Landmark closest to the robot to the Landmark closest to the goal.
-        path = a_star(end,wps)
+        path = a_star(end, wps)
         for node in path:
             rospy.logerr("AStar Node: {}".format(node.name))
-            point_pub.publish(x=node.x,y=node.y)
-            wp_queue.append((Point(x=node.x,y=node.y),False))
+            point_pub.publish(x=node.x, y=node.y)
+            wp_queue.append((Point(x=node.x, y=node.y), False))
         #And then finally publish the final waypoint
         if len(path) > 0:
-            wp_queue.append((new_goal,True))
+            wp_queue.append((new_goal, True))
             point_pub.publish(new_goal)
     except rospy.ServiceException as e:
         rospy.logerr("Service call failed: {}".format(e))
@@ -71,8 +71,8 @@ def navigable_to(point, wp):
     cy = point.y
     dx = wp.x-cx
     dy = wp.y-cy
-    sdx = math.copysign(1,dx)
-    sdy = math.copysign(1,dy)
+    sdx = math.copysign(1, dx)
+    sdy = math.copysign(1, dy)
     if dx == 0.0 and dy == 0.0:
         return True
     if(math.fabs(dx) > math.fabs(dy)):
@@ -82,11 +82,11 @@ def navigable_to(point, wp):
         incy = sdy/2.0
         incx = dx/(dy/incy)
     rospy.wait_for_service('get_pixel_occupancy')
-    map_at = rospy.ServiceProxy('get_pixel_occupancy',GetPixelOccupancy,persistent=True)
+    map_at = rospy.ServiceProxy('get_pixel_occupancy', GetPixelOccupancy, persistent=True)
     try:
         while(sdx*dx > 0 or sdy*dy > 0):
             #If you get an obstacle (if your occupancy prob is greater than 50%) then no path.
-            occ = map_at(cx+dx,cy+dy).occupancy
+            occ = map_at(cx+dx, cy+dy).occupancy
             if(occ > 50):
                 return False
             dx = dx - incx
@@ -126,7 +126,7 @@ def find_nearest_navigable(point, wps):
             continue
         dist = point_distance(point.x, point.y, wp.x, wp.y)
         if (closest != None) and (dist < closest[0]) and (navigable_to(point, wp)):
-            closest = (dist,wp)
+            closest = (dist, wp)
     if closest == None:
         rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
         return None
@@ -161,35 +161,38 @@ def a_star(dest, wps):
         near))
     #Set up persistent connection to the GetNeighbors service
     rospy.wait_for_service('get_neighbors')
-    get_nbrs_srv = rospy.ServiceProxy('get_neighbors',GetNeighbors,persistent=True)
-    while(not(pq.empty())):
-        curr = pq.get()
-        cnode = curr[1]
-        
-        if(cnode.name==goal.name):
-            #Found the path! Now build it.
-            path = []
-            pnode = goal
-            while(not(pnode==None)):
-                pname = pnode.name
-                path.insert(0,pnode)
-                pnode = preds[pname]
-            return path
+    get_nbrs_srv = rospy.ServiceProxy('get_neighbors', GetNeighbors, persistent=True)
+    try:
+        while(not(pq.empty())):
+            curr = pq.get()
+            cnode = curr[1]
+            
+            if(cnode.name==goal.name):
+                #Found the path! Now build it.
+                path = []
+                pnode = goal
+                while(not(pnode==None)):
+                    pname = pnode.name
+                    path.insert(0,pnode)
+                    pnode = preds[pname]
+                return path
 
-        open_set.remove(cnode)
-        visited.append(cnode)
-        for nbr in get_nbrs_srv(cnode).neighbors:
-            if(nbr in visited):
-                continue
-            tentG = g_scores[cnode.name]+point_distance(cnode.x,cnode.y,nbr.x,nbr.y)
-            if(not(nbr in open_set)or(tentG<g_scores[nbr.name])):
-                preds[nbr.name]=cnode
-                g_scores[nbr.name]=tentG
-                pq.put((g_scores[nbr.name]+point_distance(nbr.x,nbr.y,goal.x,goal.y),nbr))
-                if(not(nbr in open_set)):
-                    open_set.append(nbr)
-    #Cleanup persistent service connection.
-    get_nbrs_srv.close()
+            open_set.remove(cnode)
+            visited.append(cnode)
+            for nbr in get_nbrs_srv(cnode).neighbors:
+                if(nbr in visited):
+                    continue
+                tentG = g_scores[cnode.name]+point_distance(cnode.x,cnode.y,nbr.x,nbr.y)
+                if(not(nbr in open_set)or(tentG<g_scores[nbr.name])):
+                    preds[nbr.name]=cnode
+                    g_scores[nbr.name]=tentG
+                    pq.put((g_scores[nbr.name]+point_distance(nbr.x,nbr.y,goal.x,goal.y),nbr))
+                    if(not(nbr in open_set)):
+                        open_set.append(nbr)
+    except rospy.ServiceProxy as e:
+        rospy.logerr("Service call failed: {}".format(e))
+    finally:
+        get_nbrs_srv.close()
     return []
 
 def main():
