@@ -11,7 +11,8 @@ from corobot_msgs.srv import GetPixelOccupancy,GetNeighbors,GetLandmark,GetLandm
 from corobot_msgs.msg import Pose,Landmark
 
 #Robot's current position.  Defaults to a test position.
-my_pose = Pose(x=26.896,y=-9.7088,theta=0) # Class3435N
+#my_pose = Pose(x=26.896,y=-9.7088,theta=0) # Class3435N
+my_pose = Pose(x=27.0,y=-7.0,theta=0) # Close to ATRIUMS4
 
 #Used to track set goals from a user.
 # Queue of (Point,isGoal?) pairs
@@ -32,6 +33,7 @@ def waypoints_reached_callback(wp):
             goal_reached_pub.publish(top[0])
 
 def goals_callback(new_goal):
+    """No navigation goal queuing"""
     global wp_queue
     wp_queue.append((new_goal,True))
     point_pub = rospy.Publisher('waypoints',Point)
@@ -44,7 +46,6 @@ def goals_nav_callback(new_goal):
     try:
         #Publisher to obstacle_avoidance
         point_pub = rospy.Publisher('waypoints',Point)
-        
         get_wps_srv = rospy.ServiceProxy('get_landmarks',GetLandmarks)
         #Gets waypoints, no neighbor data...maybe I should change that ~Karl
         # wps is a Landmark[]
@@ -54,6 +55,7 @@ def goals_nav_callback(new_goal):
         #   Landmark closest to the robot to the Landmark closest to the goal.
         path = a_star(end,wps)
         for node in path:
+            rospy.logerr("AStar Node: {}".format(node.name))
             point_pub.publish(x=node.x,y=node.y)
             wp_queue.append((Point(x=node.x,y=node.y),False))
         #And then finally publish the final waypoint
@@ -75,23 +77,24 @@ def navigable_to(point, wp):
         return True
     if(math.fabs(dx) > math.fabs(dy)):
         incx = sdx/2.0
-        rospy.logerr("sdx {} incx {} dy {} dx {}".format(sdx,incx,dy,dx))
         incy = dy/(dx/incx)
     else:
         incy = sdy/2.0
-        rospy.logerr("sdy {} incy {} dx {} dy {}".format(sdy,incy,dx,dy))
         incx = dx/(dy/incy)
     rospy.wait_for_service('get_pixel_occupancy')
     map_at = rospy.ServiceProxy('get_pixel_occupancy',GetPixelOccupancy,persistent=True)
-    #rospy.logerr("Occupancy of curr location X:{} Y:{} Occ:{}".format(cx,cy,map_at(cx,cy).occupancy))
-    while(sdx*dx > 0 or sdy*dy > 0):
-        #Service request
-        occ = map_at(cx+dx,cy+dy).occupancy
-        if(occ == 0):
-            return False
-        dx -= incx
-        dy -= incy
-    map_at.close()
+    try:
+        while(sdx*dx > 0 or sdy*dy > 0):
+            #If you get an obstacle (if your occupancy prob is greater than 50%) then no path.
+            occ = map_at(cx+dx,cy+dy).occupancy
+            if(occ > 50):
+                return False
+            dx = dx - incx
+            dy = dy - incy
+    except rospy.ServiceException as e:
+        rospy.logerr("Service call failed: {}".format(e))
+    finally:
+        map_at.close()
     return True
 
 def point_distance(wp1x, wp1y, wp2x, wp2y):
@@ -140,14 +143,8 @@ def a_star(dest, wps):
         Landmark[] representing path to follow to the destination.
         Empty list if no path can be found.
     """
-    #near = find_nearest_navigable(my_pose, wps)
-    #goal = find_nearest_navigable(dest, wps)
-    ###TEST###
-    rospy.wait_for_service('get_landmark')
-    lndmrk_srv = rospy.ServiceProxy('get_landmark', GetLandmark)
-    near = lndmrk_srv("CLASS3435N").wp
-    goal = lndmrk_srv("VENDDOOR").wp
-    ###ENDTEST TODO DELETE###
+    near = find_nearest_navigable(my_pose, wps)
+    goal = find_nearest_navigable(dest, wps)
     if near == None:
         rospy.logerr("AStar navigation failed, couldn't find a starting node.")
         return []

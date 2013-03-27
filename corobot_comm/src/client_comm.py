@@ -12,7 +12,8 @@ from corobot_msgs.srv import GetLandmark
 from corobot_msgs.msg import Pose,Landmark
 
 #Robot's current position.  Defaults to a test position.
-my_pose = Pose(x=26.896,y=-9.7088,theta=0) # Class3435N
+#my_pose = Pose(x=26.896,y=-9.7088,theta=0) # Class3435N
+my_pose = Pose(x=27.0,y=-7.0,theta=0) # Close to ATRIUMS4
 
 goal_queue = deque()
 cl_socket = None
