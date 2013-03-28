@@ -6,38 +6,20 @@
 #include "geometry_msgs/Point.h"
 #include "sensor_msgs/LaserScan.h"
 
+#include "corobot.h"
 #include "apf.h"
 
 using namespace std;
+using corobot::bound;
+using corobot::length;
+using corobot::rCoordTransform;
 using corobot_msgs::Pose;
 using geometry_msgs::Point;
 using sensor_msgs::LaserScan;
 
-/**
- * {@inheritDoc}
- */
-float InversePowerForce::calc(const float& dist) {
-    return pow(dist, -exp);
-}
-
 bool Polar::isValid() const {
     return d >= 0.0;
 }
-
-/**
- * {@inheritDoc}
- */
-APF::APF(const float& ko, const float& kg) :
-    ko(ko), kg(kg)
-{
-    distForce = new InversePowerForce(2.0);
-};
-
-/**
- * {@inheritDoc}
- */
-APF::APF(const float& ko, const float& kg, ForceCalc* distForce) :
-    ko(ko), kg(kg), distForce(distForce) {};
 
 /**
  * {@inheritDoc}
@@ -141,49 +123,78 @@ list<Polar> APF::findObjects(list<Polar> points) {
 /**
  * {@inheritDoc}
  */
-Point APF::nav(LaserScan scan) {
+Polar APF::nav(LaserScan scan) {
 
     // Can't do anything without a goal.
     if (waypointQueue.empty()) {
-        Point p;
+        cout << "No waypoints in queue!" << endl;
+        Polar p;
         return p;
     }
 
     // The goal is the head of the waypoint queue.
-    Point goal = waypointQueue.front();
+    Point goalInMap = waypointQueue.front();
+    // Convert the goal into the robot reference frame.
+    Point goal = rCoordTransform(goalInMap, pose);
 
-    cout << "Goal: (" << goal.x << ", " << goal.y << ")" << endl;
-    cout << "Pose: (" << pose.x << ", " << pose.y << ") " << pose.theta << endl;
+    cout << endl;
+    printf("GoalMap:\t%.2f, %.2f\n", goalInMap.x, goalInMap.y);
+    printf("Pose:\t%.2f, %.2f, %+.2f\n", pose.x, pose.y, pose.theta);
+    printf("Goal:\t%.2f, %.2f\n", goal.x, goal.y);
 
-    // The list of "objects" found.
+    // The list of "objects" found; already in the robot reference frame.
     list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
 
     // Stores the object force vector summation. z is ignored.
-    Point sum;
-    sum.x = 0;
-    sum.y = 0;
-    double force;
+    Point netForce;
+    double goalDist = length(goal.x, goal.y);
+    if (goalDist <= D_GOAL) {
+        netForce.x = K_GOAL * goal.x;
+        netForce.y = K_GOAL * goal.y;
+    } else {
+        netForce.x = D_GOAL * K_GOAL * goal.x / goalDist;
+        netForce.y = D_GOAL * K_GOAL * goal.y / goalDist;
+    }
+    printf("GoalF:\t%.2f, %.2f\n", netForce.x, netForce.y);
 
-    cout << endl << endl;
     // Sum over all obstacles.
     for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
-        cout << "Obj: " << p->a << ", " << p->d << endl;
-        force = distForce->calc(p->d);
-        sum.x += force * cos(p->a);
-        sum.y += force * sin(p->a);
+        Polar o = *p;
+        printf("Obj:\t%.2f, %.2f\n", o.d * cos(o.a), o.d * sin(o.a));
+        if (o.d <= D_OBS) {
+            // Principles of Robot Motion, pg. 83
+            double f = K_OBS * (1.0/D_OBS - 1.0/o.d) / (o.d * o.d);
+            netForce.x += f * cos(o.a);
+            netForce.y += f * sin(o.a);
+            printf("ObjF:\t%.2f, %.2f\n", f * cos(o.a), f * sin(o.a));
+        }
     }
 
-    // Obstacle gain.
-    sum.x *= ko;
-    sum.y *= ko;
+    // Resulting command vector.
+    Polar cmd;
+    cmd.d = length(netForce.x, netForce.y);
+    cmd.a = atan2(netForce.y, netForce.x);
 
-    // Angle between the robot and the goal.
-    double theta = atan2(goal.y - pose.y, goal.x - pose.x) - pose.theta;
+    printf("NavF:\t%.2f, %.2f\n", netForce.x, netForce.y);
+    printf("Nav1:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
-    // Resulting vector.
-    Point res;
-    res.x = kg * cos(theta) - sum.x;
-    res.y = kg * sin(theta) - sum.y;
+    // Don't try to go forward if the angle is more than 45 degrees.
+    if (cmd.a > PI / 4.0) {
+        cmd.d = 0.0;
+        cmd.a = PI / 4.0;
+    } else if (cmd.a < PI / -4.0) {
+        cmd.d = 0.0;
+        cmd.a = PI / -4.0;
+    }
 
-    return res;
+    printf("Nav2:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+
+    // Cap the accelerations to prevent jerky movements.
+    cmd.a = bound(cmd.a, cmdPrev.a, 1.0);
+    cmd.d = bound(cmd.d, cmdPrev.d, 0.15);
+
+    printf("Nav3:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+
+    cmdPrev = cmd;
+    return cmd;
 }

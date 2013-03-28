@@ -5,12 +5,18 @@ import java.io.IOException;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * Simple monitor for the simulator (or whoever)
+ */
 public class SimMonitor extends JFrame implements Runnable {
 
     private BufferedReader in;
     private JTextField xField, yField, dxField, dyField;
     private JTextArea displayArea;
 
+    /**
+     * Constructor, opens a socket to the simulator
+     */
     public SimMonitor() {
 	setTitle("Simple Sim Monitor");
 	JPanel pospanel = new JPanel();
@@ -46,7 +52,10 @@ public class SimMonitor extends JFrame implements Runnable {
 	    displayArea.setText("Unable to establish connection to robot");
 	}
     }
-    
+
+    /**
+     * Main loop, listens to the socket and updates the GUI.
+     */    
     public void run() {
 	while(true) {
 	    //System.out.println("Waiting for messages on " + in);

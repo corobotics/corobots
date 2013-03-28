@@ -1,5 +1,8 @@
 import java.text.NumberFormat;
 
+/**
+ * Just a 2D point
+ */
 public class Point {
 
     // just a 2d point

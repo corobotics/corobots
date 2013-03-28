@@ -1,31 +1,43 @@
 #!/usr/bin/env python
-import roslib; roslib.load_manifest('corobot_comm')
-import rospy
 import socket
 import time
-import thread
-
-from geometry_msgs.msg import Point
-from corobot_msgs.srv import GetLocation
-from corobot_msgs.msg import Pose,Waypoint
+import threading
 from collections import deque
 
+import roslib; roslib.load_manifest('corobot_comm')
+import rospy
+from geometry_msgs.msg import Point
+
+from corobot_msgs.srv import GetLandmark
+from corobot_msgs.msg import Pose,Landmark
+
 #Robot's current position.  Defaults to a test position.
-myPose = Pose(x=26.3712,y=-7.7408,theta=0) # NE Atrium
+#my_pose = Pose(x=26.896,y=-9.7088,theta=0) # Class3435N
+my_pose = Pose(x=27.0,y=-7.0,theta=0) # Close to ATRIUMS4
 
 goal_queue = deque()
+cl_socket = None
+sock_write_lock = threading.Lock()
 
 def pose_callback(pose):
     """Pose subscription callback"""
-    global myPose
-    myPose = pose
+    global my_pose
+    my_pose = pose
 
 def goals_reached_callback(reached):
     """Goals Reached subscription callback"""
-    if goal_queue[0] == reached.name:
+    global goal_queue
+    if ((len(goal_queue) > 0) and 
+            (goal_queue[0].x == reached.x) and
+            (goal_queue[0].y == reached.y)):
         goal_queue.popleft()
+        with sock_write_lock:
+            cl_out = cl_socket.makefile('w')
+            cl_out.write("ARRIVED\n")
+            cl_out.flush()
 
-def client_comm(socket,addr,point_pub,goal_pub):
+
+def client_comm(addr, goals_pub, goals_nav_pub):
     """Begin client API communication
 
     Arguments:
@@ -33,8 +45,10 @@ def client_comm(socket,addr,point_pub,goal_pub):
     addr -- Client's IP address
     """
 
-    cl_in = socket.makefile('r')
-    cl_out = socket.makefile('w')
+    cl_in = cl_socket.makefile('r')
+    cl_out = cl_socket.makefile('w')
+
+    global goal_queue
     
     while True:
         rospy.loginfo("Ready for commands.")
@@ -42,7 +56,8 @@ def client_comm(socket,addr,point_pub,goal_pub):
         #Communication terminated?
         if len(cmd) == 0:
             cl_in.close()
-            cl_out.close()
+            with sock_write_lock:
+                cl_out.close()
             break
 
         cmd = cmd.strip().split(' ')
@@ -50,59 +65,56 @@ def client_comm(socket,addr,point_pub,goal_pub):
 
         #Command processing
         if cmd[0] == 'GETPOS':
-            cl_out.write("POS {} {} {}\n".format(str(myPose.x),str(myPose.y),str(myPose.theta)))
-            cl_out.flush()
+            with sock_write_lock:
+                cl_out.write("POS {} {} {}\n".format(str(my_pose.x),str(my_pose.y),str(my_pose.theta)))
+                cl_out.flush()
         elif cmd[0] == 'GOTOXY':
             #Add dest point!
-            point_pub.publish(x=float(cmd[1]),y=float(cmd[2]))
+            goals_pub.publish(x=float(cmd[1]),y=float(cmd[2]))
+            goal_queue.append(Point(x=float(cmd[1]), y=float(cmd[2])))
         elif cmd[0] == 'GOTOLOC':
             #Goto location, no navigation
-            rospy.wait_for_service('get_location')
+            rospy.wait_for_service('get_landmark')
             dest = cmd[1].upper()
             try:
-                getLoc = rospy.ServiceProxy('get_location',GetLocation)
-                #returns Waypoint
-                resp = getLoc(dest)
-                point_pub.publish(x=resp.wp.x,y=resp.wp.y)
-                goal_queue.append(resp.wp.name)
+                get_lmark = rospy.ServiceProxy('get_landmark',GetLandmark)
+                #returns Landmark
+                resp = get_lmark(dest)
+                goals_pub.publish(x=resp.wp.x,y=resp.wp.y)
+                goal_queue.append(Point(x=resp.wp.x, y=resp.wp.y))
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
         elif cmd[0] == 'NAVTOLOC':
+            rospy.wait_for_service('get_landmark')
             dest = cmd[1].upper()
             try:
-                getLoc = rospy.ServiceProxy('get_location',GetLocation)
-                resp = getLoc(dest)
-                goal_pub.publish(resp.wp)
-                goal_queue.append(resp.wp.name)
+                get_lmark = rospy.ServiceProxy('get_landmark',GetLandmark)
+                resp = get_lmark(dest)
+                goals_nav_pub.publish(x=resp.wp.x,y=resp.wp.y)
+                goal_queue.append(Point(x=resp.wp.x, y=resp.wp.y))
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
-        elif cmd[0] == 'QUERY_ARRIVE':
-            dest = cmd[1].upper()
-            if dest in goal_queue:
-                while dest in goal_queue:
-                    time.sleep(1)
-                cl_out.write("ARRIVED {}\n".format(cmd[1]))
-
 
 def main():
-    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serversocket.bind((socket.gethostname(),15001))
-    serversocket.listen(1)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((socket.gethostname(), 15001))
+    server_socket.listen(1)
 
     rospy.loginfo("Listening for client robots.")
     rospy.init_node('corobot_client_comm')
-    rospy.Subscriber('pose',Pose,pose_callback)
+    rospy.Subscriber('pose', Pose,pose_callback)
 
-    #Publisher to obstacle_avoidance, for GOTO* commands
-    point_pub = rospy.Publisher('waypoints',Point)
-    #Publisher to robot_nav, for NAVTO* commands
-    goal_pub = rospy.Publisher('goals',Waypoint)
-    rospy.Subscriber('goals_reached',Waypoint,goals_reached_callback)
+    #Publishers to robot_nav
+    goals_pub = rospy.Publisher('goals', Point)
+    goals_nav_pub = rospy.Publisher('goals_nav', Point)
+    rospy.Subscriber('goals_reached', Point, goals_reached_callback)
 
     while True:
-        (client, clAddr) = serversocket.accept()
+        (client, clAddr) = server_socket.accept()
+        global cl_socket
+        cl_socket = client
         #On connection accept, go into ROS node method
-        client_comm(client,clAddr,point_pub,goal_pub)
+        client_comm(clAddr, goals_pub, goals_nav_pub)
 
 if __name__ == '__main__':
     main()

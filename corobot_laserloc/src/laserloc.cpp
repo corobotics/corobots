@@ -8,7 +8,7 @@
 #include "sensor_msgs/LaserScan.h"
 
 #include "corobot.h"
-#include "laser_localization.h"
+#include "laserloc.h"
 
 using corobot_msgs::Pose;
 using corobot_msgs::GetCoMap;
@@ -282,7 +282,7 @@ void poseCallback(Pose pose) {
 }
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "obstacle_avoidance");
+    ros::init(argc, argv, "laserloc");
     ros::NodeHandle n;
     ros::ServiceClient client = n.serviceClient<GetCoMap>("get_map");
     GetCoMap getMap;

@@ -31,4 +31,4 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 include_directories(include)
 
-rosbuild_add_executable(laser_localization src/laser_localization.cpp)
+rosbuild_add_executable(laserloc src/laserloc.cpp)

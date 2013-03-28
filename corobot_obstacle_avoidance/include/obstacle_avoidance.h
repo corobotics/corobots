@@ -12,6 +12,21 @@
 #include "geometry_msgs/Point.h"
 #include "sensor_msgs/LaserScan.h"
 
+/** How close in meters to get to a waypoint before considered arrived. */
+#define ARRIVED_DISTANCE 0.2
+
+/**
+ * Helper struct for 2D polar coordinates.
+ */
+typedef struct {
+    /** Distance (radius) in meters. */
+    float d;
+    /** Angle in radians. */
+    float a;
+    /** Only positive distances are allowed by convention. */
+    bool isValid() const;
+} Polar;
+
 /**
  * Abstract class to handle avoiding obstacles.
  */
@@ -34,9 +49,9 @@ public:
      * Abstract method to provide a navigation vector based off a laser scan.
      *
      * @param scan  The laser scan to navigate with.
-     * @returns     A 2D movement vector.
+     * @returns     A movement vector in polar coordinates.
      */
-    virtual geometry_msgs::Point nav(sensor_msgs::LaserScan scan) = 0;
+    virtual Polar nav(sensor_msgs::LaserScan scan) = 0;
 
     /**
      * Update the known pose of the robot.
@@ -54,9 +69,7 @@ public:
 
 protected:
 
-    /**
-     * The current pose of the robot.
-     */
+    /** The current pose of the robot. */
     corobot_msgs::Pose pose;
 
 };
