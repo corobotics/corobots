@@ -55,7 +55,6 @@ def goals_nav_callback(new_goal):
         #   Landmark closest to the robot to the Landmark closest to the goal.
         path = a_star(end, wps)
         for node in path:
-            rospy.logerr("AStar Node: {}".format(node.name))
             point_pub.publish(x=node.x, y=node.y)
             wp_queue.append((Point(x=node.x, y=node.y), False))
         #And then finally publish the final waypoint

@@ -72,6 +72,9 @@ def client_comm(addr, goals_pub, goals_nav_pub):
             #Add dest point!
             goals_pub.publish(x=float(cmd[1]),y=float(cmd[2]))
             goal_queue.append(Point(x=float(cmd[1]), y=float(cmd[2])))
+
+            cl_out.write("OKAY\n")
+            cl_out.flush()            
         elif cmd[0] == 'GOTOLOC':
             #Goto location, no navigation
             rospy.wait_for_service('get_landmark')
@@ -80,10 +83,15 @@ def client_comm(addr, goals_pub, goals_nav_pub):
                 get_lmark = rospy.ServiceProxy('get_landmark',GetLandmark)
                 #returns Landmark
                 resp = get_lmark(dest)
-                goals_pub.publish(x=resp.wp.x,y=resp.wp.y)
+                goals_pub.publish(x=resp.wp.x, y=resp.wp.y)
                 goal_queue.append(Point(x=resp.wp.x, y=resp.wp.y))
+
+                cl_out.write("OKAY\n")
+                cl_out.flush()
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
+                cl_out.write("ERROR {}\n".format(e))
+                cl_out.flush()
         elif cmd[0] == 'NAVTOLOC':
             rospy.wait_for_service('get_landmark')
             dest = cmd[1].upper()
@@ -92,8 +100,13 @@ def client_comm(addr, goals_pub, goals_nav_pub):
                 resp = get_lmark(dest)
                 goals_nav_pub.publish(x=resp.wp.x,y=resp.wp.y)
                 goal_queue.append(Point(x=resp.wp.x, y=resp.wp.y))
+
+                cl_out.write("OKAY\n")
+                cl_out.flush()
             except rospy.ServiceException as e:
                 rospy.logerr("Service call failed: {}".format(e))
+                cl_out.write("ERROR {}\n".format(e))
+                cl_out.flush()
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
