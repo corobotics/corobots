@@ -9,6 +9,7 @@
 #include <string>
 #include "std_msgs/String.h"
 #include "../include/CSVReader.h"
+#include "corobot_msgs/Pose.h"
 
 
 
@@ -22,7 +23,7 @@ class pt{
 
 using namespace std;
 using namespace zbar;
-
+using corobot_msgs::Pose;
 
 class BarcodeHandler:public Image::Handler {
 
@@ -31,7 +32,7 @@ class BarcodeHandler:public Image::Handler {
     ros::Publisher test;
     pt point[4];
     int lengthPixelL,lengthPixelR;
-    float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg;
+    float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg, offsetDistance;
     int barcodeX, barcodeY;
     string barcodeOrientation;
     CSVReader csvreader;
