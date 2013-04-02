@@ -1,0 +1,19 @@
+<package>
+
+    <description brief="corobot_navigation">
+
+        corobot_navigation
+
+    </description>
+    <author>Karl Berger</author>
+    <author>Max Bogue</author>
+    <license>BSD</license>
+    <review status="unreviewed" notes=""/>
+    <url>http://ros.org/wiki/corobot_navigation</url>
+    <depend package="rospy"/>
+    <depend package="geometry_msgs"/>
+    <depend package="corobot_msgs"/>
+
+</package>
+
+
