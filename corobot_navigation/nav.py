@@ -96,23 +96,19 @@ def navigable_to(point, wp):
         map_at.close()
     return True
 
-def point_distance(wp1x, wp1y, wp2x, wp2y):
-    """Distance between two points
+def distance(x, y):
+    """The distance from the origin to (x, y)."""
+    return math.sqrt(x * x + y * y)
 
-    Arguments:
-    wp1x -- X value of the first point
-    wp1y -- Y value of the first point
-    wp2x -- X value of the second point
-    wp2y -- Y value of the second point
-
-    """
-    return math.sqrt(math.pow(wp2x-wp1x, 2)+math.pow(wp2y-wp1y, 2))
+def point_distance(p1, p2):
+    """Distance between two point-like objects in the Euclidean plane."""
+    return distance(p2.x - p1.x, p2.y - p1.y)
 
 def find_nearest_navigable(point, wps):
-    """Find nearest visible Landmark to the given point.
+    """Find nearest visible Landmark to the given point-like object.
 
     Arguments:
-    point -- a...thing that has an x and y member?  Can be used with Pose or Point
+    point -- The starting point
     wps -- Landmark[] with all waypoints in the graph/map
 
     Returns a Landmark:
@@ -122,11 +118,11 @@ def find_nearest_navigable(point, wps):
     """
     closest = None
     for wp in wps:
-        if closest == None and navigable_to(point, wp):
-            closest = (point_distance(point.x, point.y, wp.x, wp.y), wp)
+        if closest is None and navigable_to(point, wp):
+            closest = (point_distance(point, wp), wp)
             continue
-        dist = point_distance(point.x, point.y, wp.x, wp.y)
-        if (closest != None) and (dist < closest[0]) and (navigable_to(point, wp)):
+        dist = point_distance(point, wp)
+        if closest is not None and dist < closest[0] and navigable_to(point, wp):
             closest = (dist, wp)
     if closest == None:
         rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
@@ -156,10 +152,10 @@ def a_star(dest, wps):
     open_set = [near]
     visited = []
     #dict holding {waypoint name: distance from robot to waypoint} pairs
-    g_scores = {near.name: point_distance(my_pose.x, my_pose.y, near.x, near.y)}
+    g_scores = {near.name: point_distance(my_pose, near)}
     #pq elements are (g+h, node)
     # g=distRobotWp, h=distWpGoal
-    pq.put((g_scores[near.name] + point_distance(near.x, near.y, goal.x, goal.y), 
+    pq.put((g_scores[near.name] + point_distance(near, goal),
         near))
     #Set up persistent connection to the GetNeighbors service
     rospy.wait_for_service('get_neighbors')
@@ -184,11 +180,11 @@ def a_star(dest, wps):
             for nbr in get_nbrs_srv(cnode).neighbors:
                 if nbr in visited:
                     continue
-                tentG = g_scores[cnode.name] + point_distance(cnode.x, cnode.y, nbr.x, nbr.y)
+                tentG = g_scores[cnode.name] + point_distance(cnode, nbr)
                 if nbr not in open_set or tentG < g_scores[nbr.name]:
                     preds[nbr.name] = cnode
                     g_scores[nbr.name] = tentG
-                    pq.put((g_scores[nbr.name] + point_distance(nbr.x, nbr.y, goal.x, goal.y), nbr))
+                    pq.put((g_scores[nbr.name] + point_distance(nbr, goal), nbr))
                     if nbr not in open_set:
                         open_set.append(nbr)
     except rospy.ServiceProxy as e:
