@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+
+from collections import deque
 import math
 from Queue import PriorityQueue
-from collections import deque
 
 import roslib; roslib.load_manifest('corobot_comm')
 import rospy
@@ -143,8 +144,8 @@ def a_star(dest, wps):
     """
     near = find_nearest_navigable(my_pose, wps)
     goal = find_nearest_navigable(dest, wps)
-    if near == None:
-        rospy.logerr("AStar navigation failed, couldn't find a starting node.")
+    if near is None:
+        rospy.logerr("A* navigation failed, couldn't find a starting node.")
         return []
     rospy.logdebug("LandmarkClosestToMe: {}".format(near.name))
     preds = {near.name: None}
