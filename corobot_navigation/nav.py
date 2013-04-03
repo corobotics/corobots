@@ -4,16 +4,18 @@ from collections import deque
 import math
 from Queue import PriorityQueue
 
-import roslib; roslib.load_manifest('corobot_comm')
+import roslib; roslib.load_manifest('corobot_navigation')
 import rospy
 from geometry_msgs.msg import Point
 
-from corobot_msgs.srv import GetPixelOccupancy, GetNeighbors, GetLandmark, GetLandmarks
+from corobot_msgs.srv import GetPixelOccupancy, GetNeighbors, GetLandmark, GetLandmarks, GetCoMap
 from corobot_msgs.msg import Pose, Landmark
 
 #Robot's current position.  Defaults to a test position.
 #my_pose = Pose(x=26.896, y=-9.7088, theta=0) # Class3435N
 my_pose = Pose(x=27.0, y=-7.0, theta=0) # Close to ATRIUMS4
+
+occ_map = None
 
 #Used to track set goals from a user.
 # Queue of (Point, isGoal?) pairs
@@ -81,20 +83,18 @@ def navigable_to(point, wp):
     else:
         incy = sdy / 2.0
         incx = incy * dx / dy
-    rospy.wait_for_service('get_pixel_occupancy')
-    map_at = rospy.ServiceProxy('get_pixel_occupancy', GetPixelOccupancy, persistent=True)
-    try:
-        while sdx * dx > 0 or sdy * dy > 0:
-            #If you get an obstacle (if your occupancy prob is greater than 50%) then no path.
-            occ = map_at(cx + dx, cy + dy).occupancy
-            if occ > 50:
-                return False
-            dx = dx - incx
-            dy = dy - incy
-    except rospy.ServiceException as e:
-        rospy.logerr("Service call failed: {}".format(e))
-    finally:
-        map_at.close()
+    while sdx * dx > 0 or sdy * dy > 0:
+        #If you get an obstacle (if your occupancy prob is greater than 50%) then no path.
+        p_x = int(math.floor((cx + dx)/occ_map.info.resolution))
+        p_y = int(math.floor((cx + dy)/occ_map.info.resolution))
+        #Data is in row-major order
+        off = p_y*occ_map.info.width + p_x
+        occ = occ_map.data[off]
+    
+        if occ > 50:
+            return False
+        dx = dx - incx
+        dy = dy - incy
     return True
 
 def distance(x, y):
@@ -201,6 +201,14 @@ def main():
     rospy.Subscriber('goals_nav', Point, goals_nav_callback)
     rospy.Subscriber('goals', Point, goals_callback)
     rospy.Subscriber('pose', Pose, pose_callback)
+
+    global occ_map
+    rospy.wait_for_service('get_map')
+    try:
+        get_map_srv = rospy.ServiceProxy('get_map',GetCoMap)
+        occ_map = get_map_srv().map
+    except rospy.ServiceProxy as e:
+        rospy.logerr("Service call failed: {}".format(e))
 
     rospy.spin()
 
