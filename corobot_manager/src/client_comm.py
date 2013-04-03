@@ -4,7 +4,7 @@ import time
 import threading
 from collections import deque
 
-import roslib; roslib.load_manifest('corobot_comm')
+import roslib; roslib.load_manifest('corobot_manager')
 import rospy
 from geometry_msgs.msg import Point
 
@@ -114,7 +114,7 @@ def main():
     server_socket.listen(1)
 
     rospy.loginfo("Listening for client robots.")
-    rospy.init_node('corobot_client_comm')
+    rospy.init_node('corobot_manager')
     rospy.Subscriber('pose', Pose,pose_callback)
 
     #Publishers to robot_nav
