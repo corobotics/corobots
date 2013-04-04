@@ -41,7 +41,7 @@ namespace corobot {
         return bPose;
     }
 
-    geometry_msgs::Point rCoordTransform(geometry_msgs::Point aPoint, corobot_msgs::Pose bOrigin) {
+    geometry_msgs::Point rCoordTransform(geometry_msgs::Point aPoint, corobot_common::Pose bOrigin) {
         geometry_msgs::Point bPoint;
         float dx = aPoint.x - bOrigin.x;
         float dy = aPoint.y - bOrigin.y;

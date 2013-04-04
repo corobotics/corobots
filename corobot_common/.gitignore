@@ -1,0 +1,4 @@
+msg_gen/*
+srv_gen/*
+src/corobot_common/msg/*
+src/corobot_common/srv/*

@@ -1,5 +1,5 @@
 <package>
-  <description brief="corobot_core">
+  <description brief="corobot_common">
 
      corobot_core
 
@@ -8,7 +8,6 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/corobot_core</url>
-  <depend package="corobot_msgs"/>
   <depend package="nav_msgs"/>
   <depend package="geometry_msgs"/>
   <depend package="roscpp"/>
