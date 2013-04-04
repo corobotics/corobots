@@ -6,8 +6,8 @@ import roslib; roslib.load_manifest('corobot_map')
 import rospy
 from nav_msgs.srv import GetMap
 
-from corobot_msgs.msg import Landmark
-from corobot_msgs.srv import *  #Importing star because I'm using 95% of the 
+from corobot_common.msg import Landmark
+from corobot_common.srv import *  #Importing star because I'm using 95% of the 
                                 #services defined here and I'm not importing 
                                 #all 3 forms of the service definition.
 

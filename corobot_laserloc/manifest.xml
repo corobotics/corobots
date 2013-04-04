@@ -8,8 +8,7 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/laser_localization</url>
-  <depend package="corobot_core"/>
-  <depend package="corobot_msgs"/>
+  <depend package="corobot_common"/>
   <depend package="nav_msgs"/>
   <depend package="sensor_msgs"/>
 

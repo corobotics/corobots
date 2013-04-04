@@ -8,8 +8,7 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <!--<url>http://ros.org/wiki/obstacle_avoidance</url>-->
-  <depend package="corobot_core"/>
-  <depend package="corobot_msgs"/>
+  <depend package="corobot_common"/>
   <depend package="geometry_msgs"/>
   <depend package="sensor_msgs"/>
   <depend package="turtlebot_node"/>
