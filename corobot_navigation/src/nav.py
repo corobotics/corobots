@@ -95,15 +95,17 @@ def find_nearest_navigable(point, waypoints):
         None if no nearby waypoint can be found
 
     """
-    closest = None
+    closest = []
     for wp in waypoints:
         d = point_distance(point, wp)
         if (closest is None or d < closest[0]) and navigable(point, wp):
-            closest = (d, wp)
-    if closest == None:
+            closest.append(d, wp)
+    if closest is []:
         rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
-        return None
-    return closest[1]
+        return []
+    closest.sort()
+    closest_four = [x for (x,y) in closest][0:4]
+    return closest_four
 
 def a_star(dest, wps):
     """Perform A* to produce path of waypoints to given dest from nearest map waypoint.
@@ -119,10 +121,12 @@ def a_star(dest, wps):
     """
     near = find_nearest_navigable(my_pose, wps)
     goal = find_nearest_navigable(dest, wps)
-    if near is None:
+    if near is []:
         rospy.logerr("A* navigation failed, couldn't find a starting node.")
         return []
-    rospy.logdebug("LandmarkClosestToMe: {}".format(near.name))
+    rospy.logdebug("LandmarksClosestToMe: {}".format([x.name for x in near]))
+
+#    TODO prime A* with near nodes
     preds = {near.name: None}
     pq = PriorityQueue()
     open_set = [near]
