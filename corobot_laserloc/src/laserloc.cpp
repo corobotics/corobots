@@ -2,16 +2,16 @@
 #include <vector>
 
 #include "ros/ros.h"
-#include "corobot_msgs/Pose.h"
-#include "corobot_msgs/GetCoMap.h"
+#include "corobot_common/Pose.h"
+#include "corobot_common/GetCoMap.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "sensor_msgs/LaserScan.h"
 
 #include "corobot.h"
 #include "laserloc.h"
 
-using corobot_msgs::Pose;
-using corobot_msgs::GetCoMap;
+using corobot_common::Pose;
+using corobot_common::GetCoMap;
 using nav_msgs::OccupancyGrid;
 using sensor_msgs::LaserScan;
 

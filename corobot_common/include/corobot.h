@@ -1,7 +1,7 @@
 #ifndef corobot_h
 #define corobot_h
 
-#include "corobot_msgs/Pose.h"
+#include "corobot_common/Pose.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Quaternion.h"
 
@@ -67,7 +67,7 @@ namespace corobot {
      * @param bOrigin   The origin of frame B in frame A.
      * @return          The point converted into frame B.
      */
-    geometry_msgs::Point rCoordTransform(geometry_msgs::Point aPoint, corobot_msgs::Pose bOrigin);
+    geometry_msgs::Point rCoordTransform(geometry_msgs::Point aPoint, corobot_common::Pose bOrigin);
 
     /**
      * Perform a matrix multiplication with matrices stored as flat arrays.

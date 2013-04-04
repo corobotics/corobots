@@ -2,7 +2,7 @@ from math import cos, sin
 
 from numpy import matrix
 
-from corobot_msgs.msg import Pose
+from corobot_common.msg import Pose
 
 class EKF(object):
 

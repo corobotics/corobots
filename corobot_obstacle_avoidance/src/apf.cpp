@@ -2,7 +2,7 @@
 #include <iostream>
 #include <list>
 
-#include "corobot_msgs/Pose.h"
+#include "corobot_common/Pose.h"
 #include "geometry_msgs/Point.h"
 #include "sensor_msgs/LaserScan.h"
 
@@ -13,7 +13,7 @@ using namespace std;
 using corobot::bound;
 using corobot::length;
 using corobot::rCoordTransform;
-using corobot_msgs::Pose;
+using corobot_common::Pose;
 using geometry_msgs::Point;
 using sensor_msgs::LaserScan;
 

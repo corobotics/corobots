@@ -2,7 +2,7 @@
 \mainpage
 \htmlinclude manifest.html
 
-\b corobot_core 
+\b corobot_common
 
 <!-- 
 Provide an overview of your package.

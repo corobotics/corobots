@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "ros/ros.h"
-#include "corobot_msgs/Pose.h"
+#include "corobot_common/Pose.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "sensor_msgs/LaserScan.h"
 
@@ -84,7 +84,7 @@ public:
      * @return      A best-guess of where the laser scan goes in the area around
      *              the pose.
      */
-    corobot_msgs::Pose find(corobot_msgs::Pose pose);
+    corobot_common::Pose find(corobot_common::Pose pose);
 
 private:
 
@@ -183,7 +183,7 @@ private:
      * @param scan  Used to calculate the probability of each sample.
      * @return      A list of GridPoseP objects.
      */
-    std::vector<GridPoseP> generateSamples(corobot_msgs::Pose pose);
+    std::vector<GridPoseP> generateSamples(corobot_common::Pose pose);
 
 };
 

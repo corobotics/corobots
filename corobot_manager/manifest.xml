@@ -1,16 +1,16 @@
 <package>
-  <description brief="corobot_comm">
+  <description brief="corobot_manager">
 
-     corobot_comm
+     corobot_manager
 
   </description>
   <author>Karl Berger</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/corobot_comm</url>
+  <url>http://ros.org/wiki/corobot_manager</url>
   <depend package="rospy"/>
   <depend package="geometry_msgs"/>
-  <depend package="corobot_msgs"/>
+  <depend package="corobot_common"/>
 
 </package>
 
