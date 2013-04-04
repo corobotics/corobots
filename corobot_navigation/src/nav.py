@@ -8,6 +8,7 @@ import roslib; roslib.load_manifest('corobot_navigation')
 import rospy
 from geometry_msgs.msg import Point
 
+from corobot_common import bresenham
 from corobot_common.srv import GetPixelOccupancy, GetNeighbors, GetLandmark, GetLandmarks, GetCoMap
 from corobot_common.msg import Pose, Landmark
 
@@ -67,35 +68,20 @@ def goals_nav_callback(new_goal):
     except rospy.ServiceException as e:
         rospy.logerr("Service call failed: {}".format(e))
 
-def navigable_to(point, wp):
-    """Can I straight line nav to this wp from given point?"""
-    cx = point.x
-    cy = point.y
-    dx = wp.x - cx
-    dy = wp.y - cy
-    sdx = math.copysign(1, dx)
-    sdy = math.copysign(1, dy)
-    if dx == 0.0 and dy == 0.0:
-        return True
-    if math.fabs(dx) > math.fabs(dy):
-        incx = sdx / 2.0
-        incy = incx * dy / dx
-    else:
-        incy = sdy / 2.0
-        incx = incy * dx / dy
-    while sdx * dx > 0 or sdy * dy > 0:
-        #If you get an obstacle (if your occupancy prob is greater than 50%) then no path.
-        p_x = int(math.floor((cx + dx)/occ_map.info.resolution))
-        p_y = int(math.floor((cx + dy)/occ_map.info.resolution))
-        #Data is in row-major order
-        off = p_y*occ_map.info.width + p_x
-        occ = occ_map.data[off]
-    
-        if occ > 50:
-            return False
-        dx = dx - incx
-        dy = dy - incy
-    return True
+def bresenham_callback(x, y):
+    print (x, y)
+    i = x + y * occ_map.info.width
+    occ_prob = occ_map.data[i]
+    if occ_prob > 50:
+        return False
+
+def navigable(p1, p2):
+    """Test whether there are any obstacles between p1 and p2."""
+    res = occ_map.info.resolution
+    x1, y1 = int(p1.x / res), int(p1.y / res)
+    x2, y2 = int(p2.x / res), int(p2.y / res)
+    v = bresenham(x1, y1, x2, y2, bresenham_callback)
+    return False if v is False else True
 
 def distance(x, y):
     """The distance from the origin to (x, y)."""
@@ -119,11 +105,11 @@ def find_nearest_navigable(point, wps):
     """
     closest = None
     for wp in wps:
-        if closest is None and navigable_to(point, wp):
+        if closest is None and navigable(point, wp):
             closest = (point_distance(point, wp), wp)
             continue
         dist = point_distance(point, wp)
-        if closest is not None and dist < closest[0] and navigable_to(point, wp):
+        if closest is not None and dist < closest[0] and navigable(point, wp):
             closest = (dist, wp)
     if closest == None:
         rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
