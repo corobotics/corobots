@@ -10,7 +10,7 @@
   <url>http://ros.org/wiki/corobot_manager</url>
   <depend package="rospy"/>
   <depend package="geometry_msgs"/>
-  <depend package="corobot_msgs"/>
+  <depend package="corobot_common"/>
 
 </package>
 

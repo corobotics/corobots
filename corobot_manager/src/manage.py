@@ -8,8 +8,8 @@ import roslib; roslib.load_manifest('corobot_manager')
 import rospy
 from geometry_msgs.msg import Point
 
-from corobot_msgs.srv import GetLandmark
-from corobot_msgs.msg import Pose,Landmark
+from corobot_common.srv import GetLandmark
+from corobot_common.msg import Pose, Landmark
 
 #Robot's current position.  Defaults to a test position.
 #my_pose = Pose(x=26.896,y=-9.7088,theta=0) # Class3435N
