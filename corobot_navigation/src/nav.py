@@ -8,7 +8,7 @@ import roslib; roslib.load_manifest('corobot_navigation')
 import rospy
 from geometry_msgs.msg import Point
 
-from corobot_common import bresenham
+from corobot_common import bresenham, distance, point_distance
 from corobot_common.srv import GetPixelOccupancy, GetNeighbors, GetLandmark, GetLandmarks, GetCoMap
 from corobot_common.msg import Pose, Landmark
 
@@ -83,20 +83,12 @@ def navigable(p1, p2):
     v = bresenham(x1, y1, x2, y2, bresenham_callback)
     return False if v is False else True
 
-def distance(x, y):
-    """The distance from the origin to (x, y)."""
-    return math.sqrt(x * x + y * y)
-
-def point_distance(p1, p2):
-    """Distance between two point-like objects in the Euclidean plane."""
-    return distance(p2.x - p1.x, p2.y - p1.y)
-
-def find_nearest_navigable(point, wps):
+def find_nearest_navigable(point, waypoints):
     """Find nearest visible Landmark to the given point-like object.
 
     Arguments:
     point -- The starting point
-    wps -- Landmark[] with all waypoints in the graph/map
+    waypoints -- Landmark[] with all waypoints in the graph/map
 
     Returns a Landmark:
         Nearest navigable Landmark
@@ -104,13 +96,10 @@ def find_nearest_navigable(point, wps):
 
     """
     closest = None
-    for wp in wps:
-        if closest is None and navigable(point, wp):
-            closest = (point_distance(point, wp), wp)
-            continue
-        dist = point_distance(point, wp)
-        if closest is not None and dist < closest[0] and navigable(point, wp):
-            closest = (dist, wp)
+    for wp in waypoints:
+        d = point_distance(point, wp)
+        if (closest is None or d < closest[0]) and navigable(point, wp):
+            closest = (d, wp)
     if closest == None:
         rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
         return None
