@@ -98,13 +98,13 @@ def find_nearest_navigable(point, waypoints):
     closest = []
     for wp in waypoints:
         d = point_distance(point, wp)
-        if (closest is None or d < closest[0]) and navigable(point, wp):
-            closest.append(d, wp)
-    if closest is []:
+        if (closest == [] or d < closest[0]) and navigable(point, wp):
+            closest.append((d, wp))
+    if closest == []:
         rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
         return []
     closest.sort()
-    closest_four = [x for (x,y) in closest][0:4]
+    closest_four = [y for (x,y) in closest][0:4]
     return closest_four
 
 def a_star(dest, wps):
@@ -120,23 +120,32 @@ def a_star(dest, wps):
 
     """
     near = find_nearest_navigable(my_pose, wps)
-    goal = find_nearest_navigable(dest, wps)
+    goal = Landmark(name="CORO_GOAL_",x=dest.x,y=dest.y)
+    goal_zone = find_nearest_navigable(dest, wps)
     if near is []:
         rospy.logerr("A* navigation failed, couldn't find a starting node.")
         return []
     rospy.logdebug("LandmarksClosestToMe: {}".format([x.name for x in near]))
 
 #    TODO prime A* with near nodes
-    preds = {near.name: None}
+    preds = {}
     pq = PriorityQueue()
-    open_set = [near]
-    visited = []
+ 
+    # Set of nodes to be potentially evaluated, 
+    #  initialized with our set of potential starting nodes
+    open_set = near
+    visited = [] # Set of nodes already evaluated
     #dict holding {waypoint name: distance from robot to waypoint} pairs
-    g_scores = {near.name: point_distance(my_pose, near)}
-    #pq elements are (g+h, node)
-    # g=distRobotWp, h=distWpGoal
-    pq.put((g_scores[near.name] + point_distance(near, goal),
-        near))
+    # This is the cost from the node along the best known path
+    for node in near:
+        g = point_distance(my_pose, node)
+        g_scores = {node.name: g}
+
+        #pq elements are (g+h, node)
+        # g=distRobotWp, h=distWpGoal
+        # These are 'f_scores' of the estimated best path cost through the node
+        pq.put((g + point_distance(node, goal), node))
+        preds[node.name] = None
     #Set up persistent connection to the GetNeighbors service
     rospy.wait_for_service('get_neighbors')
     get_nbrs_srv = rospy.ServiceProxy('get_neighbors', GetNeighbors, persistent=True)
@@ -144,8 +153,7 @@ def a_star(dest, wps):
         while not pq.empty():
             curr = pq.get()
             cnode = curr[1]
-            
-            if cnode.name == goal.name:
+            if cnode.name == "CORO_GOAL_":
                 #Found the path! Now build it.
                 path = []
                 pnode = goal
@@ -153,11 +161,20 @@ def a_star(dest, wps):
                     pname = pnode.name
                     path.insert(0, pnode)
                     pnode = preds[pname]
+
                 return path
 
             open_set.remove(cnode)
             visited.append(cnode)
-            for nbr in get_nbrs_srv(cnode).neighbors:
+
+            #Bit of hackery to add the goal as a neighbor to all of
+            # the waypoints in the goal_zone, so that we aren't forced
+            # to overshoot the goal and then backtrack
+            nbrs = get_nbrs_srv(cnode).neighbors
+            if cnode in goal_zone:
+                nbrs.append(goal)
+
+            for nbr in nbrs:
                 if nbr in visited:
                     continue
                 tentG = g_scores[cnode.name] + point_distance(cnode, nbr)
