@@ -92,7 +92,19 @@
 	realy= (barcodeY) - distanceAvg * sin (angleAvg);	
 	}
 
-	
+	double cbx=offsetDistance;
+	double cby=sqrt((distanceAvg*distanceAvg)-(offsetDistance*offsetDistance));
+	double cbo=angleAvg;
+
+	double alpha= acos(offsetDistance/distanceAvg);
+	double gamma= ( (PI) - (alpha + angleAvg) );
+
+	double bcx=distanceAvg * cos((PI/2)-gamma);
+	double bcy=distanceAvg * sin((PI/2)-gamma);
+	double bco=((3*PI)/2)-cbo;
+
+	cout<<"zack stuff"<<endl;
+	cout<<"cbx "<<cbx<<" "<<"cby "<<cby<<" "<<"cbo "<<cbo<<" "<<"alpha "<<alpha<<" "<<"gamma "<<gamma<<" "<<"bcx "<<bcx<<" "<<"bcy "<<bcy<<" "<<"bco "<<bco<<endl;
 	
 	//Publishing the msg
        std_msgs::String msg1;
