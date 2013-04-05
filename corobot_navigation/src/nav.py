@@ -14,7 +14,7 @@ from corobot_common.msg import Pose, Landmark
 
 #Robot's current position.  Defaults to a test position.
 #my_pose = Pose(x=26.896, y=-9.7088, theta=0) # Class3435N
-my_pose = Pose(x=27.0, y=-7.0, theta=0) # Close to ATRIUMS4
+my_pose = Pose(x=7.1832,y=-9.184,theta=0) # Close to EInter
 
 occ_map = None
 
@@ -69,9 +69,9 @@ def goals_nav_callback(new_goal):
         rospy.logerr("Service call failed: {}".format(e))
 
 def bresenham_callback(x, y):
-    print (x, y)
     i = x + y * occ_map.info.width
     occ_prob = occ_map.data[i]
+    rospy.logerr(str((x, y, occ_prob)))
     if occ_prob > 50:
         return False
 
@@ -127,7 +127,7 @@ def a_star(dest, wps):
         return []
     rospy.logdebug("LandmarksClosestToMe: {}".format([x.name for x in near]))
 
-#    TODO prime A* with near nodes
+    #preds used to build path when a path is found.
     preds = {}
     pq = PriorityQueue()
  
@@ -137,6 +137,8 @@ def a_star(dest, wps):
     visited = [] # Set of nodes already evaluated
     #dict holding {waypoint name: distance from robot to waypoint} pairs
     # This is the cost from the node along the best known path
+    rospy.logerr("Near nodes: " + str(near))
+    rospy.logerr("Goal Zone: " + str(goal_zone))
     for node in near:
         g = point_distance(my_pose, node)
         g_scores = {node.name: g}
@@ -153,6 +155,7 @@ def a_star(dest, wps):
         while not pq.empty():
             curr = pq.get()
             cnode = curr[1]
+            rospy.logerr("Processing node: " + cnode.name)
             if cnode.name == "CORO_GOAL_":
                 #Found the path! Now build it.
                 path = []
@@ -161,7 +164,7 @@ def a_star(dest, wps):
                     pname = pnode.name
                     path.insert(0, pnode)
                     pnode = preds[pname]
-
+                rospy.logerr("Path: " + str(path))
                 return path
 
             open_set.remove(cnode)

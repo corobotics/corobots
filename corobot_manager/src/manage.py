@@ -13,7 +13,7 @@ from corobot_common.msg import Pose, Landmark
 
 #Robot's current position.  Defaults to a test position.
 #my_pose = Pose(x=26.896,y=-9.7088,theta=0) # Class3435N
-my_pose = Pose(x=27.0,y=-7.0,theta=0) # Close to ATRIUMS4
+my_pose = Pose(x=7.1832,y=-9.184,theta=0) # Close to EInter
 
 goal_queue = deque()
 cl_socket = None
@@ -92,6 +92,12 @@ def client_comm(addr, goals_pub, goals_nav_pub):
                 rospy.logerr("Service call failed: {}".format(e))
                 cl_out.write("ERROR {}\n".format(e))
                 cl_out.flush()
+        elif cmd[0] == 'NAVTOXY':
+            goals_nav_pub.publish(x=float(cmd[1]),y=float(cmd[2]))
+            goal_queue.append(Point(x=float(cmd[1]),y=float(cmd[2])))
+
+            cl_out.write("OKAY\n")
+            cl_out.flush()
         elif cmd[0] == 'NAVTOLOC':
             rospy.wait_for_service('get_landmark')
             dest = cmd[1].upper()

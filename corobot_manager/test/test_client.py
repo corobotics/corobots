@@ -19,6 +19,10 @@ def main():
     data = s.recv(1024)
     print(data)
 
+    s.sendall('NAVTOXY 7.4128 13.0544\n')
+    data = s.recv(1024)
+    print(data)
+
     #Should return an ERROR condition
     s.sendall('NAVTOLOC NOWHERE\n')
     data = s.recv(1024)
