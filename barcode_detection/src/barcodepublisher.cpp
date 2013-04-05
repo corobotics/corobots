@@ -7,14 +7,14 @@
 #include "std_msgs/String.h"
 #include "../include/CSVReader.h"
 #include "barcodeHandler.h"
-#include "corobot_msgs/Pose.h"
+#include "corobot_common/Pose.h"
 
 
 #define PI 3.14159265
 
 using namespace std;
 using namespace zbar;
-using corobot_msgs::Pose;
+using corobot_common::Pose;
 
 
 int main(int argc, char **argv)
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 
     // std_msgs::String 
     // create and initialize a Processor
-    const char *device = "/dev/video0";
+    const char* device = "/dev/video0";
 
    
     Processor proc;
@@ -40,6 +40,8 @@ int main(int argc, char **argv)
 	 
     // setup a callback
     BarcodeHandler my_handler(chatter_pub);
+
+   
     proc.set_handler(my_handler);
 
     // enable the preview window
@@ -49,10 +51,11 @@ int main(int argc, char **argv)
     try {
 	// keep scanning until user provides key/mouse input
 	
-	proc.process_one();
+	proc.user_wait();
     }
     catch(ClosedError & e) {
     }
+	
 	
 	
     return (0);

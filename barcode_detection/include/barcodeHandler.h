@@ -9,7 +9,7 @@
 #include <string>
 #include "std_msgs/String.h"
 #include "../include/CSVReader.h"
-#include "corobot_msgs/Pose.h"
+#include "corobot_common/Pose.h"
 
 
 
@@ -23,7 +23,7 @@ class pt{
 
 using namespace std;
 using namespace zbar;
-using corobot_msgs::Pose;
+using corobot_common::Pose;
 
 class BarcodeHandler:public Image::Handler {
 

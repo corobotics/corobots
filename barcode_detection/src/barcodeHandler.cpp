@@ -56,6 +56,7 @@
 	
 	angleAvg= (angleR + angleL) / 2;
 
+	
 	// Calculate Average and convert to meters 
 	distanceAvg= ((distanceL + distanceR) / 2) / 39.3701;
 	cout << angleR <<" "<< angleL << endl;
@@ -64,24 +65,34 @@
 	
 	if(barcodeOrientation.compare("S")==0){
 	// S orientation 
-	realx= (barcodeX) + distanceAvg * cos (angleAvg+180);
-	realy= (barcodeY) + distanceAvg * sin (angleAvg+180);
+	angleAvg= (angleAvg+180) * (PI/180);
+	cout<<"south";
+	realx= (barcodeX) + distanceAvg * cos (angleAvg);
+	realy= (barcodeY) - distanceAvg * sin (angleAvg);
 	}
 	if(barcodeOrientation.compare("N")==0){
 	// N orientation 
+	angleAvg= (angleAvg) * (PI/180);
+	cout<<"north";
 	realx= (barcodeX) + distanceAvg * cos (angleAvg);
-	realy= (barcodeY) + distanceAvg * sin (angleAvg);
+	realy= (barcodeY) - distanceAvg * sin (angleAvg);
 	}
 	if(barcodeOrientation.compare("W")==0){
 	// W orientation 
-	realx= (barcodeX) + distanceAvg * cos (angleAvg+270);
-	realy= (barcodeY) + distanceAvg * sin (angleAvg+270);
+	angleAvg= (angleAvg+90) * (PI/180);
+	cout<<"west";
+	realx= (barcodeX) + distanceAvg * cos (angleAvg);
+	realy= (barcodeY) - distanceAvg * sin (angleAvg);
 	}
 	if(barcodeOrientation.compare("E")==0){
 	// E orientation 
-	realx= (barcodeX) + distanceAvg * cos (angleAvg+90);
-	realy= (barcodeY) + distanceAvg * sin (angleAvg+90);	
+	angleAvg= (angleAvg+270) * (PI/180);
+	cout<<"east";
+	realx= (barcodeX) + distanceAvg * cos (angleAvg);
+	realy= (barcodeY) - distanceAvg * sin (angleAvg);	
 	}
+
+	
 	
 	//Publishing the msg
        std_msgs::String msg1;

@@ -11,7 +11,7 @@
   <depend package="std_msgs"/>
   <depend package="rospy"/>
   <depend package="roscpp"/>
-  <depend package="corobot_msgs"/>
+  <depend package="corobot_common"/>
  
 
 </package>
