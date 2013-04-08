@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+
+from collections import deque
+from contextlib import closing
 import socket
 import time
 import threading
-from collections import deque
 
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
@@ -19,7 +21,7 @@ class CorobotManager():
         #self.pose = Pose(x=26.896, y=-9.7088, theta=0) # Class3435N
         self.pose = Pose(x=74.2592,y=14.432, theta=0) # Close to EInter
         # Track goals.
-        self.goal_queue = deque()
+        self.goals_queue = deque()
         # The output stream to the current client, or None.
         self.client_out = None
         # A lock so we can write to the client from multiple threads.
@@ -33,7 +35,7 @@ class CorobotManager():
         """Utility function to write a message to the current client."""
         with self.client_out_lock:
             if self.client_out:
-                self.client_out.write("%d %s\n" % (msg_id, msg))
+                self.client_out.write("%s %s\n" % (msg_id, msg))
                 self.client_out.flush()
 
     def pose_callback(self, pose):
@@ -59,23 +61,29 @@ class CorobotManager():
 
     def listen_for_clients(self):
         # Create our server socket.
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((socket.gethostname(), 15001))
-        self.server_socket.listen(1)
+        server_socket = socket.socket()
+        server_socket.bind((socket.gethostname(), 15001))
+        server_socket.listen(1)
         while not rospy.is_shutdown():
             # Accept socket.
-            client_socket, client_addr = self.server_socket.accept()
-            # Set up the output output stream variable.
-            with self.client_out_lock:
-                self.client_out = client_socket.makefile("w")
-            # Only this function gets the input stream.
-            with client_socket.makefile("r") as client_in:
-                self.listen_for_commands(client_in, client_addr)
-            # Clean up instance variables client_out, client_socket, and client_addr.
-            with self.client_out_lock:
-                self.client_out.close()
-                self.client_out = None
-                client_socket.close()
+            client_socket, client_addr = server_socket.accept()
+            with closing(client_socket):
+                # Set up the output output stream variable.
+                with self.client_out_lock:
+                    self.client_out = client_socket.makefile("w")
+                # Only this function gets the input stream.
+                with closing(client_socket.makefile("r")) as client_in:
+                    try:
+                        self.listen_for_commands(client_in, client_addr)
+                    except socket.error as e:
+                        rospy.logerr(e)
+                # Clean up client_out.
+                with self.client_out_lock:
+                    try:
+                        self.client_out.close()
+                    except:
+                        pass
+                    self.client_out = None
 
     def listen_for_commands(self, client_in, client_addr):
         """Listen for API commands from the client.
@@ -92,9 +100,13 @@ class CorobotManager():
             if len(command) == 0:
                 break
 
-            rospy.loginfo("Command recieved from client %s: %s", client_addr, command)
-            tokens = cmd.strip().split(" ")
+            host, port = client_addr
+            rospy.loginfo("Command recieved from client [%s:%s]: %s", host, port, command)
+            tokens = command.strip().split(" ")
             msg_id = tokens[0]
+            if len(tokens) < 2:
+                self.client_write(msg_id, "ERROR Missing message type.")
+                continue
             msg_type = tokens[1]
             data = tokens[2:]
 
@@ -107,8 +119,7 @@ class CorobotManager():
                         landmark = self.get_landmark(data[0].upper())
                         x, y = landmark.wp.x, landmark.wp.y
                     except rospy.ServiceException as e:
-                        rospy.logerr("Service call failed: %s" % e)
-                        self.client_write("ERROR %s" % e)
+                        self.client_write(msg_id, "ERROR " % e)
                 else:
                     x, y = float(data[0]), float(data[1])
                 if msg_type.startswith("NAVTO"):
