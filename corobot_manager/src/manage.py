@@ -17,7 +17,7 @@ class CorobotManager():
     def __init__(self):
         # Robot"s current position.  Defaults to a test position.
         #self.pose = Pose(x=26.896, y=-9.7088, theta=0) # Class3435N
-        self.pose = Pose(x=7.1832, y=-9.184, theta=0) # Close to EInter
+        self.pose = Pose(x=74.2592,y=14.432, theta=0) # Close to EInter
         # Track goals.
         self.goal_queue = deque()
         # The output stream to the current client, or None.
@@ -64,7 +64,7 @@ class CorobotManager():
         self.server_socket.listen(1)
         while not rospy.is_shutdown():
             # Accept socket.
-            client_socket, client_addr = server_socket.accept()
+            client_socket, client_addr = self.server_socket.accept()
             # Set up the output output stream variable.
             with self.client_out_lock:
                 self.client_out = client_socket.makefile("w")
