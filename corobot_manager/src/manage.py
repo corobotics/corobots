@@ -20,11 +20,10 @@ class CorobotManager():
         self.pose = Pose(x=7.1832, y=-9.184, theta=0) # Close to EInter
         # Track goals.
         self.goal_queue = deque()
-        # The socket connecting to the current client, or None.
-        self.client_socket = None
+        # The output stream to the current client, or None.
+        self.client_out = None
         # A lock so we can write to the client from multiple threads.
         self.client_out_lock = threading.Lock()
-        self._is_shutdown = False
 
     def start(self):
         self.init_ros_node()
@@ -32,8 +31,8 @@ class CorobotManager():
 
     def client_write(self, msg_id, msg):
         """Utility function to write a message to the current client."""
-        if self.client_socket:
-            with self.client_out_lock:
+        with self.client_out_lock:
+            if self.client_out:
                 self.client_out.write("%d %s\n" % (msg_id, msg))
                 self.client_out.flush()
 
@@ -65,36 +64,35 @@ class CorobotManager():
         self.server_socket.listen(1)
         while not rospy.is_shutdown():
             # Accept socket.
-            self.client_socket, self.client_addr = server_socket.accept()
+            client_socket, client_addr = server_socket.accept()
             # Set up the output output stream variable.
             with self.client_out_lock:
-                self.client_out = self.client_socket.makefile("w")
+                self.client_out = client_socket.makefile("w")
             # Only this function gets the input stream.
-            with self.client_socket.makefile("r") as client_in:
-                self.listen_for_commands(client_in)
+            with client_socket.makefile("r") as client_in:
+                self.listen_for_commands(client_in, client_addr)
             # Clean up instance variables client_out, client_socket, and client_addr.
             with self.client_out_lock:
                 self.client_out.close()
                 self.client_out = None
-                self.client_socket.close()
-                self.client_socket = None
-                self.client_addr = None
+                client_socket.close()
 
-    def listen_for_commands(self, client_in):
+    def listen_for_commands(self, client_in, client_addr):
         """Listen for API commands from the client.
 
-        client_in -- a file object for reading from the client socket.
+        client_in -- A file object for reading from the client socket.
+        client_addr -- The client's address.
 
         """
         rospy.loginfo("Ready for commands.")
-        while True:
+        while not rospy.is_shutdown():
             command = client_in.readline()
 
-            #Communication terminated?
+            # Communication terminated?
             if len(command) == 0:
                 break
 
-            rospy.loginfo("Command recieved from client %s: %s", self.client_addr, command)
+            rospy.loginfo("Command recieved from client %s: %s", client_addr, command)
             tokens = cmd.strip().split(" ")
             msg_id = tokens[0]
             msg_type = tokens[1]
