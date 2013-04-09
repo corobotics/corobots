@@ -28,7 +28,7 @@ def barcode_callback(pose):
     ekf.update_pos(pose)
 
 def main():
-    global ekf, pub;
+    global ekf, pose_pub;
     rospy.init_node("localization")
     ekf = EKF(1.0 / ODOM_FREQ)
     pose_pub = rospy.Publisher("pose", Pose)

@@ -27,8 +27,8 @@ class EKF(object):
             [   0.0,    0.0,    0.0, 0.0, 1.0, 0.0],
             [   0.0,    0.0,    0.0, 0.0, 0.0, 1.0]])
         # Constants for the update H matrices.
-        self.HPOS = concatenate(eye(3), zeros((3, 3)), axis=1)
-        self.HVEL = concatenate(zeros((3, 3)), eye(3), axis=1)
+        self.HPOS = concatenate([eye(3), zeros((3, 3))], axis=1)
+        self.HVEL = concatenate([zeros((3, 3)), eye(3)], axis=1)
 
     @property
     def x(self):
@@ -68,7 +68,7 @@ class EKF(object):
         v = twist_with_cov.twist.linear.x
         w = twist_with_cov.twist.angular.z
         y = column_vector(v * cos(self.theta), v * sin(self.theta), w)
-        W = reduce_covariance(twist_with_cov.covariance)
+        W = matrix(reduce_covariance(twist_with_cov.covariance)).reshape(3, 3)
         self.update(y, W, self.HVEL)
 
     def update(self, y, W, H):
@@ -91,7 +91,6 @@ class EKF(object):
         x, y, theta, vx, vy, w = self.state_tuple
         cost, sint = cos(theta), sin(theta)
         dt = self.dt
-        V = matrix(V).reshape(3, 3)
         # state prediction
         self.state = column_vector(
             x + dt * vx,
@@ -121,4 +120,4 @@ class EKF(object):
             [0.05 * vc, 0.0],
             [0.0, 0.05 * wc]])
         # covariance prediction
-        self.covariance = Fp * P * Fp.T + Fu * V * Fu.T
+        self.covariance = Fp * self.covariance * Fp.T + Fu * V * Fu.T
