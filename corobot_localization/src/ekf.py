@@ -3,7 +3,7 @@ from math import cos, sin
 from numpy.matlib import eye, matrix, zeros
 
 from corobot_common.msg import Pose
-from utils import column_vector
+from utils import column_vector, reduce_covariance
 
 class EKF(object):
 
@@ -44,9 +44,11 @@ class EKF(object):
 
     @property
     def state_tuple(self):
+        """Returns a tuple of the current state: (x, y, theta, vx, vy, w)"""
         return tuple(self.state.T.tolist()[0])
 
     def get_pose(self):
+        """Converts the current EKF state into a Pose object."""
         pose = Pose()
         pose.header.frame_id = "world"
         pose.x = self.x
@@ -61,12 +63,12 @@ class EKF(object):
         W = matrix(pose.cov).reshape(3, 3)
         self.update(y, W, self.HPOS)
 
-    def update_vel(self, twist):
+    def update_vel(self, twist_with_cov):
         """Convenience function to do a velocity update."""
-        v = twist.twist.linear.x
-        w = twist.twist.angular.z
+        v = twist_with_cov.twist.linear.x
+        w = twist_with_cov.twist.angular.z
         y = column_vector(v * cos(self.theta), v * sin(self.theta), w)
-        W = reduce_covariance(twist.covariance)
+        W = reduce_covariance(twist_with_cov.covariance)
         self.update(y, W, self.HVEL)
 
     def update(self, y, W, H):
@@ -83,15 +85,40 @@ class EKF(object):
         self.state = x - R * (y - H * x)
         self.covariance = P - R * H * P
 
-    def predict(self, vc, wc, V):
-        x, y, t, vx, vy, w = self.state_tuple
+    def predict(self, twist):
+        # command velocity and angular velocity
+        vc, wc = twist.linear.x, twist.angular.z
+        x, y, theta, vx, vy, w = self.state_tuple
+        cost, sint = cos(theta), sin(theta)
+        dt = self.dt
         V = matrix(V).reshape(3, 3)
         # state prediction
-        sp = EKF.column_vector(x + v * cos(t), y + self.dt * v * sin(t), t + self.dt * w)
-        F = matrix([
-            [1, 0, -self.dt * v * sin(t)],
-            [0, 1, self.dt * v * cos(t)],
-            [0, 0, 1]])
+        self.state = column_vector(
+            x + dt * vx,
+            y + dt * vy,
+            theta + dt * w,
+            vc * cost,
+            vc * sint,
+            wc)
+        # the partial derivatives of f for the state
+        Fp = matrix([
+            [1.0, 0.0, 0.0,  dt, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0,  dt, 0.0],
+            [0.0, 0.0, 1.0, 0.0, 0.0,  dt],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+        # the partial derivatives of f for the commands
+        Fu = matrix([
+            [ 0.0, 0.0],
+            [ 0.0, 0.0],
+            [ 0.0, 0.0],
+            [cost, 0.0],
+            [sint, 0.0],
+            [ 0.0, 1.0]])
+        # the input command covariances
+        V = matrix([
+            [0.05 * vc, 0.0],
+            [0.0, 0.05 * wc]])
         # covariance prediction
-        PP = F * P * F.T + V
-        return sp, PP
+        self.covariance = Fp * P * Fp.T + Fu * V * Fu.T
