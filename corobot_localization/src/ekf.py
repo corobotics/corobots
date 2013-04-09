@@ -1,6 +1,6 @@
 from math import cos, sin
 
-from numpy.matlib import eye, matrix, zeros
+from numpy.matlib import concatenate, eye, matrix, zeros
 
 from corobot_common.msg import Pose
 from utils import column_vector, reduce_covariance
