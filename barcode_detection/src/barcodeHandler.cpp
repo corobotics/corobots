@@ -1,126 +1,120 @@
-  #include "../include/barcodeHandler.h"
+#include "../include/barcodeHandler.h"
 
-    BarcodeHandler::BarcodeHandler(ros::Publisher & chatter_pub) {
+BarcodeHandler::BarcodeHandler(ros::Publisher & chatter_pub)
+{
 
-	test = chatter_pub;
+    test = chatter_pub;
 
-    } 
-    void BarcodeHandler::image_callback(Image & image) {
+}
+void BarcodeHandler::image_callback(Image & image)
+    {
 
-	
-	for (SymbolIterator symbol = image.symbol_begin(); symbol != image.symbol_end(); ++symbol) {
 
-	    for(int i=0;i<4;i++){
-		point[i].x=symbol->get_location_x(i);
-		point[i].y=symbol->get_location_y(i);
-	    }
-	
+    for (SymbolIterator symbol = image.symbol_begin(); symbol != image.symbol_end(); ++symbol) {
+
+	for (int i = 0; i < 4; i++) {
+	    point[i].x = symbol->get_location_x(i);
+	    point[i].y = symbol->get_location_y(i);
+	}
+
 	// Read csv file 
 	csvreader.init();
-        csvreader.readFile();
-        
+	csvreader.readFile();
+
 	// Get data 
-        istringstream ( csvreader.getX(symbol->get_data()) ) >> barcodeX;
-	istringstream ( csvreader.getY(symbol->get_data()) ) >> barcodeY;
-	barcodeOrientation=csvreader.getOrientation(symbol->get_data());
+	istringstream(csvreader.getX(symbol->get_data())) >> barcodeX;
+	istringstream(csvreader.getY(symbol->get_data())) >> barcodeY;
+	barcodeOrientation = csvreader.getOrientation(symbol->get_data());
 
 	// Close csv file 
 	csvreader.close();
-	
-	// focal length( calculated before) and test distance 	
-	float f = 270,D=25;
+
+	// focal length( calculated before) and test distance   
+	float f = 270, D = 25;
 
 	//Length of pixels top left and bottom left
-	lengthPixelL=abs (point[1].y-point[0].y);
+	lengthPixelL = abs(point[1].y - point[0].y);
 
 	//Length of pixels top right and bottom right
-	lengthPixelR=abs (point[3].y-point[2].y);
+	lengthPixelR = abs(point[3].y - point[2].y);
 
 	//Calculating the distance from the barcode to camera
-	distanceL=(f*D)/lengthPixelL;
-	distanceR=(f*D)/lengthPixelR;
+	distanceL = (f * D) / lengthPixelL;
+	distanceR = (f * D) / lengthPixelR;
 
-	cout<<"length of pixel:"<<lengthPixelL;
-	
+	cout << "length of pixel:" << lengthPixelL;
+
 	//offsetDistance= ( (f*D) / abs( 800 -  ( ( point[0].x + point[1].x + point[2].x + point[3].x ) / 4 ) ) ) / 39.3701 ;
-	offsetDistance= ( 5 * abs( 800 -  ( ( point[0].x + point[1].x + point[2].x + point[3].x ) / 4 ) ) / lengthPixelL ) / 39.3701;
-	cout<<endl<<point[0].x<<" "<<point[1].x<<" "<<point[2].x<<" "<<point[3].x;
-	cout<<endl<<"Offset="<<offsetDistance<<endl;
+	offsetDistance = -(5 * (800 - ((point[0].x + point[1].x + point[2].x + point[3].x) / 4)) / lengthPixelL) / 39.3701;
+	cout << endl << point[0].x << " " << point[1].x << " " << point[2].x << " " << point[3].x;
+	cout << endl << "Offset=" << offsetDistance << endl;
 
-	squareDistanceL=pow(distanceL,2);
-	squareDistanceR=pow(distanceR,2);
+	squareDistanceL = pow(distanceL, 2);
+	squareDistanceR = pow(distanceR, 2);
 
 	//Calculating the angle from the barcode to camera
-	angleR=acos ((squareDistanceR+25-squareDistanceL)/(2*distanceR*5)) * 180.0 / PI ;
-	angleL=180 - (acos ((squareDistanceL+25-squareDistanceR)/(2*distanceL*5)) * 180.0 / PI);
-	
-	angleAvg= (angleR + angleL) / 2;
+	angleR = acos((squareDistanceR + 25 - squareDistanceL) / (2 * distanceR * 5));	//* 180.0 / PI ;
+	angleL = (PI) - (acos((squareDistanceL + 25 - squareDistanceR) / (2 * distanceL * 5)));	// * 180.0 / PI);
 
-	
+	angleAvg = (angleR + angleL) / 2;
+
+
 	// Calculate Average and convert to meters 
-	distanceAvg= ((distanceL + distanceR) / 2) / 39.3701;
-	cout << angleR <<" "<< angleL << endl;
+	distanceAvg = ((distanceL + distanceR) / 2) / 39.3701;
+	cout << angleR << " " << angleL << endl;
 
-	float realx, realy= 0.0;
-	
-	if(barcodeOrientation.compare("S")==0){
-	// S orientation 
-	angleAvg= (angleAvg+180) * (PI/180);
-	cout<<"south";
-	realx= (barcodeX) + distanceAvg * cos (angleAvg);
-	realy= (barcodeY) - distanceAvg * sin (angleAvg);
-	}
-	if(barcodeOrientation.compare("N")==0){
-	// N orientation 
-	angleAvg= (angleAvg) * (PI/180);
-	cout<<"north";
-	realx= (barcodeX) + distanceAvg * cos (angleAvg);
-	realy= (barcodeY) - distanceAvg * sin (angleAvg);
-	}
-	if(barcodeOrientation.compare("W")==0){
-	// W orientation 
-	angleAvg= (angleAvg+90) * (PI/180);
-	cout<<"west";
-	realx= (barcodeX) + distanceAvg * cos (angleAvg);
-	realy= (barcodeY) - distanceAvg * sin (angleAvg);
-	}
-	if(barcodeOrientation.compare("E")==0){
-	// E orientation 
-	angleAvg= (angleAvg+270) * (PI/180);
-	cout<<"east";
-	realx= (barcodeX) + distanceAvg * cos (angleAvg);
-	realy= (barcodeY) - distanceAvg * sin (angleAvg);	
+	cbx = offsetDistance;
+	cby = sqrt((distanceAvg * distanceAvg) - (offsetDistance * offsetDistance));
+	cbtheta = angleAvg;
+
+	alpha = acos(offsetDistance / distanceAvg);
+	gamma = ((PI) - (alpha + angleAvg));
+
+	bcx = distanceAvg * cos((PI / 2) - gamma);
+	bcy = distanceAvg * sin((PI / 2) - gamma);
+	bctheta = ((3 * PI) / 2) - cbtheta;
+
+	float realx, realy = 0.0;
+
+	if (barcodeOrientation.compare("N") == 0) {
+	    realx = (barcodeX) + bcx;
+	    realy = (barcodeY) + bcy;
 	}
 
-	double cbx=offsetDistance;
-	double cby=sqrt((distanceAvg*distanceAvg)-(offsetDistance*offsetDistance));
-	double cbo=angleAvg;
+	else if (barcodeOrientation.compare("S") == 0) {
+	    realx = (barcodeX) - bcx;
+	    realy = (barcodeY) - bcy;
+	    bctheta += PI;
+	} else if (barcodeOrientation.compare("E") == 0) {
+	    realx = (barcodeY) - bcx;
+	    realy = (barcodeX) + bcy;
+	    bctheta += 3 * (PI / 2);
+	} else if (barcodeOrientation.compare("W") == 0) {
+	    realx = (barcodeY) + bcx;
+	    realy = (barcodeX) - bcy;
+	    bctheta += PI / 2;
 
-	double alpha= acos(offsetDistance/distanceAvg);
-	double gamma= ( (PI) - (alpha + angleAvg) );
+	}
 
-	double bcx=distanceAvg * cos((PI/2)-gamma);
-	double bcy=distanceAvg * sin((PI/2)-gamma);
-	double bco=((3*PI)/2)-cbo;
+	cout << "cbx " << cbx << " " << "cby " << cby << " " << "cbo " << cbtheta << " " << "alpha " << alpha << " " << "gamma " << gamma << " " << "bcx " << bcx << " " << "bcy " << bcy << " 		" << "bco " << bctheta << endl;
 
-	cout<<"zack stuff"<<endl;
-	cout<<"cbx "<<cbx<<" "<<"cby "<<cby<<" "<<"cbo "<<cbo<<" "<<"alpha "<<alpha<<" "<<"gamma "<<gamma<<" "<<"bcx "<<bcx<<" "<<"bcy "<<bcy<<" "<<"bco "<<bco<<endl;
-	
 	//Publishing the msg
-       std_msgs::String msg1;
+	std_msgs::String msg1;
 
 	Pose msg;
-	msg.x=realx;
-	msg.y=realy;
-	msg.theta=angleAvg;
-	std::stringstream ss;
-	ss <<distanceAvg<<" "<<angleAvg<<" Position: "<< realx <<" "<< realy;
-	msg1.data = ss.str();
-	ROS_INFO("%s", msg1.data.c_str());
-	test.publish(msg);
-	
-	}
+	msg.x = realx;
+	msg.y = realy;
+	msg.theta = angleAvg;
+	for (int i = 0; i < 9; i++)
+	    msg.cov[i] = 0;
 
-	
+	msg.cov[0] = 0.05;
+	msg.cov[3] = 0.05;
+	msg.cov[8] = 0.1;
+	test.publish(msg);
+
     }
+
+
+}
 

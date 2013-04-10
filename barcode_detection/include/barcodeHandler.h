@@ -33,6 +33,7 @@ class BarcodeHandler:public Image::Handler {
     pt point[4];
     int lengthPixelL,lengthPixelR;
     float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg, offsetDistance;
+    float cbx, cby, cbtheta, bcx, bcy, bctheta, alpha, gamma;
     int barcodeX, barcodeY;
     string barcodeOrientation;
     CSVReader csvreader;

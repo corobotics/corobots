@@ -49,7 +49,7 @@ string CSVReader::getX(string url)
     for (int i = 1; i < data.size(); i++) {
 	temp = data[i][6];
 	if (url.compare(temp) == 0)
-	    return data[i][1];
+	    return data[i][3];
     }
     return "";
 }
@@ -60,7 +60,7 @@ string CSVReader::getY(string url)
     for (int i = 1; i < data.size(); i++) {
 	temp = data[i][6];
 	if (url.compare(temp) == 0)
-	    return data[i][2];
+	    return data[i][4];
     }
     return "";
 }
