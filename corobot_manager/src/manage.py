@@ -21,7 +21,7 @@ class CorobotManager():
         #self.pose = Pose(x=26.896, y=-9.7088, theta=0) # Class3435N
         self.pose = Pose(x=67.7648,y=14.9568,theta=0) # Close to EInter
         # Track goals.
-        self.goals_queue = deque()
+        self.goal_queue = deque()
         # The output stream to the current client, or None.
         self.client_out = None
         # A lock so we can write to the client from multiple threads.
@@ -29,7 +29,10 @@ class CorobotManager():
 
     def start(self):
         self.init_ros_node()
-        self.listen_for_clients()
+        try:
+            self.listen_for_clients()
+        except SystemExit:
+            rospy.signal_shutdown("Requested by user.")
 
     def client_write(self, msg_id, msg):
         """Utility function to write a message to the current client."""
@@ -66,7 +69,12 @@ class CorobotManager():
         server_socket.listen(1)
         while not rospy.is_shutdown():
             # Accept socket.
-            client_socket, client_addr = server_socket.accept()
+            try:
+                client_socket, client_addr = server_socket.accept()
+            except socket.error as e:
+                # If a SystemExit is raised during socket.accept(), it gets
+                # rethrown as a socket.error, but we want SystemExit.
+                raise SystemExit(e)
             with closing(client_socket):
                 # Set up the output output stream variable.
                 with self.client_out_lock:
@@ -126,7 +134,7 @@ class CorobotManager():
                     self.goals_nav_pub.publish(x=x, y=y)
                 else:
                     self.goals_pub.publish(x=x, y=y)
-                self.goals_queue.append((msg_id, Point(x=x, y=y)))
+                self.goal_queue.append((msg_id, Point(x=x, y=y)))
             else:
                 self.client_write(msg_id, "ERROR Unknown message type \"%s\"" % msg_type)
 
