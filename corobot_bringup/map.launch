@@ -1,4 +1,4 @@
 <launch>
-    <node pkg="map_server" type="map_server" name="map_server" args="$(find corobot_map)/map/robotMap.png 0.0328" />
-    <node pkg="corobot_map" type="map.py" name="corobot_map_server" />
+    <node pkg="map_server" type="map_server" name="map_server" args="$(find corobot_map)/map/robotMap_params.yaml"/>
+    <node pkg="corobot_map" type="map.py" name="corobot_map_server"/>
 </launch>

@@ -8,6 +8,10 @@ def point_distance(p1, p2):
     """Distance between two point-like objects in the Euclidean plane."""
     return distance(p2.x - p1.x, p2.y - p1.y)
 
+def point_equals(p1, p2):
+    """Checks if two point-like objects have the same x and y."""
+    return p1.x == p2.x and p1.y == p2.y
+
 def bresenham(x1, y1, x2, y2, f):
     """Can I straight line nav to this wp from given point?"""
     x1, y1 = int(x1), int(y1)
