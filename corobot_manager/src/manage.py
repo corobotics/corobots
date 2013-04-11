@@ -18,7 +18,6 @@ class CorobotManager():
 
     def __init__(self):
         # Robot"s current position.  Defaults to a test position.
-        #self.pose = Pose(x=26.896, y=-9.7088, theta=0) # Class3435N
         self.pose = Pose(x=67.7648,y=14.9568,theta=0) # Close to EInter
         # Track goals.
         self.goal_queue = deque()

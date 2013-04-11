@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-
-from collections import deque
 import math
+from collections import deque
 from Queue import PriorityQueue
+from contextlib import closing
 
 import roslib; roslib.load_manifest('corobot_navigation')
 import rospy
@@ -13,7 +13,6 @@ from corobot_common.srv import GetPixelOccupancy, GetNeighbors, GetLandmark, Get
 from corobot_common.msg import Pose, Landmark
 
 #Robot's current position.  Defaults to a test position.
-#my_pose = Pose(x=26.896, y=-9.7088, theta=0) # Class3435N
 my_pose = Pose(x=67.7648,y=14.9568,theta=0) # Close to EInter
 
 occ_map = None
@@ -82,20 +81,21 @@ def navigable(p1, p2):
     v = bresenham(x1, y1, x2, y2, bresenham_callback)
     return False if v is False else True
 
-def find_nearest_navigable(point, waypoints):
-    """Find nearest visible Landmark to the given point-like object.
+def find_nearest_visibles(point, landmarks, num):
+    """Find nearest <num> visible landmarks
 
     Arguments:
     point -- The starting point
-    waypoints -- Landmark[] with all waypoints in the graph/map
+    landmarks -- Landmark[] with all landmarks in the graph/map
+    num -- Return the closest <num> landmarks.
 
-    Returns a Landmark:
-        Nearest navigable Landmark
+    Returns a Landmark[]:
+        Nearest <num> navigable Landmark
         None if no nearby waypoint can be found
 
     """
     closest = []
-    for wp in waypoints:
+    for wp in landmarks:
         d = point_distance(point, wp)
         if (closest == [] or d < closest[0]) and navigable(point, wp):
             closest.append((d, wp))
@@ -103,11 +103,17 @@ def find_nearest_navigable(point, waypoints):
         rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
         return []
     closest.sort()
-    closest_four = [y for (x,y) in closest][0:4]
-    return closest_four
+    closest_n = [y for (x,y) in closest][0:num]
+    return closest_n
 
 def a_star(dest, wps):
-    """Perform A* to produce path of waypoints to given dest from nearest map waypoint.
+    """Perform a modified A* to produce path of waypoints to given dest from nearest map waypoint.
+    
+    Modifications were made to consider a handful of starting locations instead of one absolute
+    origin (the robot's position), this lets the algorithm find the best landmark for the robot
+    to start its planned path.  Also, because the goal may not be a predefined landmark the 
+    concept of a "goal zone" was added which adds a dynamic landmark for the goal as a neighbor
+    to any of the landmarks in the goal zone.
 
     Arguments:
     dest -- Destination Point
@@ -118,41 +124,51 @@ def a_star(dest, wps):
         Empty list if no path can be found.
 
     """
-    near = find_nearest_navigable(my_pose, wps)
+    zone_size = 4
+    near = find_nearest_visibles(my_pose, wps, zone_size)
     goal = Landmark(name="CORO_GOAL_",x=dest.x,y=dest.y)
-    goal_zone = find_nearest_navigable(dest, wps)
+    goal_zone = find_nearest_visibles(dest, wps, zone_size)
     if near is []:
-        rospy.logerr("A* navigation failed, couldn't find a starting node.")
+        rospy.logerr("A* navigation failed, no landmarks visible from robot.")
         return []
+    if goal_zone == []:
+        rospy.logerr("A* navigation failed, no landmarks visible to goal.")
 
     #preds used to build path when a path is found.
     preds = {}
+    
+    #pq elements are (g+h, node)
+    # g=distRobotWp, h=distWpGoal
+    # These are 'f_scores' of the estimated best path cost through the node
     pq = PriorityQueue()
-    g_scores = {}
  
     # Set of nodes to be potentially evaluated, 
     #  initialized with our set of potential starting nodes
     open_set = []
-    visited = [] # Set of nodes already evaluated
+
+    # Set of nodes already evaluated
+    visited = []
+
     #dict holding {waypoint name: distance from robot to waypoint} pairs
     # This is the cost from the node along the best known path
+    g_scores = {}
+
     rospy.logdebug("Near nodes: " + str(near))
     rospy.logdebug("Goal Zone: " + str(goal_zone))
+
+    #Prime the queue and other data structures with the potential starting nodes.
     for node in near:
         g = point_distance(my_pose, node)
         g_scores[node.name] = g
 
-        #pq elements are (g+h, node)
-        # g=distRobotWp, h=distWpGoal
-        # These are 'f_scores' of the estimated best path cost through the node
         pq.put((g + point_distance(node, goal), node))
         open_set.append(node.name)
         preds[node.name] = None
         rospy.logdebug("Initialized %s" % (node.name))
+
     #Set up persistent connection to the GetNeighbors service
     rospy.wait_for_service('get_neighbors')
-    get_nbrs_srv = rospy.ServiceProxy('get_neighbors', GetNeighbors, persistent=True)
-    try:
+    with closing(rospy.ServiceProxy('get_neighbors', GetNeighbors, persistent=True)) as get_nbrs_srv:
         while not pq.empty():
             curr = pq.get()
             cnode = curr[1]
@@ -189,9 +205,7 @@ def a_star(dest, wps):
                     pq.put((g_scores[nbr.name] + point_distance(nbr, goal), nbr))
                     open_set.append(nbr.name)
     except rospy.ServiceProxy as e:
-        rospy.logerr("Service call failed: {}".format(e))
-    finally:
-        get_nbrs_srv.close()
+        rospy.logerr("Service call failed: %s" % e)
     return []
 
 def main():
