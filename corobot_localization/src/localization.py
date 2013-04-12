@@ -6,6 +6,7 @@ import roslib; roslib.load_manifest("corobot_localization")
 import rospy
 
 from corobot_common.msg import Pose
+from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
 from ekf import EKF
@@ -13,49 +14,25 @@ from ekf import EKF
 # Expected frequency of odom updates, in Hz.
 ODOM_FREQ = 10.0
 
-def reduce_covariance(cov):
-    """Convert a flat 6x6 covariance matrix into a flat 3x3."""
-    return (cov[0],  cov[1],  cov[5],
-            cov[6],  cov[7],  cov[11],
-            cov[30], cov[31], cov[35])
-
-def odom_to_pose(odom):
-    """Utility function to convert an Odometry message into a Pose message."""
-    pose = Pose()
-    pose.header = odom.header
-    pose.x = odom.pose.pose.position.x
-    pose.y = odom.pose.pose.position.y
-    qz = odom.pose.pose.orientation.z
-    qw = odom.pose.pose.orientation.w
-    pose.theta = atan2(2 * qw * qz, 1 - 2 * qz * qz)
-    pose.cov = reduce_covariance(odom.pose.covariance)
-    return pose
-
-def odom_to_velocity(odom):
-    """Pulls the velocity info out of an Odom object."""
-    v = odom.twist.twist.linear.x
-    w = odom.twist.twist.angular.z
-    V = reduce_covariance(odom.twist.covariance)
-    return ((v, w), V)
+def cmd_vel_callback(twist):
+    ekf.predict(twist)
 
 def odom_callback(odom):
-    ekf.data_received("odom", odom_to_pose(odom))
-    ekf.update()
-    # we want the previous velocity during the update so the prediction makes sense
-    ekf.data_received("velocity", odom_to_velocity(odom))
-    pub.publish(ekf.get_pose())
+    ekf.update_vel(odom.twist)
+    pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):
-    ekf.data_received("laser", pose)
+    ekf.update_pos(pose)
 
 def barcode_callback(pose):
-    ekf.data_received("barcode", pose)
+    ekf.update_pos(pose)
 
 def main():
-    global ekf, pub;
+    global ekf, pose_pub;
     rospy.init_node("localization")
     ekf = EKF(1.0 / ODOM_FREQ)
-    pub = rospy.Publisher("pose", Pose)
+    pose_pub = rospy.Publisher("pose", Pose)
+    rospy.Subscriber("cmd_vel", Twist, cmd_vel_callback)
     rospy.Subscriber("odom", Odometry, odom_callback)
     rospy.Subscriber("laser_pose", Pose, laser_callback)
     rospy.Subscriber("barcode_pose", Pose, barcode_callback)
