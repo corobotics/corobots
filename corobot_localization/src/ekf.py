@@ -1,9 +1,9 @@
 from math import cos, sin
 
-from numpy.matlib import concatenate, eye, matrix, zeros
+from numpy.matlib import array, concatenate, diag, eye, matrix, zeros
 
 from corobot_common.msg import Pose
-from utils import column_vector, reduce_covariance
+from utils import column_vector, coord_transform, get_offset, reduce_covariance
 
 class EKF(object):
 
@@ -56,6 +56,26 @@ class EKF(object):
         pose.theta = self.theta
         pose.cov = tuple(self.covariance[0:3,0:3].flat)
         return pose
+
+    def update_odom_pos(self, pose):
+        # y is the sensor state
+        y = column_vector(pose.x, pose.y, pose.theta)
+        # transform the sensor state into the map frame.
+        y_map = coord_transform(y, self.odom_origin)
+        # calculate the delta y
+        dy = y_map - self.odom_pos
+        # perform the delta update
+        self.update_pos_delta(dy)
+        # update the stored values
+        self.odom_pos = y_map
+        # get the new odom frame origin in the map frame and save it
+        self.odom_origin = get_offset(self.state[0:3], y_map)
+
+    def update_pos_delta(self, dy):
+        y = self.state[0:3] + dy
+        # use the current covariance plus 10% of the delta values.
+        W = self.covariance[0:3,0:3] + matrix(diag(array(dy).T[0])) * 0.1
+        self.update(y, W, self.HPOS)
 
     def update_pos(self, pose):
         """Convenience function to do a position update."""
