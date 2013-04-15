@@ -10,13 +10,14 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
 from ekf import EKF
+from utils import odom_to_pose
 
 # Expected frequency of odom updates, in Hz.
 ODOM_FREQ = 10.0
 
 def odom_callback(odom):
     ekf.predict(odom.twist.twist)
-    ekf.update_odom_pos(odom.pose.pose)
+    ekf.update_odom_pos(odom_to_pose(odom))
     pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):
