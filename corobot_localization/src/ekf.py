@@ -29,6 +29,8 @@ class EKF(object):
         # Constants for the update H matrices.
         self.HPOS = concatenate([eye(3), zeros((3, 3))], axis=1)
         self.HVEL = concatenate([zeros((3, 3)), eye(3)], axis=1)
+        # Need to store old odom state for delta updates.
+        self.odom_state = None
 
     @property
     def x(self):
@@ -58,23 +60,24 @@ class EKF(object):
         return pose
 
     def update_odom_pos(self, pose):
-        # y is the sensor state
-        y = column_vector(pose.x, pose.y, pose.theta)
-        # transform the sensor state into the map frame.
-        y_map = coord_transform(y, self.odom_origin)
-        # calculate the delta y
-        dy = y_map - self.odom_pos
-        # perform the delta update
-        self.update_pos_delta(dy)
-        # update the stored values
-        self.odom_pos = y_map
-        # get the new odom frame origin in the map frame and save it
-        self.odom_origin = get_offset(self.state[0:3], y_map)
+        # Convert into matrix form.
+        y_odom = column_vector(pose.x, pose.y, pose.theta)
+        if self.odom_state is not None:
+            # Get the odom frame origin in the map frame.
+            odom_origin = get_offset(self.state[0:3], self.odom_state)
+            # Transform the sensor state into the map frame.
+            y = coord_transform(y_odom, odom_origin)
+            # Calculate the change odom state, in map coords (delta y).
+            dy = y - coord_transform(self.odom_state, odom_origin)
+            # Perform the delta update.
+            self.update_pos_delta(dy)
+        # Update the stored odom state.
+        self.odom_state = y_odom
 
     def update_pos_delta(self, dy):
         y = self.state[0:3] + dy
-        # use the current covariance plus 10% of the delta values.
-        W = self.covariance[0:3,0:3] + matrix(diag(array(dy).T[0])) * 0.1
+        # use 10% of the delta values as covariance.
+        W = matrix(diag(array(dy).T[0])) * 0.1
         self.update(y, W, self.HPOS)
 
     def update_pos(self, pose):

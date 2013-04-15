@@ -14,11 +14,9 @@ from ekf import EKF
 # Expected frequency of odom updates, in Hz.
 ODOM_FREQ = 10.0
 
-def cmd_vel_callback(twist):
-    ekf.predict(twist)
-
 def odom_callback(odom):
-    ekf.update_vel(odom.twist)
+    ekf.predict(odom.twist.twist)
+    ekf.update_odom_pos(odom.pose.pose)
     pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):
@@ -32,7 +30,6 @@ def main():
     rospy.init_node("localization")
     ekf = EKF(1.0 / ODOM_FREQ)
     pose_pub = rospy.Publisher("pose", Pose)
-    rospy.Subscriber("cmd_vel", Twist, cmd_vel_callback)
     rospy.Subscriber("odom", Odometry, odom_callback)
     rospy.Subscriber("laser_pose", Pose, laser_callback)
     rospy.Subscriber("barcode_pose", Pose, barcode_callback)
