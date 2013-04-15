@@ -168,42 +168,44 @@ def a_star(dest, wps):
 
     #Set up persistent connection to the GetNeighbors service
     rospy.wait_for_service('get_neighbors')
-    with closing(rospy.ServiceProxy('get_neighbors', GetNeighbors, persistent=True)) as get_nbrs_srv:
-        while not pq.empty():
-            curr = pq.get()
-            cnode = curr[1]
-            rospy.logdebug("Processing node: " + cnode.name)
-            if cnode.name == "CORO_GOAL_":
-                #Found the path! Now build it.
-                path = []
-                pnode = goal
-                while pnode is not None:
-                    pname = pnode.name
-                    path.insert(0, pnode)
-                    pnode = preds[pname]
-                rospy.logdebug("Path: " + str(path))
-                return path
+    try:
+        get_nbrs_srv = rospy.ServiceProxy('get_neighbors', GetNeighbors, persistent=True)
+        with closing(get_nbrs_srv):
+            while not pq.empty():
+                curr = pq.get()
+                cnode = curr[1]
+                rospy.logdebug("Processing node: " + cnode.name)
+                if cnode.name == "CORO_GOAL_":
+                    #Found the path! Now build it.
+                    path = []
+                    pnode = goal
+                    while pnode is not None:
+                        pname = pnode.name
+                        path.insert(0, pnode)
+                        pnode = preds[pname]
+                    rospy.logdebug("Path: " + str(path))
+                    return path
 
-            open_set.remove(cnode.name)
-            visited.append(cnode.name)
+                open_set.remove(cnode.name)
+                visited.append(cnode.name)
 
-            #Bit of hackery to add the goal as a neighbor to all of
-            # the waypoints in the goal_zone, so that we aren't forced
-            # to overshoot the goal and then backtrack
-            nbrs = get_nbrs_srv(cnode).neighbors
-            if cnode in goal_zone:
-                nbrs.append(goal)
+                #Bit of hackery to add the goal as a neighbor to all of
+                # the waypoints in the goal_zone, so that we aren't forced
+                # to overshoot the goal and then backtrack
+                nbrs = get_nbrs_srv(cnode).neighbors
+                if cnode in goal_zone:
+                    nbrs.append(goal)
 
-            for nbr in nbrs:
-                tentG = g_scores[cnode.name] + point_distance(cnode, nbr)
-                if nbr.name in visited:
-                    if tentG >= g_scores[nbr.name]:
-                        continue
-                if nbr.name not in open_set or tentG < g_scores[nbr.name]:
-                    preds[nbr.name] = cnode
-                    g_scores[nbr.name] = tentG
-                    pq.put((g_scores[nbr.name] + point_distance(nbr, goal), nbr))
-                    open_set.append(nbr.name)
+                for nbr in nbrs:
+                    tentG = g_scores[cnode.name] + point_distance(cnode, nbr)
+                    if nbr.name in visited:
+                        if tentG >= g_scores[nbr.name]:
+                            continue
+                    if nbr.name not in open_set or tentG < g_scores[nbr.name]:
+                        preds[nbr.name] = cnode
+                        g_scores[nbr.name] = tentG
+                        pq.put((g_scores[nbr.name] + point_distance(nbr, goal), nbr))
+                        open_set.append(nbr.name)
     except rospy.ServiceProxy as e:
         rospy.logerr("Service call failed: %s" % e)
     return []
