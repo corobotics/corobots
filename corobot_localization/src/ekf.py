@@ -77,7 +77,7 @@ class EKF(object):
     def update_pos_delta(self, dy):
         y = self.state[0:3] + dy
         # use 10% of the delta values as covariance.
-        W = matrix(diag(array(dy).T[0])) * 0.1
+        W = matrix(diag(array(dy).T[0])) * 0.1 + eye(3) * 0.1
         self.update(y, W, self.HPOS)
 
     def update_pos(self, pose):

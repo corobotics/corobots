@@ -1,6 +1,8 @@
-from math import cos, sin
+from math import atan2, cos, sin
 
 from numpy.matlib import matrix
+
+from corobot_common.msg import Pose
 
 def reduce_covariance(cov):
     """Convert a flat 6x6 covariance matrix into a flat 3x3."""

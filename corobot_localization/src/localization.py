@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from math import atan2
-
 import roslib; roslib.load_manifest("corobot_localization")
 import rospy
 
