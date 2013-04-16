@@ -1,6 +1,4 @@
-from math import cos, sin
-
-from numpy.matlib import array, concatenate, diag, eye, matrix, zeros
+from numpy.matlib import absolute, array, concatenate, diag, eye, matrix, zeros
 
 from corobot_common.msg import Pose
 from utils import column_vector, coord_transform, get_offset, reduce_covariance
@@ -18,9 +16,9 @@ class EKF(object):
         self.state = column_vector(0.0, 0.0, 0.0)
         # P(k|k); the system covariance matrix.
         self.covariance = matrix([
-            [1000.0,    0.0,    0.0],
-            [   0.0, 1000.0,    0.0],
-            [   0.0,    0.0, 1000.0],
+            [1000.0,    0.0, 0.0],
+            [   0.0, 1000.0, 0.0],
+            [   0.0,    0.0, 6.0]])
         # Need to store old odom state for delta updates.
         self.odom_state = None
 
@@ -92,6 +90,6 @@ class EKF(object):
         # state prediction
         self.state = self.state + delta
         # use 10% of the delta values as covariance.
-        V = matrix(diag(array(delta).T[0])) * 0.1
+        V = matrix(diag(absolute(array(delta).T[0]))) * 0.1
         # covariance prediction
         self.covariance = self.covariance + V
