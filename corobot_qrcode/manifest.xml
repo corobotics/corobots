@@ -1,7 +1,7 @@
 <package>
-  <description brief="barcode_detection">
+  <description brief="corobot_qrcode">
 
-     barcode_detection
+     corobot_qrcode
 
   </description>
   <author>Ravdeep</author>
@@ -12,7 +12,6 @@
   <depend package="rospy"/>
   <depend package="roscpp"/>
   <depend package="corobot_common"/>
- 
 
 </package>
 
