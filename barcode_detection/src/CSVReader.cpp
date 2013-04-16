@@ -20,26 +20,26 @@ void CSVReader::close()
 void CSVReader::readFile()
 {
     data.clear();
-	
+
     while (infile) {
-	string s;
-	if (!getline(infile, s))
-	    break;
+        string s;
+        if (!getline(infile, s))
+            break;
 
-	istringstream ss(s);
-	vector < string > record;
+        istringstream ss(s);
+        vector < string > record;
 
-	while (ss) {
-	    string s;
-	    if (!getline(ss, s, ','))
-		break;
-	    record.push_back(s);
-	}
+        while (ss) {
+            string s;
+            if (!getline(ss, s, ','))
+                break;
+            record.push_back(s);
+        }
 
-	data.push_back(record);
+        data.push_back(record);
     }
     if (!infile.eof()) {
-	cerr << "Error!!!";
+        cerr << "Error!!!";
     }
 }
 
@@ -47,9 +47,9 @@ string CSVReader::getX(string url)
 {
     string temp;
     for (unsigned int i = 1; i < data.size(); i++) {
-	temp = data[i][6];
-	if (url.compare(temp) == 0)
-	    return data[i][3];
+        temp = data[i][6];
+        if (url.compare(temp) == 0)
+            return data[i][3];
     }
     return "";
 }
@@ -58,9 +58,9 @@ string CSVReader::getY(string url)
 {
     string temp;
     for (unsigned int i = 1; i < data.size(); i++) {
-	temp = data[i][6];
-	if (url.compare(temp) == 0)
-	    return data[i][4];
+        temp = data[i][6];
+        if (url.compare(temp) == 0)
+            return data[i][4];
     }
     return "";
 }
@@ -69,9 +69,9 @@ string CSVReader::getOrientation(string url)
 {
     string temp;
     for (unsigned int i = 1; i < data.size(); i++) {
-	temp = data[i][6];
-	if (url.compare(temp) == 0)
-	    return data[i][5];
+        temp = data[i][6];
+        if (url.compare(temp) == 0)
+            return data[i][5];
     }
     return "";
 }
