@@ -46,7 +46,7 @@ void CSVReader::readFile()
 string CSVReader::getX(string url)
 {
     string temp;
-    for (int i = 1; i < data.size(); i++) {
+    for (unsigned int i = 1; i < data.size(); i++) {
 	temp = data[i][6];
 	if (url.compare(temp) == 0)
 	    return data[i][3];
@@ -57,7 +57,7 @@ string CSVReader::getX(string url)
 string CSVReader::getY(string url)
 {
     string temp;
-    for (int i = 1; i < data.size(); i++) {
+    for (unsigned int i = 1; i < data.size(); i++) {
 	temp = data[i][6];
 	if (url.compare(temp) == 0)
 	    return data[i][4];
@@ -68,7 +68,7 @@ string CSVReader::getY(string url)
 string CSVReader::getOrientation(string url)
 {
     string temp;
-    for (int i = 1; i < data.size(); i++) {
+    for (unsigned int i = 1; i < data.size(); i++) {
 	temp = data[i][6];
 	if (url.compare(temp) == 0)
 	    return data[i][5];

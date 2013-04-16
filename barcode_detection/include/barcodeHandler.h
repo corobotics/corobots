@@ -2,11 +2,11 @@
 #define BARCODEHANDLER_H
 
 #include <iostream>
-#include <zbar.h>
 #include <sstream>
-#include "ros/ros.h"
 #include <cmath>
 #include <string>
+#include <zbar.h>
+#include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "../include/CSVReader.h"
 #include "corobot_common/Pose.h"
@@ -29,14 +29,15 @@ class BarcodeHandler:public Image::Handler {
 
     public:
 
-    ros::Publisher test;
+    ros::Publisher publisher;
     pt point[4];
     int lengthPixelL,lengthPixelR;
-    float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg, offsetDistance;
+    float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg, offsetDistance, barcodeXavg;
     float cbx, cby, cbtheta, bcx, bcy, bctheta, alpha, gamma;
-    int barcodeX, barcodeY;
+    float barcodeX, barcodeY;
     string barcodeOrientation;
     CSVReader csvreader;
+    Pose msg;
     
 
     BarcodeHandler(ros::Publisher & chatter_pub);
