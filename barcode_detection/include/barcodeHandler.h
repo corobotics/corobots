@@ -11,27 +11,22 @@
 #include "../include/CSVReader.h"
 #include "corobot_common/Pose.h"
 
-
-
 #define PI 3.14159265
 
-class pt{
-	public: 
-	 int x,y;
-};
-
+typedef struct {
+	 int x, y;
+} Pt;
 
 using namespace std;
 using namespace zbar;
 using corobot_common::Pose;
 
-class BarcodeHandler:public Image::Handler {
-
-    public:
+class BarcodeHandler : public Image::Handler {
+public:
 
     ros::Publisher publisher;
-    pt point[4];
-    int lengthPixelL,lengthPixelR;
+    Pt point[4];
+    int lengthPixelL, lengthPixelR;
     float distanceL, distanceR,squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg, offsetDistance, barcodeXavg;
     float cbx, cby, cbtheta, bcx, bcy, bctheta, alpha, gamma;
     float barcodeX, barcodeY;
@@ -39,7 +34,6 @@ class BarcodeHandler:public Image::Handler {
     CSVReader csvreader;
     Pose msg;
     
-
     BarcodeHandler(ros::Publisher & chatter_pub);
     void image_callback(Image & image);
 

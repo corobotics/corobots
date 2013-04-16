@@ -1,10 +1,10 @@
-#include "../include/barcodeHandler.h"
+#include "barcodeHandler.h"
 
-BarcodeHandler::BarcodeHandler(ros::Publisher & chatter_pub){
+BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub) {
     publisher = chatter_pub;
 }
 
-void BarcodeHandler::image_callback(Image & image){
+void BarcodeHandler::image_callback(Image &image) {
 
     for (SymbolIterator symbol = image.symbol_begin(); symbol != image.symbol_end(); ++symbol) {
 
@@ -26,15 +26,15 @@ void BarcodeHandler::image_callback(Image & image){
         csvreader.close();
 
         // focal length(calculated before) and test distance
-        float f = 270, D = 25;
+        float f = 270.0, D = 25.0;
 
-        //Length of pixels top left and bottom left
+        // Length of pixels top left and bottom left
         lengthPixelL = abs(point[1].y - point[0].y);
 
-        //Length of pixels top right and bottom right
+        // Length of pixels top right and bottom right
         lengthPixelR = abs(point[3].y - point[2].y);
 
-        //Calculating the distance from the barcode to camera
+        // Calculate the distance from the barcode to camera
         distanceL = (f * D) / lengthPixelL;
         distanceR = (f * D) / lengthPixelR;
 
@@ -86,12 +86,13 @@ void BarcodeHandler::image_callback(Image & image){
 
         cout << realx << " " << realy << " " << bctheta << endl;
 
-        //Publishing the msg
+        // Publishing the msg
         msg.x = realx;
         msg.y = realy;
         msg.theta = angleAvg;
-        for (int i = 0; i < 9; i++)
+        for (int i = 0; i < 9; i++) {
             msg.cov[i] = 0;
+        }
 
         msg.cov[0] = 0.05;
         msg.cov[3] = 0.05;
