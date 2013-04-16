@@ -13,22 +13,14 @@ class EKF(object):
 
     """
 
-    def __init__(self, dt):
-        # Time delta between updates in seconds.
-        self.dt = float(dt)
+    def __init__(self):
         # x(k|k); the system state column vector.
-        self.state = column_vector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        self.state = column_vector(0.0, 0.0, 0.0)
         # P(k|k); the system covariance matrix.
         self.covariance = matrix([
-            [1000.0,    0.0,    0.0, 0.0, 0.0, 0.0],
-            [   0.0, 1000.0,    0.0, 0.0, 0.0, 0.0],
-            [   0.0,    0.0, 1000.0, 0.0, 0.0, 0.0],
-            [   0.0,    0.0,    0.0, 1.0, 0.0, 0.0],
-            [   0.0,    0.0,    0.0, 0.0, 1.0, 0.0],
-            [   0.0,    0.0,    0.0, 0.0, 0.0, 1.0]])
-        # Constants for the update H matrices.
-        self.HPOS = concatenate([eye(3), zeros((3, 3))], axis=1)
-        self.HVEL = concatenate([zeros((3, 3)), eye(3)], axis=1)
+            [1000.0,    0.0,    0.0],
+            [   0.0, 1000.0,    0.0],
+            [   0.0,    0.0, 1000.0],
         # Need to store old odom state for delta updates.
         self.odom_state = None
 
@@ -46,7 +38,7 @@ class EKF(object):
 
     @property
     def state_tuple(self):
-        """Returns a tuple of the current state: (x, y, theta, vx, vy, w)"""
+        """Returns a tuple of the current state: (x, y, theta)"""
         return tuple(self.state.T.tolist()[0])
 
     def get_pose(self):
@@ -56,91 +48,50 @@ class EKF(object):
         pose.x = self.x
         pose.y = self.y
         pose.theta = self.theta
-        pose.cov = tuple(self.covariance[0:3,0:3].flat)
+        pose.cov = tuple(self.covariance.flat)
         return pose
 
-    def update_odom_pos(self, pose):
+    def get_odom_delta(self, pose):
         # Convert into matrix form.
         y_odom = column_vector(pose.x, pose.y, pose.theta)
+        odom_delta = None
         if self.odom_state is not None:
             # Get the odom frame origin in the map frame.
-            odom_origin = get_offset(self.state[0:3], self.odom_state)
+            odom_origin = get_offset(self.state, self.odom_state)
             # Transform the sensor state into the map frame.
             y = coord_transform(y_odom, odom_origin)
             # Calculate the change odom state, in map coords (delta y).
-            dy = y - coord_transform(self.odom_state, odom_origin)
-            # Perform the delta update.
-            self.update_pos_delta(dy)
+            odom_delta = y - coord_transform(self.odom_state, odom_origin)
         # Update the stored odom state.
         self.odom_state = y_odom
-
-    def update_pos_delta(self, dy):
-        y = self.state[0:3] + dy
-        # use 10% of the delta values as covariance.
-        W = matrix(diag(array(dy).T[0])) * 0.1 + eye(3) * 0.1
-        self.update(y, W, self.HPOS)
+        return odom_delta
 
     def update_pos(self, pose):
         """Convenience function to do a position update."""
         y = column_vector(pose.x, pose.y, pose.theta)
         W = matrix(pose.cov).reshape(3, 3)
-        self.update(y, W, self.HPOS)
+        self.update(y, W)
 
-    def update_vel(self, twist_with_cov):
-        """Convenience function to do a velocity update."""
-        v = twist_with_cov.twist.linear.x
-        w = twist_with_cov.twist.angular.z
-        y = column_vector(v * cos(self.theta), v * sin(self.theta), w)
-        W = matrix(reduce_covariance(twist_with_cov.covariance)).reshape(3, 3)
-        self.update(y, W, self.HVEL)
-
-    def update(self, y, W, H):
+    def update(self, y, W):
         """Perform an EKF update with the given sensor data.
 
         y -- The sensor data (3x1 matrix).
         W -- The sensor noise/covariance (3x3 matrix).
-        H -- The mapping that describes which attributes are being updated.
-             A 3x6 matrix with I on the left for pos and on the right for vel.
 
         """
+        H = eye(3)
         x, P = self.state, self.covariance
         R = P * H.T * (H * P * H.T + W).I
         self.state = x - R * (y - H * x)
         self.covariance = P - R * H * P
 
-    def predict(self, twist):
-        # command velocity and angular velocity
-        vc, wc = twist.linear.x, twist.angular.z
-        x, y, theta, vx, vy, w = self.state_tuple
-        cost, sint = cos(theta), sin(theta)
-        dt = self.dt
+    def predict(self, odom_pose):
+        delta = self.get_odom_delta(odom_pose)
+        if delta is None:
+            return
         # state prediction
-        self.state = column_vector(
-            x + dt * vx,
-            y + dt * vy,
-            theta + dt * w,
-            vc * cost,
-            vc * sint,
-            wc)
-        # the partial derivatives of f for the state
-        Fp = matrix([
-            [1.0, 0.0, 0.0,  dt, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0,  dt, 0.0],
-            [0.0, 0.0, 1.0, 0.0, 0.0,  dt],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
-        # the partial derivatives of f for the commands
-        Fu = matrix([
-            [ 0.0, 0.0],
-            [ 0.0, 0.0],
-            [ 0.0, 0.0],
-            [cost, 0.0],
-            [sint, 0.0],
-            [ 0.0, 1.0]])
-        # the input command covariances
-        V = matrix([
-            [0.05 * vc, 0.0],
-            [0.0, 0.05 * wc]])
+        self.state = self.state + delta
+        # use 10% of the delta values as covariance.
+        V = matrix(diag(array(delta).T[0])) * 0.1
         # covariance prediction
-        self.covariance = Fp * self.covariance * Fp.T + Fu * V * Fu.T
+        self.covariance = self.covariance + V
