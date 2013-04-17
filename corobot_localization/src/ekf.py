@@ -81,7 +81,7 @@ class EKF(object):
         if delta is None:
             # Can't do a delta update the first time.
             return
-        dx, dy, dt = self.state_to_tuple(delta)
+        dx, dy, dt = self.state_tuple(delta)
         # State prediction; nice and simple.
         self.state = self.state + delta
         # Use 50% of the delta x/y values as covariance, and 200% theta.
