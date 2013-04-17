@@ -1,6 +1,0 @@
-FILENAME ../corobot_map/map/robotMap.png
-WIDTH 4096
-HEIGHT 1440
-MPP 0.0328
-INIT_X 7.2
-INIT_Y 12.5
