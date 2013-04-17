@@ -37,9 +37,14 @@ class EKF(object):
         return pose
 
     def get_odom_delta(self, pose):
-        """Calculates the delta of the odometry since the last update."""
-        # Convert into matrix form.
+        """Calculates the delta of the odometry position since the last time called.
+
+        Returns None the first time, and a 3x1 state matrix thereafter.
+
+        """
+        # Convert the pose into matrix form.
         y_odom = column_vector(pose.x, pose.y, pose.theta)
+        # None is the fallback in case we can't get an actual delta.
         odom_delta = None
         if self.odom_state is not None:
             # Transform the sensor state into the map frame.
@@ -48,7 +53,7 @@ class EKF(object):
             odom_delta = y - coord_transform(self.odom_state, self.odom_origin)
         # Update the stored odom state.
         self.odom_state = y_odom
-        # Get the odom frame origin in the map frame.
+        # Get the odom frame origin in the map frame and store it for next time.
         self.odom_origin = get_offset(self.state, self.odom_state)
         return odom_delta
 
@@ -71,6 +76,7 @@ class EKF(object):
         self.covariance = P - R * P
 
     def predict(self, odom_pose):
+        """Perform an EKF prediction step using odometry information."""
         delta = self.get_odom_delta(odom_pose)
         if delta is None:
             # Can't do a delta update the first time.
