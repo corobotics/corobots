@@ -22,32 +22,8 @@
         <param name="acpi_path" type="string" value="/proc/acpi/battery/BAT0" />
     </node>
 
-    <!-- Publish the state to tf -->
-    <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen">
-        <param name="publish_frequency" type="double" value="5.0" />
-        <!--param name="tf_prefix" type="string" value="" /-->
-    </node>
-
-    <node pkg="diagnostic_aggregator" type="aggregator_node" name="diagnostic_aggregator" >
-        <!-- Load the file you made above -->
-        <rosparam command="load" file="$(find turtlebot_bringup)/config/diagnostics.yaml" />
-    </node>
-
-    <!-- The odometry estimator -->
-    <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf">
-        <param name="freq" value="10.0"/>
-        <param name="sensor_timeout" value="1.0"/>
-        <param name="publish_tf" value="true"/>
-        <param name="odom_used" value="true"/>
-        <param name="imu_used" value="false"/>
-        <param name="vo_used" value="false"/>
-        <param name="output_frame" value="odom"/>
-    </node>
-
     <!-- Map -->
-    <include file="$(find corobot_bringup)/map.launch"/>
-
-    <!-- Client communication and navigations (server-side of the API) -->
-    <include file="$(find corobot_bringup)/serverAPI.launch"/>
+    <node pkg="map_server" type="map_server" name="map_server" args="$(find corobot_map)/map/robotMap_params.yaml"/>
+    <node pkg="corobot_map" type="map.py" name="corobot_map_server"/>
 
 </launch>

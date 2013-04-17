@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="corobot_localization" type="localization.py" name="ekf"/>
+    <node pkg="corobot_obstacle_avoidance" type="obstacle_avoidance" name="obstacle_avoidance"/>
+    <node pkg="corobot_navigation" type="nav.py" name="nav"/>
+    <node pkg="corobot_manager" type="manage.py" name="manage"/>
+</launch>
