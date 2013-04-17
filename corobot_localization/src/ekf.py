@@ -1,6 +1,4 @@
-from math import cos, sin
-
-from numpy.matlib import array, concatenate, diag, eye, matrix, zeros
+from numpy.matlib import matrix
 
 from corobot_common.msg import Pose
 from utils import column_vector, coord_transform, get_offset, reduce_covariance
@@ -13,134 +11,83 @@ class EKF(object):
 
     """
 
-    def __init__(self, dt):
-        # Time delta between updates in seconds.
-        self.dt = float(dt)
+    def __init__(self):
         # x(k|k); the system state column vector.
-        self.state = column_vector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        self.state = column_vector(0.0, 0.0, 0.0)
         # P(k|k); the system covariance matrix.
         self.covariance = matrix([
-            [1000.0,    0.0,    0.0, 0.0, 0.0, 0.0],
-            [   0.0, 1000.0,    0.0, 0.0, 0.0, 0.0],
-            [   0.0,    0.0, 1000.0, 0.0, 0.0, 0.0],
-            [   0.0,    0.0,    0.0, 1.0, 0.0, 0.0],
-            [   0.0,    0.0,    0.0, 0.0, 1.0, 0.0],
-            [   0.0,    0.0,    0.0, 0.0, 0.0, 1.0]])
-        # Constants for the update H matrices.
-        self.HPOS = concatenate([eye(3), zeros((3, 3))], axis=1)
-        self.HVEL = concatenate([zeros((3, 3)), eye(3)], axis=1)
+            [1000.0,    0.0, 0.0],
+            [   0.0, 1000.0, 0.0],
+            [   0.0,    0.0, 6.0]])
         # Need to store old odom state for delta updates.
         self.odom_state = None
 
-    @property
-    def x(self):
-        return self.state.item(0, 0)
-
-    @property
-    def y(self):
-        return self.state.item(1, 0)
-
-    @property
-    def theta(self):
-        return self.state.item(2, 0)
-
-    @property
-    def state_tuple(self):
-        """Returns a tuple of the current state: (x, y, theta, vx, vy, w)"""
-        return tuple(self.state.T.tolist()[0])
+    def state_tuple(self, state=None):
+        """Returns a tuple of the given state matrix: (x, y, theta)"""
+        if state is None:
+            state = self.state
+        return tuple(state.T.tolist()[0])
 
     def get_pose(self):
         """Converts the current EKF state into a Pose object."""
         pose = Pose()
         pose.header.frame_id = "world"
-        pose.x = self.x
-        pose.y = self.y
-        pose.theta = self.theta
-        pose.cov = tuple(self.covariance[0:3,0:3].flat)
+        pose.x, pose.y, pose.theta = self.state_tuple()
+        pose.cov = tuple(self.covariance.flat)
         return pose
 
-    def update_odom_pos(self, pose):
-        # Convert into matrix form.
+    def get_odom_delta(self, pose):
+        """Calculates the delta of the odometry position since the last time called.
+
+        Returns None the first time, and a 3x1 state matrix thereafter.
+
+        """
+        # Convert the pose into matrix form.
         y_odom = column_vector(pose.x, pose.y, pose.theta)
+        # None is the fallback in case we can't get an actual delta.
+        odom_delta = None
         if self.odom_state is not None:
-            # Get the odom frame origin in the map frame.
-            odom_origin = get_offset(self.state[0:3], self.odom_state)
             # Transform the sensor state into the map frame.
-            y = coord_transform(y_odom, odom_origin)
+            y = coord_transform(y_odom, self.odom_origin)
             # Calculate the change odom state, in map coords (delta y).
-            dy = y - coord_transform(self.odom_state, odom_origin)
-            # Perform the delta update.
-            self.update_pos_delta(dy)
+            odom_delta = y - coord_transform(self.odom_state, self.odom_origin)
         # Update the stored odom state.
         self.odom_state = y_odom
-
-    def update_pos_delta(self, dy):
-        y = self.state[0:3] + dy
-        # use 10% of the delta values as covariance.
-        W = matrix(diag(array(dy).T[0])) * 0.1 + eye(3) * 0.1
-        self.update(y, W, self.HPOS)
+        # Get the odom frame origin in the map frame and store it for next time.
+        self.odom_origin = get_offset(self.state, self.odom_state)
+        return odom_delta
 
     def update_pos(self, pose):
         """Convenience function to do a position update."""
         y = column_vector(pose.x, pose.y, pose.theta)
         W = matrix(pose.cov).reshape(3, 3)
-        self.update(y, W, self.HPOS)
+        self.update(y, W)
 
-    def update_vel(self, twist_with_cov):
-        """Convenience function to do a velocity update."""
-        v = twist_with_cov.twist.linear.x
-        w = twist_with_cov.twist.angular.z
-        y = column_vector(v * cos(self.theta), v * sin(self.theta), w)
-        W = matrix(reduce_covariance(twist_with_cov.covariance)).reshape(3, 3)
-        self.update(y, W, self.HVEL)
-
-    def update(self, y, W, H):
+    def update(self, y, W):
         """Perform an EKF update with the given sensor data.
 
         y -- The sensor data (3x1 matrix).
         W -- The sensor noise/covariance (3x3 matrix).
-        H -- The mapping that describes which attributes are being updated.
-             A 3x6 matrix with I on the left for pos and on the right for vel.
 
         """
         x, P = self.state, self.covariance
-        R = P * H.T * (H * P * H.T + W).I
-        self.state = x - R * (y - H * x)
-        self.covariance = P - R * H * P
+        R = P * (P + W).I
+        self.state = x - R * (y - x)
+        self.covariance = P - R * P
 
-    def predict(self, twist):
-        # command velocity and angular velocity
-        vc, wc = twist.linear.x, twist.angular.z
-        x, y, theta, vx, vy, w = self.state_tuple
-        cost, sint = cos(theta), sin(theta)
-        dt = self.dt
-        # state prediction
-        self.state = column_vector(
-            x + dt * vx,
-            y + dt * vy,
-            theta + dt * w,
-            vc * cost,
-            vc * sint,
-            wc)
-        # the partial derivatives of f for the state
-        Fp = matrix([
-            [1.0, 0.0, 0.0,  dt, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0,  dt, 0.0],
-            [0.0, 0.0, 1.0, 0.0, 0.0,  dt],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
-        # the partial derivatives of f for the commands
-        Fu = matrix([
-            [ 0.0, 0.0],
-            [ 0.0, 0.0],
-            [ 0.0, 0.0],
-            [cost, 0.0],
-            [sint, 0.0],
-            [ 0.0, 1.0]])
-        # the input command covariances
+    def predict(self, odom_pose):
+        """Perform an EKF prediction step using odometry information."""
+        delta = self.get_odom_delta(odom_pose)
+        if delta is None:
+            # Can't do a delta update the first time.
+            return
+        dx, dy, dt = self.state_to_tuple(delta)
+        # State prediction; nice and simple.
+        self.state = self.state + delta
+        # Use 50% of the delta x/y values as covariance, and 200% theta.
         V = matrix([
-            [0.05 * vc, 0.0],
-            [0.0, 0.05 * wc]])
-        # covariance prediction
-        self.covariance = Fp * self.covariance * Fp.T + Fu * V * Fu.T
+            [abs(dx) * 0.5, 0.0, 0.0],
+            [0.0, abs(dy) * 0.5, 0.0],
+            [0.0, 0.0, abs(dt) * 2.0]])
+        # Covariance prediction; add our custom covariance assumptions.
+        self.covariance = self.covariance + V

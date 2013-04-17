@@ -14,8 +14,7 @@ from utils import odom_to_pose
 ODOM_FREQ = 10.0
 
 def odom_callback(odom):
-    ekf.predict(odom.twist.twist)
-    ekf.update_odom_pos(odom_to_pose(odom))
+    ekf.predict(odom_to_pose(odom))
     pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):
@@ -27,7 +26,7 @@ def barcode_callback(pose):
 def main():
     global ekf, pose_pub;
     rospy.init_node("localization")
-    ekf = EKF(1.0 / ODOM_FREQ)
+    ekf = EKF()
     pose_pub = rospy.Publisher("pose", Pose)
     rospy.Subscriber("odom", Odometry, odom_callback)
     rospy.Subscriber("laser_pose", Pose, laser_callback)
