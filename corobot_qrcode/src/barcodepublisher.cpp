@@ -26,9 +26,10 @@ int main(int argc, char **argv)
     const char* device = "/dev/video0";
 
     Processor proc(false, device, false);
-    //Don't change the resolution, will screw up everything!
+    // Don't change the resolution, will screw up everything!
+    // Don't know if this is actually taking effect.
     proc.request_size(1600,1200);
-    //proc.init()
+    //proc.init(device, false);
 
     // configure the Processor
     proc.set_config(ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
@@ -41,8 +42,11 @@ int main(int argc, char **argv)
     proc.set_active();
 
     // keep scanning until user provides key/mouse input
-    proc.user_wait();
+    while (ros::ok()) {
+        proc.process_one(10);
+        ros::spinOnce();
+    }
 
-    return (0);
+    return 0;
 }
 
