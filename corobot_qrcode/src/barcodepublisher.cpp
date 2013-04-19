@@ -17,18 +17,18 @@ using corobot_common::Pose;
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "talker");
+    ros::init(argc, argv, "corobot_qrcode");
     ros::NodeHandle n;
-    ros::Publisher chatter_pub = n.advertise <Pose> ("chatter", 1000);
+    ros::Publisher chatter_pub = n.advertise<Pose>("qrcode_pose", 1000);
 
     // std_msgs::String
     // create and initialize a Processor
     const char* device = "/dev/video0";
 
-    Processor proc;
+    Processor proc(false, device, false);
     //Don't change the resolution, will screw up everything!
     proc.request_size(1600,1200);
-    proc.init(device,true);
+    //proc.init()
 
     // configure the Processor
     proc.set_config(ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
@@ -38,16 +38,10 @@ int main(int argc, char **argv)
 
     proc.set_handler(my_handler);
 
-    // enable the preview window
-    proc.set_visible();
     proc.set_active();
 
-    try {
-        // keep scanning until user provides key/mouse input
-        proc.user_wait();
-    }
-    catch(ClosedError & e) {
-    }
+    // keep scanning until user provides key/mouse input
+    proc.user_wait();
 
     return (0);
 }
