@@ -82,16 +82,13 @@ def navigable(p1, p2):
     return False if v is False else True
 
 def find_nearest_visibles(point, landmarks, num):
-    """Find nearest <num> visible landmarks
+    """Finds landmarks visible from a point.
 
-    Arguments:
-    point -- The starting point
-    landmarks -- Landmark[] with all landmarks in the graph/map
+    point -- The starting point.
+    landmarks -- Landmark[] with all landmarks in the map.
     num -- Return the closest <num> landmarks.
 
-    Returns a Landmark[]:
-        Nearest <num> navigable Landmark
-        None if no nearby waypoint can be found
+    Returns a list of up to n Landmarks visible from the given point.
 
     """
     closest = []
