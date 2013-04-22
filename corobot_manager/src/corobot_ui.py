@@ -3,7 +3,7 @@
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
 
-from corobot_common.msg import CorobotUIConfirm
+from corobot_common.msg import UIMessage, UIConfirm
 from corobot_manager.ui import CorobotUIMessage
 
 class CorobotUI():
@@ -11,17 +11,27 @@ class CorobotUI():
     def start(self):
         self.init_ros_node()
 
-    def show_msg(ui_message):
-        if ui_message.confirm:
-            win = CorobotUIMessage(ui_message.text, ui_message.timeout, 
+    def show_msg(self, ui_message):
+        rospy.logerr("Message received")
+        if ui_message.req_confirm:
+            win = CorobotUIMessage(ui_message.msg, ui_message.timeout)
         else:
-            win = CorobotUIMessage(ui_message.text, ui_message.timeout, self.confirm_pub
+            win = CorobotUIMessage(ui_message.msg, ui_message.timeout, True)
 
-    def init_ros_node():
+        rospy.logerr("Entering mainloop()")
+        win.mainloop()
+        if ui_message.req_confirm:
+            confirm = win.wasConfirmed()
+            self.confirm_pub(UIConfirm(ui_message.id, confirm))
+
+
+    def init_ros_node(self):
         rospy.init_node("corobot_ui")
 
-        self.confirm_pub = rospy.Publisher("confirm_msg", CorobotUIConfirm)
-        rospy.Subscriber("show_msg", self.show_msg)
+        self.confirm_pub = rospy.Publisher("confirm_msg", UIConfirm)
+        rospy.Subscriber("show_msg", UIMessage, self.show_msg)
+
+        rospy.spin()
 
 def main():
     CorobotUI().start()

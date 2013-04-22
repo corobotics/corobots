@@ -13,7 +13,7 @@ from geometry_msgs.msg import Point
 
 from corobot_common import point_equals
 from corobot_common.srv import GetLandmark
-from corobot_common.msg import Pose, Landmark
+from corobot_common.msg import Pose, Landmark, UIMessage
 from corobot_manager.io import CorobotServer
 
 class CorobotManager():
@@ -56,15 +56,20 @@ class CorobotManager():
             msg_id, _ = self.goal_queue.popleft()
             self.client_write(msg_id, "ARRIVED")
 
+    def confirm_ui_callback(self, confirm):
+        self.client_write(confirm.id, "CONFIRM %s" % confirm.confirmed)
+
     def init_ros_node(self):
         """Initialize all ROS node/sub/pub/srv stuff."""
         rospy.init_node("corobot_manager")
         rospy.Subscriber("pose", Pose, self.pose_callback)
         rospy.Subscriber("goals_reached", Point, self.goals_reached_callback)
+        rospy.Subscriber("confirm_msg", UIConfirm, self.confirm_ui_callback)
         rospy.wait_for_service("get_landmark")
         self.get_landmark = rospy.ServiceProxy("get_landmark", GetLandmark)
         self.goals_pub = rospy.Publisher("goals", Point)
         self.goals_nav_pub = rospy.Publisher("goals_nav", Point)
+        self.show_msgs_pub = rospy.Publisher("show_msg", UIMessage)
         rospy.loginfo("Listening for client robots.")
         rospy.on_shutdown(self.shutdown)
 
@@ -102,6 +107,13 @@ class CorobotManager():
             else:
                 self.goals_pub.publish(x=x, y=y)
             self.goal_queue.append((msg_id, Point(x=x, y=y)))
+        elif msg_type.startswith("SHOW_MSG"):
+            if msg_type.endswith("CONFIRM"):
+                confirm = True
+            else:
+                confirm = False
+            self.show_msgs_pub.publish(UIMessage(id=msg_id, timeout=int(data[0]), 
+                                        msg=data[1], req_confirm=confirm))
         else:
             self.client_write(msg_id, "ERROR Unknown message type \"%s\"" % msg_type)
 
