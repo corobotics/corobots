@@ -15,36 +15,30 @@ using namespace std;
 using namespace zbar;
 using corobot_common::Pose;
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
+    // Initialize the ROS node.
     ros::init(argc, argv, "corobot_qrcode");
     ros::NodeHandle n;
     ros::Publisher chatter_pub = n.advertise<Pose>("qrcode_pose", 1000);
 
-    // std_msgs::String
-    // create and initialize a Processor
-    const char* device = "/dev/video0";
-
-    Processor proc(false, device, false);
-    // Don't change the resolution, will screw up everything!
-    proc.request_size(1600,1200);
-    proc.init(device, false);
-    // configure the Processor
-    proc.set_config(ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
-
-    // setup a callback
+    // Create our barcode detected handler.
     BarcodeHandler my_handler(chatter_pub);
 
+    // Create the zbar processor; this will run in its own thread.
+    Processor proc;
+    // Don't change the resolution, will screw up everything!
+    proc.request_size(1600, 1200);
+    // Initialize after setting size; no X window.
+    proc.init("dev/video0", false);
+    // Configure the processor to detect QR codes.
+    proc.set_config(ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
+    // Set the handler.
     proc.set_handler(my_handler);
-
+    // Start the processor in "free-running video mode".
     proc.set_active();
 
-    // keep scanning until user provides key/mouse input
-    while (ros::ok()) {
-        proc.process_one(10);
-        ros::spinOnce();
-    }
-
+    // ROS loop.
+    ros::spin();
     return 0;
 }
 
