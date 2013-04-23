@@ -27,9 +27,8 @@ int main(int argc, char **argv)
 
     Processor proc(false, device, false);
     // Don't change the resolution, will screw up everything!
-    // Don't know if this is actually taking effect.
     proc.request_size(1600,1200);
-    proc.init();
+    proc.init(device, false);
     // configure the Processor
     proc.set_config(ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
 
