@@ -95,7 +95,7 @@ void BarcodeHandler::image_callback(Image &image) {
         }
 
         msg.cov[0] = 0.05;
-        msg.cov[3] = 0.05;
+        msg.cov[4] = 0.05;
         msg.cov[8] = 0.1;
         publisher.publish(msg);
 
