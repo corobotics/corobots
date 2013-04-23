@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     // Don't change the resolution, will screw up everything!
     proc.request_size(1600, 1200);
     // Initialize after setting size; no X window.
-    proc.init("dev/video0", false);
+    proc.init("/dev/video0", false);
     // Configure the processor to detect QR codes.
     proc.set_config(ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
     // Set the handler.
