@@ -1,4 +1,8 @@
+#include <zbar.h>
 #include "barcodeHandler.h"
+
+using namespace std;
+using namespace zbar;
 
 BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub) {
     publisher = chatter_pub;

@@ -1,15 +1,9 @@
-#include <iostream>
 #include <zbar.h>
-#include "ros/ros.h"
-#include <sstream>
-#include <cmath>
-#include <string>
-#include "std_msgs/String.h"
-#include "../include/CSVReader.h"
-#include "barcodeHandler.h"
-#include "corobot_common/Pose.h"
+#include <ros/ros.h>
+#include <corobot_common/Pose.h>
 
-#define PI 3.14159265
+#include "CSVReader.h"
+#include "barcodeHandler.h"
 
 using namespace std;
 using namespace zbar;
