@@ -20,7 +20,7 @@ def odom_callback(odom):
 def laser_callback(pose):
     ekf.update_pos(pose)
 
-def barcode_callback(pose):
+def qrcode_callback(pose):
     ekf.update_pos(pose)
 
 def main():
@@ -30,7 +30,7 @@ def main():
     pose_pub = rospy.Publisher("pose", Pose)
     rospy.Subscriber("odom", Odometry, odom_callback)
     rospy.Subscriber("laser_pose", Pose, laser_callback)
-    rospy.Subscriber("barcode_pose", Pose, barcode_callback)
+    rospy.Subscriber("qrcode_pose", Pose, qrcode_callback)
     rospy.spin()
 
 def test():
