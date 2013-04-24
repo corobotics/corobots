@@ -25,8 +25,7 @@ class CorobotUIMessage(Tk):
        
         self.update_idletasks()
         #Set timeout and disable window decorations
-        self.after(int(timeout*1000), self.quit())
-        self.mainloop()
+        self.after(int(timeout*1000), self.ui_destroy)
 
     def okay(self):
         self.respond = True

@@ -19,7 +19,7 @@ class CorobotUI():
             win = CorobotUIMessage(ui_message.msg, ui_message.timeout, True)
 
         rospy.logerr("Entering mainloop()")
-#        win.mainloop()
+        win.mainloop()
         if ui_message.req_confirm:
             confirm = win.was_confirmed()
             self.confirm_pub.publish(UIConfirm(ui_message.id, confirm))
