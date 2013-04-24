@@ -14,10 +14,11 @@ from corobot_common.msg import Pose, Landmark
 
 class CorobotNavigator():
 
-    def __init__(self, occupancy_map):
+    def __init__(self, occupancy_map, landmark_graph):
         # Robot's current position.
         self.pose = None
         self.occupancy_map = occupancy_map
+        self.landmark_graph = landmark_graph
         # Queue of (Point, isGoal?) pairs used to track goals from user.
         self.wp_queue = deque()
         self.ros_init()
@@ -53,26 +54,16 @@ class CorobotNavigator():
 
     def goals_nav_callback(self, new_goal):
         """Goals subscription callback."""
-        rospy.wait_for_service('get_landmarks')
-
-        try:
-            get_wps_srv = rospy.ServiceProxy('get_landmarks', GetLandmarks)
-            #Gets waypoints, no neighbor data...maybe I should change that ~Karl
-            # wps is a Landmark[]
-            wps = get_wps_srv().all_wps
-            end = new_goal
-            # Will return a path of Landmarks from the Landmark
-            # closest to the robot to the Landmark closest to the goal.
-            path = self.a_star(end, wps)
-            for node in path:
-                self.point_pub.publish(x=node.x, y=node.y)
-                self.wp_queue.append((Point(x=node.x, y=node.y), False))
-            #And then finally publish the final waypoint
-            if len(path) > 0:
-                self.wp_queue.append((new_goal, True))
-                self.point_pub.publish(new_goal)
-        except rospy.ServiceException as e:
-            rospy.logerr("Service call failed: {}".format(e))
+        # Will return a path of Landmarks from the Landmark
+        # closest to the robot to the Landmark closest to the goal.
+        path = self.a_star(new_goal)
+        for node in path:
+            self.point_pub.publish(x=node.x, y=node.y)
+            self.wp_queue.append((Point(x=node.x, y=node.y), False))
+        # And then finally publish the final waypoint
+        if len(path) > 0:
+            self.wp_queue.append((new_goal, True))
+            self.point_pub.publish(new_goal)
 
     def bresenham_callback(self, x, y):
         i = x + y * self.occupancy_map.info.width
@@ -86,30 +77,30 @@ class CorobotNavigator():
         x1, y1 = int(p1.x / res), int(p1.y / res)
         x2, y2 = int(p2.x / res), int(p2.y / res)
         v = bresenham(x1, y1, x2, y2, self.bresenham_callback)
+        # v will be False if we found an obstacle, and None otherwise.
         return v is not False
 
-    def find_nearest_visibles(self, point, landmarks, num):
+    def find_nearest_visibles(self, point, num):
         """Finds landmarks visible from a point.
 
         point -- The starting point.
-        landmarks -- Landmark[] with all landmarks in the map.
         num -- Return the closest <num> landmarks.
 
         Returns a list of up to n closest Landmarks visible from the given point.
 
         """
         closest = []
-        for wp in landmarks:
-            d = point_distance(point, wp)
-            if (closest == [] or d < closest[0]) and self.navigable(point, wp):
-                closest.append((d, wp))
+        for landmark, _ in self.landmark_graph.itervalues():
+            d = point_distance(point, landmark)
+            if (closest == [] or d < closest[0]) and self.navigable(point, landmark):
+                closest.append((d, landmark))
         if closest == []:
             rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
             return []
         closest.sort()
         return [landmark for d, landmark in closest[:num]]
 
-    def a_star(self, dest, wps):
+    def a_star(self, dest):
         """Perform a modified A* to produce path of waypoints to given dest from nearest map waypoint.
         
         Modifications were made to consider a handful of starting locations instead of one absolute
@@ -120,7 +111,6 @@ class CorobotNavigator():
 
         Arguments:
         dest -- Destination Point
-        wps  -- List of Landmarks (Landmark[]) representing full list of map waypoints.
 
         Returns:
             Landmark[] representing path to follow to the destination.
@@ -128,14 +118,15 @@ class CorobotNavigator():
 
         """
         zone_size = 4
-        near = self.find_nearest_visibles(my_pose, wps, zone_size)
+        near = self.find_nearest_visibles(my_pose, zone_size)
         goal = Landmark(name="CORO_GOAL_",x=dest.x,y=dest.y)
-        goal_zone = self.find_nearest_visibles(dest, wps, zone_size)
-        if near is []:
+        goal_zone = self.find_nearest_visibles(dest, zone_size)
+        if near == []:
             rospy.logerr("A* navigation failed, no landmarks visible from robot.")
             return []
         if goal_zone == []:
             rospy.logerr("A* navigation failed, no landmarks visible to goal.")
+            return []
 
         #preds used to build path when a path is found.
         preds = {}
@@ -169,58 +160,63 @@ class CorobotNavigator():
             preds[node.name] = None
             rospy.logdebug("Initialized %s" % (node.name))
 
-        #Set up persistent connection to the GetNeighbors service
-        rospy.wait_for_service('get_neighbors')
-        try:
-            get_nbrs_srv = rospy.ServiceProxy('get_neighbors', GetNeighbors, persistent=True)
-            with closing(get_nbrs_srv):
-                while not pq.empty():
-                    curr = pq.get()
-                    cnode = curr[1]
-                    rospy.logdebug("Processing node: " + cnode.name)
-                    if cnode.name == "CORO_GOAL_":
-                        #Found the path! Now build it.
-                        path = []
-                        pnode = goal
-                        while pnode is not None:
-                            pname = pnode.name
-                            path.insert(0, pnode)
-                            pnode = preds[pname]
-                        rospy.logdebug("Path: " + str(path))
-                        return path
+        while not pq.empty():
+            cnode = pq.get()[1]
+            rospy.logdebug("Processing node: " + cnode.name)
+            if cnode.name == "CORO_GOAL_":
+                #Found the path! Now build it.
+                path = []
+                pnode = goal
+                while pnode is not None:
+                    pname = pnode.name
+                    path.insert(0, pnode)
+                    pnode = preds[pname]
+                rospy.logdebug("Path: " + str(path))
+                return path
 
-                    open_set.remove(cnode.name)
-                    visited.append(cnode.name)
+            open_set.remove(cnode.name)
+            visited.append(cnode.name)
 
-                    # Bit of hackery to add the goal as a neighbor to all of
-                    # the waypoints in the goal_zone, so that we aren't forced
-                    # to overshoot the goal and then backtrack
-                    nbrs = get_nbrs_srv(cnode).neighbors
-                    if cnode in goal_zone:
-                        nbrs.append(goal)
+            # Bit of hackery to add the goal as a neighbor to all of
+            # the waypoints in the goal_zone, so that we aren't forced
+            # to overshoot the goal and then backtrack
+            nbrs = self.landmark_graph[cnode.name][1][:]
+            if cnode in goal_zone:
+                nbrs.append(goal)
 
-                    for nbr in nbrs:
-                        tentG = g_scores[cnode.name] + point_distance(cnode, nbr)
-                        if nbr.name in visited:
-                            if tentG >= g_scores[nbr.name]:
-                                continue
-                        if nbr.name not in open_set or tentG < g_scores[nbr.name]:
-                            preds[nbr.name] = cnode
-                            g_scores[nbr.name] = tentG
-                            pq.put((g_scores[nbr.name] + point_distance(nbr, goal), nbr))
-                            open_set.append(nbr.name)
-        except rospy.ServiceProxy as e:
-            rospy.logerr("Service call failed: %s" % e)
+            for nbr in nbrs:
+                tentG = g_scores[cnode.name] + point_distance(cnode, nbr)
+                if nbr.name in visited:
+                    if tentG >= g_scores[nbr.name]:
+                        continue
+                if nbr.name not in open_set or tentG < g_scores[nbr.name]:
+                    preds[nbr.name] = cnode
+                    g_scores[nbr.name] = tentG
+                    pq.put((g_scores[nbr.name] + point_distance(nbr, goal), nbr))
+                    open_set.append(nbr.name)
         return []
 
-def main():
+def load_occupancy_map():
     rospy.wait_for_service('get_map')
-    try:
-        get_map_srv = rospy.ServiceProxy('get_map',GetCoMap)
-        occupancy_map = get_map_srv().map
-    except rospy.ServiceProxy as e:
-        rospy.logerr("Service call failed: %s" % e)
-    CorobotNavigator(occupancy_map).start()
+    get_occupancy_map_srv = rospy.ServiceProxy('get_map', GetCoMap)
+    return get_occupancy_map_srv().map
+
+def load_landmark_graph():
+    rospy.wait_for_service('get_landmarks')
+    rospy.wait_for_service('get_neighbors')
+    get_landmarks_srv = rospy.ServiceProxy('get_landmarks', GetLandmarks)
+    get_neighbors_srv = rospy.ServiceProxy('get_neighbors', GetNeighbors)
+    landmarks = get_landmarks_srv().all_wps
+    graph = {}
+    for landmark in landmarks:
+        neighbors = get_neighbors_srv(landmark).neighbors
+        graph[landmark.name] = (landmark, neighbors)
+    return graph
+
+def main():
+    occupancy_map = load_occupancy_map()
+    landmark_graph = load_landmark_graph()
+    CorobotNavigator(occupancy_map, landmark_graph).start()
 
 if __name__ == '__main__':
     main()
