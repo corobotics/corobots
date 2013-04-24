@@ -52,18 +52,20 @@ class CorobotNavigator():
         self.wp_queue.append((new_goal, True))
         self.point_pub.publish(new_goal)
 
-    def goals_nav_callback(self, new_goal):
+    def goals_nav_callback(self, goal):
         """Goals subscription callback."""
         # Will return a path of Landmarks from the Landmark
         # closest to the robot to the Landmark closest to the goal.
-        path = self.a_star(new_goal)
-        for node in path:
+        path = self.navigate(goal)
+        if not path:
+            rospy.logerr("A* navigation failed!")
+            return
+        for node in path[:-1]:
             self.point_pub.publish(x=node.x, y=node.y)
             self.wp_queue.append((Point(x=node.x, y=node.y), False))
         # And then finally publish the final waypoint
-        if len(path) > 0:
-            self.wp_queue.append((new_goal, True))
-            self.point_pub.publish(new_goal)
+        self.point_pub.publish(goal)
+        self.wp_queue.append((goal, True))
 
     def bresenham_callback(self, x, y):
         i = x + y * self.occupancy_map.info.width
@@ -100,101 +102,31 @@ class CorobotNavigator():
         closest.sort()
         return [landmark for d, landmark in closest[:num]]
 
-    def a_star(self, dest):
-        """Perform a modified A* to produce path of waypoints to given dest from nearest map waypoint.
-        
-        Modifications were made to consider a handful of starting locations instead of one absolute
-        origin (the robot's position), this lets the algorithm find the best landmark for the robot
-        to start its planned path.  Also, because the goal may not be a predefined landmark the 
-        concept of a "goal zone" was added which adds a dynamic landmark for the goal as a neighbor
-        to any of the landmarks in the goal zone.
-
-        Arguments:
-        dest -- Destination Point
-
-        Returns:
-            Landmark[] representing path to follow to the destination.
-            Empty list if no path can be found.
-
-        """
-        zone_size = 4
-        near = self.find_nearest_visibles(my_pose, zone_size)
-        goal = Landmark(name="CORO_GOAL_",x=dest.x,y=dest.y)
-        goal_zone = self.find_nearest_visibles(dest, zone_size)
-        if near == []:
-            rospy.logerr("A* navigation failed, no landmarks visible from robot.")
-            return []
-        if goal_zone == []:
-            rospy.logerr("A* navigation failed, no landmarks visible to goal.")
-            return []
-
-        #preds used to build path when a path is found.
-        preds = {}
-        
-        #pq elements are (g+h, node)
-        # g=distRobotWp, h=distWpGoal
-        # These are 'f_scores' of the estimated best path cost through the node
-        pq = PriorityQueue()
-     
-        # Set of nodes to be potentially evaluated, 
-        #  initialized with our set of potential starting nodes
-        open_set = []
-
-        # Set of nodes already evaluated
-        visited = []
-
-        #dict holding {waypoint name: distance from robot to waypoint} pairs
-        # This is the cost from the node along the best known path
-        g_scores = {}
-
-        rospy.logdebug("Near nodes: " + str(near))
-        rospy.logdebug("Goal Zone: " + str(goal_zone))
-
-        #Prime the queue and other data structures with the potential starting nodes.
-        for node in near:
-            g = point_distance(my_pose, node)
-            g_scores[node.name] = g
-
-            pq.put((g + point_distance(node, goal), node))
-            open_set.append(node.name)
-            preds[node.name] = None
-            rospy.logdebug("Initialized %s" % (node.name))
-
-        while not pq.empty():
-            cnode = pq.get()[1]
-            rospy.logdebug("Processing node: " + cnode.name)
-            if cnode.name == "CORO_GOAL_":
-                #Found the path! Now build it.
-                path = []
-                pnode = goal
-                while pnode is not None:
-                    pname = pnode.name
-                    path.insert(0, pnode)
-                    pnode = preds[pname]
-                rospy.logdebug("Path: " + str(path))
-                return path
-
-            open_set.remove(cnode.name)
-            visited.append(cnode.name)
-
-            # Bit of hackery to add the goal as a neighbor to all of
-            # the waypoints in the goal_zone, so that we aren't forced
-            # to overshoot the goal and then backtrack
-            nbrs = self.landmark_graph[cnode.name][1][:]
-            if cnode in goal_zone:
-                nbrs.append(goal)
-
-            for nbr in nbrs:
-                tentG = g_scores[cnode.name] + point_distance(cnode, nbr)
-                if nbr.name in visited:
-                    if tentG >= g_scores[nbr.name]:
-                        continue
-                if nbr.name not in open_set or tentG < g_scores[nbr.name]:
-                    preds[nbr.name] = cnode
-                    g_scores[nbr.name] = tentG
-                    pq.put((g_scores[nbr.name] + point_distance(nbr, goal), nbr))
-                    open_set.append(nbr.name)
-        return []
+    def navigate(self, dest):
+        ZONE_SIZE = 4
+        start = Landmark(name="START", x=self.pose.x, y=self.pose.y)
+        goal = Landmark(name="GOAL", x=dest.x, y=dest.y)
+        start_zone = self.find_nearest_visibles(start, ZONE_SIZE)
+        goal_zone = self.find_nearest_visibles(goal, ZONE_SIZE)
+        if self.navigable(start, goal):
+            start_zone.append(goal)
+        # Sketchy modifications of our waypoint graph!
+        self.waypoint_graph["START"] = (start, start_zone)
+        self.waypoint_graph["GOAL"] = (goal, goal_zone)
+        for node in goal_zone:
+            self.waypoint_graph[node.name][1].append(goal)
+        # A* functions.
+        is_goal = lambda node: node.name == "GOAL"
+        neighbors = lambda node: self.waypoint_graph[node.name][1]
+        heuristic = lambda node: point_distance(node, goal)
+        try:
+            return a_star(start, is_goal, neighbors, point_distance, heuristic)
+        finally:
+            # We always need to undo our hacky changes, no matter what.
+            del self.waypoint_graph["START"]
+            del self.waypoint_graph["GOAL"]
+            for node in goal_zone:
+                self.waypoint_graph[node.name][1].pop()
 
 def load_occupancy_map():
     rospy.wait_for_service('get_map')
