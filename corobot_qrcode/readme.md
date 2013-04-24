@@ -4,9 +4,10 @@ This node depends on the `zbar` library to detect QR codes.
 
 ## Installing `zbar`
 
-    sudo apt-get install -y python-gtk2-dev v4l-utils gettext xmlto
+    # Unsure whether you need xmlto, and it requires a ton of packages...
+    sudo apt-get install -y python-gtk2-dev v4l-utils gettext git xmlto
     cd /usr/local/src
-    sudo hg clone http://zbar.hg.sourceforge.net:8000/hgroot/zbar
+    sudo git clone https://github.com/corobotics/ZBar.git zbar
     cd zbar
     sudo autoreconf --install
     sudo ./configure --without-imagemagick
