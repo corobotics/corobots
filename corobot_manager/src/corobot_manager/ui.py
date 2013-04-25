@@ -4,6 +4,7 @@ class CorobotUIMessage(Tk):
 
     def __init__(self, display_text, timeout, okay_text="Okay", confirm=False):
         Tk.__init__(self)
+        self.title("Corobot Message!")
 
         self.confirm = confirm
         self.respond = False
@@ -21,22 +22,24 @@ class CorobotUIMessage(Tk):
         yp = (self.winfo_screenheight() / 4) - (height / 2) - 20
 
         self.geometry("%dx%d%+d%+d" % (width, height, xp, yp))
-        self.overrideredirect(1)
+        self.protocol("WM_DELETE_WINDOW", self.ignore)
        
         #Set timeout and disable window decorations
-        self.after(int(timeout*1000), self.destroy)
+        self.after(int(timeout*1000), self.ui_destroy)
         self.update_idletasks()
 
     def okay(self):
         self.respond = True
-        self.quit()
+        self.destroy()
 
     def ui_destroy(self):
         if self.confirm:
             self.respond = False
  
-        self.quit()
+        self.destroy()
 
     def was_confirmed(self):
         return self.respond
-            
+    
+    def ignore(self):
+        pass
