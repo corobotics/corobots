@@ -72,7 +72,7 @@ class EKF(object):
         """
         x, P = self.state, self.covariance
         R = P * (P + W).I
-        self.state = x - R * (y - x)
+        self.state = x + R * (y - x)
         self.covariance = P - R * P
 
     def predict(self, odom_pose):
