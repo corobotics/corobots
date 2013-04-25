@@ -8,7 +8,7 @@ import roslib; roslib.load_manifest('corobot_navigation')
 import rospy
 from geometry_msgs.msg import Point
 
-from corobot_common import bresenham, distance, point_distance
+from corobot_common import a_star, bresenham, distance, point_distance
 from corobot_common.srv import GetPixelOccupancy, GetNeighbors, GetLandmark, GetLandmarks, GetCoMap
 from corobot_common.msg import Pose, Landmark
 
@@ -111,22 +111,23 @@ class CorobotNavigator():
         if self.navigable(start, goal):
             start_zone.append(goal)
         # Sketchy modifications of our waypoint graph!
-        self.waypoint_graph["START"] = (start, start_zone)
-        self.waypoint_graph["GOAL"] = (goal, goal_zone)
+        self.landmark_graph["START"] = (start, start_zone)
+        self.landmark_graph["GOAL"] = (goal, goal_zone)
         for node in goal_zone:
-            self.waypoint_graph[node.name][1].append(goal)
+            self.landmark_graph[node.name][1].append(goal)
         # A* functions.
         is_goal = lambda node: node.name == "GOAL"
-        neighbors = lambda node: self.waypoint_graph[node.name][1]
+        neighbors = lambda node: self.landmark_graph[node.name][1]
         heuristic = lambda node: point_distance(node, goal)
         try:
-            return a_star(start, is_goal, neighbors, point_distance, heuristic)
+            path = a_star(start, is_goal, neighbors, point_distance, heuristic)
         finally:
             # We always need to undo our hacky changes, no matter what.
-            del self.waypoint_graph["START"]
-            del self.waypoint_graph["GOAL"]
+            del self.landmark_graph["START"]
+            del self.landmark_graph["GOAL"]
             for node in goal_zone:
-                self.waypoint_graph[node.name][1].pop()
+                self.landmark_graph[node.name][1].pop()
+        return path
 
 def load_occupancy_map():
     rospy.wait_for_service('get_map')

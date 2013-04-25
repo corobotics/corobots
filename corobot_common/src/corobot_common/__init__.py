@@ -1,4 +1,5 @@
 import math
+from collections import namedtuple
 from heapq import heappop, heappush
 
 def distance(x, y):
@@ -53,7 +54,7 @@ def a_star(start, is_goal, neighbors, get_cost, heuristic):
             while parent is not None:
                 path.append(node)
                 node = parent
-                parent = visited[node.name].parent
+                parent = node_data[node.name].parent
             # Since we traverse from goal back to start, reverse the path.
             path.reverse()
             # Fin.
