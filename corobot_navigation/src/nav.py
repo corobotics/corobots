@@ -114,24 +114,19 @@ class CorobotNavigator():
         # Manually add the edge from start to goal if it's navigable.
         if self.navigable(start, goal):
             start_zone.append(goal)
-        # Sketchy modifications of our landmark/waypoint graph!
-        self.landmark_graph["START"] = (start, start_zone)
-        self.landmark_graph["GOAL"] = (goal, goal_zone)
-        for node in goal_zone:
-            self.landmark_graph[node.name][1].append(goal)
         # A* functions.
         is_goal = lambda node: node.name == "GOAL"
-        neighbors = lambda node: self.landmark_graph[node.name][1]
         heuristic = lambda node: point_distance(node, goal)
-        try:
-            path = a_star(start, is_goal, neighbors, point_distance, heuristic)
-        finally:
-            # We always need to undo our changes to the graph, no matter what.
-            del self.landmark_graph["START"]
-            del self.landmark_graph["GOAL"]
-            for node in goal_zone:
-                self.landmark_graph[node.name][1].pop()
-        return path
+        def neighbors(node):
+            if node.name == "START":
+                return start_zone
+            nbrs = self.landmark_graph[node.name][1]
+            if node in goal_zone:
+                # Intentionally use list concat to make a copy of the list.
+                # If we just modify nbrs, it will modify the original graph.
+                return nbrs + [goal]
+            return nbrs
+        return a_star(start, is_goal, neighbors, point_distance, heuristic)
 
 def load_occupancy_map():
     rospy.wait_for_service('get_map')
