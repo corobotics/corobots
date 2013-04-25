@@ -1,4 +1,8 @@
+#include <zbar.h>
 #include "barcodeHandler.h"
+
+using namespace std;
+using namespace zbar;
 
 BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub) {
     publisher = chatter_pub;
@@ -95,7 +99,7 @@ void BarcodeHandler::image_callback(Image &image) {
         }
 
         msg.cov[0] = 0.05;
-        msg.cov[3] = 0.05;
+        msg.cov[4] = 0.05;
         msg.cov[8] = 0.1;
         publisher.publish(msg);
 

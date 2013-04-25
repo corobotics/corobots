@@ -1,6 +1,12 @@
-#include "../include/CSVReader.h"
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
+#include "CSVReader.h"
 
+using namespace std;
 
 void CSVReader::init()
 {

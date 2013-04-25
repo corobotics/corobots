@@ -2,25 +2,24 @@
 #define CSVReader_H
 
 #include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
-using namespace std;
 
 class CSVReader {
+public:
 
-    ifstream infile;
-
-  public:
-
-    vector < vector < string > > data;
+    std::vector < std::vector < std::string > > data;
     void init();
     void close();
     void readFile();
-    string getX(string url);
-    string getY(string url);
-    string getOrientation(string url);
+    std::string getX(std::string url);
+    std::string getY(std::string url);
+    std::string getOrientation(std::string url);
+
+private:
+
+    std::ifstream infile;
+
 };
 
 #endif
