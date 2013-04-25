@@ -103,14 +103,18 @@ class CorobotNavigator():
         return [landmark for d, landmark in closest[:num]]
 
     def navigate(self, dest):
+        """Find a path from current location to the given destination."""
         ZONE_SIZE = 4
+        # Make our node objects for A*.
         start = Landmark(name="START", x=self.pose.x, y=self.pose.y)
         goal = Landmark(name="GOAL", x=dest.x, y=dest.y)
+        # Find neighbors of start and goal to add as edges to the graph.
         start_zone = self.find_nearest_visibles(start, ZONE_SIZE)
         goal_zone = self.find_nearest_visibles(goal, ZONE_SIZE)
+        # Manually add the edge from start to goal if it's navigable.
         if self.navigable(start, goal):
             start_zone.append(goal)
-        # Sketchy modifications of our waypoint graph!
+        # Sketchy modifications of our landmark/waypoint graph!
         self.landmark_graph["START"] = (start, start_zone)
         self.landmark_graph["GOAL"] = (goal, goal_zone)
         for node in goal_zone:
@@ -122,7 +126,7 @@ class CorobotNavigator():
         try:
             path = a_star(start, is_goal, neighbors, point_distance, heuristic)
         finally:
-            # We always need to undo our hacky changes, no matter what.
+            # We always need to undo our changes to the graph, no matter what.
             del self.landmark_graph["START"]
             del self.landmark_graph["GOAL"]
             for node in goal_zone:
