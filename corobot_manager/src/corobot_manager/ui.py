@@ -23,9 +23,9 @@ class CorobotUIMessage(Tk):
         self.geometry("%dx%d%+d%+d" % (width, height, xp, yp))
         self.overrideredirect(1)
        
-        self.update_idletasks()
         #Set timeout and disable window decorations
-        self.after(int(timeout*1000), self.ui_destroy)
+        self.after(int(timeout*1000), self.destroy)
+        self.update_idletasks()
 
     def okay(self):
         self.respond = True

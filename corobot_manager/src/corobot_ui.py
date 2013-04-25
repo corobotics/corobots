@@ -2,6 +2,7 @@
 
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
+import threading
 
 from corobot_common.msg import UIMessage, UIConfirm
 from corobot_manager.ui import CorobotUIMessage
@@ -12,13 +13,11 @@ class CorobotUI():
         self.init_ros_node()
 
     def show_msg(self, ui_message):
-        rospy.logerr("Message received")
         if ui_message.req_confirm:
             win = CorobotUIMessage(ui_message.msg, ui_message.timeout)
         else:
             win = CorobotUIMessage(ui_message.msg, ui_message.timeout, True)
 
-        rospy.logerr("Entering mainloop()")
         win.mainloop()
         if ui_message.req_confirm:
             confirm = win.was_confirmed()
