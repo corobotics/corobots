@@ -1,4 +1,5 @@
 <launch>
     <node pkg="corobot_navigation" type="nav.py" name="nav"/>
     <node pkg="corobot_manager" type="manage.py" name="manage"/>
+    <node pkg="corobot_manager" type="corobot_ui.py" name="popups"/>
 </launch>
