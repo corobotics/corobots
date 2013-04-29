@@ -13,7 +13,7 @@ from geometry_msgs.msg import Point
 
 from corobot_common import point_equals
 from corobot_common.srv import GetLandmark
-from corobot_common.msg import Pose, Landmark, UIMessage
+from corobot_common.msg import Pose, Landmark, UIMessage, UIConfirm
 from corobot_manager.io import CorobotServer
 
 class CorobotManager():
