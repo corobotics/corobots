@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "ros/console.h"
 #include "ros/ros.h"
 #include "corobot_common/Pose.h"
 #include "geometry_msgs/Point.h"
@@ -64,6 +65,7 @@ void scanCallback(LaserScan scan) {
     t.linear.x = p.d;
     t.angular.z = p.a;
     cmdVelPub.publish(t);
+    ROS_INFO("Cmd: %.2f, %.2f rads", p.d, p.a);
 }
 
 /**
@@ -72,8 +74,10 @@ void scanCallback(LaserScan scan) {
 void poseCallback(Pose pose) {
     oa->updatePose(pose);
     while (!oa->arrivedQueue.empty()) {
-        waypointsReachedPub.publish(oa->arrivedQueue.front());
+        Point reached = oa->arrivedQueue.front();
+        waypointsReachedPub.publish(reached);
         oa->arrivedQueue.pop();
+        ROS_INFO("Waypoint reached: (%.2f, %.2f)", reached.x, reached.y);
     }
 }
 
@@ -82,7 +86,7 @@ void poseCallback(Pose pose) {
  */
 void waypointCallback(Point waypoint) {
     oa->addWaypoint(waypoint);
-    cout << "Waypoint added: " << waypoint.x << ", " << waypoint.y << endl;
+    ROS_INFO("Waypoint added: (%.2f, %.2f)", waypoint.x, waypoint.y);
 }
 
 int main(int argc, char** argv) {

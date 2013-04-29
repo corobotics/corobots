@@ -56,10 +56,12 @@ class CorobotNavigator():
         """Goals subscription callback."""
         # Will return a path of Landmarks from the Landmark
         # closest to the robot to the Landmark closest to the goal.
+        rospy.loginfo("New goal: (%.2f, %.2f)" % (goal.x, goal.y))
         path = self.navigate(goal)
         if not path:
             rospy.logerr("A* navigation failed!")
             return
+        rospy.logdebug("A* result: %s" % (", ".join(l.name for l in path)))
         for node in path[:-1]:
             self.point_pub.publish(x=node.x, y=node.y)
             self.wp_queue.append((Point(x=node.x, y=node.y), False))
@@ -114,6 +116,8 @@ class CorobotNavigator():
         # Manually add the edge from start to goal if it's navigable.
         if self.navigable(start, goal):
             start_zone.append(goal)
+        rospy.logdebug("Start zone: %s" % (", ".join(l.name for l in start_zone)))
+        rospy.logdebug("Goal zone: %s" % (", ".join(l.name for l in goal_zone)))
         # A* functions.
         is_goal = lambda node: node.name == "GOAL"
         heuristic = lambda node: point_distance(node, goal)

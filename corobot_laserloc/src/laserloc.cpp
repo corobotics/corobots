@@ -234,7 +234,7 @@ std::vector<GridPoseP> LaserLocalization::generateSamples(Pose pose) {
         float y = pose.y - step * SAMPLE_XY_COUNT / 2;
         for (int j = 0; j < SAMPLE_XY_COUNT; j++) {
             float theta = pose.theta - thetaStep * SAMPLE_THETA_COUNT / 2;
-            for(int k = 0; k < SAMPLE_THETA_COUNT; k++) {
+            for (int k = 0; k < SAMPLE_THETA_COUNT; k++) {
                 p.x = (int)x;
                 p.y = (int)y;
                 p.a = theta;
