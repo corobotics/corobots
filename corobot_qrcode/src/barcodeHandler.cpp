@@ -1,4 +1,8 @@
+#include <zbar.h>
 #include "barcodeHandler.h"
+
+using namespace std;
+using namespace zbar;
 
 BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub) {
     publisher = chatter_pub;
@@ -60,42 +64,41 @@ void BarcodeHandler::image_callback(Image &image) {
 
         bcx = distanceAvg * cos((PI / 2) - gamma);
         bcy = distanceAvg * sin((PI / 2) - gamma);
-        bctheta = ((3 * PI) / 2) - cbtheta;
+        bctheta = PI / 2 + cbtheta;
 
         float realx, realy = 0.0;
 
+        cout << "cbx " << cbx << " " << "cby " << cby << " " << "cbo " << cbtheta << " " << "alpha " << alpha << " " << "gamma " << gamma << " " << "bcx " << bcx << " " << "bcy " << bcy << " " << "bco " << bctheta << endl;
+
         if (barcodeOrientation.compare("N") == 0) {
-            realx = (barcodeX) + bcx;
-            realy = (barcodeY) + bcy;
+            realx = barcodeX + bcx;
+            realy = barcodeY + bcy;
         } else if (barcodeOrientation.compare("S") == 0) {
-            realx = (barcodeX) - bcx;
-            realy = (barcodeY) - bcy;
+            realx = barcodeX - bcx;
+            realy = barcodeY - bcy;
             bctheta += PI;
         } else if (barcodeOrientation.compare("E") == 0) {
-            realx = (barcodeY) - bcx;
-            realy = (barcodeX) + bcy;
-            bctheta += 3 * (PI / 2);
+            realx = barcodeX + bcy;
+            realy = barcodeY - bcx;
+            bctheta += PI * 1.5;
         } else if (barcodeOrientation.compare("W") == 0) {
-            realx = (barcodeY) + bcx;
-            realy = (barcodeX) - bcy;
-            bctheta += PI / 2;
+            realx = barcodeX - bcy;
+            realy = barcodeY + bcx;
+            bctheta += PI * 0.5;
         }
-        bctheta = ((3 * PI) / 2) - bctheta;
-
-        cout << "cbx " << cbx << " " << "cby " << cby << " " << "cbo " << cbtheta << " " << "alpha " << alpha << " " << "gamma " << gamma << " " << "bcx " << bcx << " " << "bcy " << bcy << " " << "bco " << bctheta << endl;
 
         cout << realx << " " << realy << " " << bctheta << endl;
 
         // Publishing the msg
         msg.x = realx;
         msg.y = realy;
-        msg.theta = angleAvg;
+        msg.theta = bctheta;
         for (int i = 0; i < 9; i++) {
             msg.cov[i] = 0;
         }
 
         msg.cov[0] = 0.05;
-        msg.cov[3] = 0.05;
+        msg.cov[4] = 0.05;
         msg.cov[8] = 0.1;
         publisher.publish(msg);
 

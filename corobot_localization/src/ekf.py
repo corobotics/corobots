@@ -16,9 +16,9 @@ class EKF(object):
         self.state = column_vector(0.0, 0.0, 0.0)
         # P(k|k); the system covariance matrix.
         self.covariance = matrix([
-            [1000.0,    0.0, 0.0],
-            [   0.0, 1000.0, 0.0],
-            [   0.0,    0.0, 6.0]])
+            [1000.0,    0.0,    0.0],
+            [   0.0, 1000.0,    0.0],
+            [   0.0,    0.0, 1000.0]])
         # Need to store old odom state for delta updates.
         self.odom_state = None
 
@@ -72,7 +72,7 @@ class EKF(object):
         """
         x, P = self.state, self.covariance
         R = P * (P + W).I
-        self.state = x - R * (y - x)
+        self.state = x + R * (y - x)
         self.covariance = P - R * P
 
     def predict(self, odom_pose):

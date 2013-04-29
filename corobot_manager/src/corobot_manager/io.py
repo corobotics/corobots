@@ -12,7 +12,7 @@ class CorobotServer(dispatcher):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         # Allows a socket still in the TIME_WAIT state to be used.
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.bind((socket.gethostname(), port))
+        self.bind(("0.0.0.0", port))
         self.listen(1)
 
     def handle_error(self):
