@@ -15,8 +15,9 @@ class CorobotUIMessage(Tk):
         Tk.__init__(self)
         self.title("Corobot Message")
 
+        #Confirm indicates whether a response is needed, with the response defaulting to false.
         self.confirm = confirm
-        self.respond = False
+        self.response = False
 
         frame = Frame(self)
         frame.pack(padx=8, pady=8)
@@ -25,7 +26,7 @@ class CorobotUIMessage(Tk):
         label = Label(frame, text=display_text, font=("Helvetica", 24), wraplength=(self.winfo_screenwidth()/2))
         label.pack(side='top')
         
-        if confirm:
+        if self.confirm:
             btn1 = Button(frame, text=okay_text, command=self.okay, font=("Helvetica", 16))
             btn1.pack(side='bottom', padx=4, pady=4)
         
@@ -49,18 +50,18 @@ class CorobotUIMessage(Tk):
 
     def okay(self):
         """Message confirmed, used with 'Okay' button"""
-        self.respond = True
+        self.response = True
         self.destroy()
 
     def timeout_destroy(self):
         """Destroy on timeout method, means the message was not confirmed."""
         if self.confirm:
-            self.respond = False
+            self.response = False
         self.destroy()
 
     def was_confirmed(self):
         """Getter for whether the message was confirmed"""
-        return self.respond
+        return self.response
     
     def ignore(self):
         """Used to override close behavior of 'X' button"""
