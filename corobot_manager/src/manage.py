@@ -108,10 +108,7 @@ class CorobotManager():
                 self.goals_pub.publish(x=x, y=y)
             self.goal_queue.append((msg_id, Point(x=x, y=y)))
         elif msg_type.startswith("SHOW_MSG"):
-            if msg_type.endswith("CONFIRM"):
-                confirm = True
-            else:
-                confirm = False
+            confirm = msg_type.endswith("CONFIRM")
             self.show_msgs_pub.publish(UIMessage(id=msg_id, timeout=int(data[0]), 
                                         msg=data[1], req_confirm=confirm))
         else:

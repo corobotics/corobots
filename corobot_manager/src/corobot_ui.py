@@ -2,7 +2,6 @@
 
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
-import threading
 
 from corobot_common.msg import UIMessage, UIConfirm
 from corobot_manager.ui import CorobotUIMessage
@@ -19,7 +18,7 @@ class CorobotUI():
                                 ui_message.req_confirm)
 
         win.mainloop()
-        #When ui exits, if we needed confirmation then poll confirm flag.
+        # When ui exits, if we needed confirmation then poll confirm flag.
         if ui_message.req_confirm:
             confirm = win.was_confirmed()
             self.confirm_pub.publish(UIConfirm(ui_message.id, confirm))

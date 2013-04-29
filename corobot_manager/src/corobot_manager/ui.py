@@ -15,14 +15,14 @@ class CorobotUIMessage(Tk):
         Tk.__init__(self)
         self.title("Corobot Message")
 
-        #Confirm indicates whether a response is needed, with the response defaulting to false.
+        # Confirm indicates whether a response is needed, with the response defaulting to false.
         self.confirm = confirm
         self.response = False
 
         frame = Frame(self)
         frame.pack(padx=8, pady=8)
 
-        #Text wraps at half of screen width.
+        # Text wraps at half of screen width.
         label = Label(frame, text=display_text, font=("Helvetica", 24), wraplength=(self.winfo_screenwidth()/2))
         label.pack(side='top')
         
@@ -33,7 +33,7 @@ class CorobotUIMessage(Tk):
         self.update()
         width = self.winfo_width()
         height = self.winfo_height()
-        #Center popup and set minimum window size to smallest pack of 
+        # Center popup and set minimum window size to smallest pack of 
         # ui elements.
         xp = (self.winfo_screenwidth() / 2) - (width / 2)
         yp = (self.winfo_screenheight() / 2) - (height / 2)
@@ -41,10 +41,10 @@ class CorobotUIMessage(Tk):
         self.geometry("%dx%d%+d%+d" % (width, height, xp, yp))
         self.minsize(width, height)
         
-        #Prevent closing via the 'X' button, forcing either confirmation
+        # Prevent closing via the 'X' button, forcing either confirmation
         # or timeout.
         self.protocol("WM_DELETE_WINDOW", self.ignore)
-        #Set timeout and disable window decorations
+        # Set timeout and disable window decorations
         self.after(int(timeout*1000), self.timeout_destroy)
         self.update_idletasks()
 
