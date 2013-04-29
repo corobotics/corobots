@@ -92,11 +92,11 @@ void waypointCallback(Point waypoint) {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "obstacle_avoidance");
     ros::NodeHandle n;
-    cmdVelPub = n.advertise<Twist>("cmd_vel", 1000);
+    cmdVelPub = n.advertise<Twist>("cmd_vel", 1);
     waypointsReachedPub = n.advertise<Point>("waypoints_reached", 1000);
     oa = new APF();
-    ros::Subscriber scanSub = n.subscribe("scan", 1000, scanCallback);
-    ros::Subscriber poseSub = n.subscribe("pose", 1000, poseCallback);
+    ros::Subscriber scanSub = n.subscribe("scan", 1, scanCallback);
+    ros::Subscriber poseSub = n.subscribe("pose", 1, poseCallback);
     ros::Subscriber waypointSub = n.subscribe("waypoints", 1000, waypointCallback);
     ros::spin();
     delete oa;
