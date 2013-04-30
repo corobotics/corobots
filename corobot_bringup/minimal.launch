@@ -22,8 +22,6 @@
         <param name="acpi_path" type="string" value="/proc/acpi/battery/BAT0" />
     </node>
 
-    <!-- Map -->
-    <node pkg="map_server" type="map_server" name="map_server" args="$(find corobot_map)/map/robotMap_params.yaml"/>
-    <node pkg="corobot_map" type="map.py" name="corobot_map_server"/>
+    <include file="$(find corobot_bringup)/map.launch" />
 
 </launch>

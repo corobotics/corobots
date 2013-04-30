@@ -29,5 +29,5 @@ fi
 if [ -s /etc/ros/fuerte/corobot.launch ]; then
     setuidgid $user roslaunch /etc/ros/fuerte/corobot.launch
 else
-    setuidgid $user roslaunch corobot_bringup corobot.launch
+    setuidgid $user roslaunch corobot_bringup minimal.launch
 fi

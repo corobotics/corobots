@@ -66,6 +66,5 @@ chmod +x /usr/sbin/corobot-stop
 
 mkdir -p /etc/ros
 mkdir -p /etc/ros/$release
-cat ./corobot.launch > /etc/ros/$release/corobot.launch
 
 echo ". /opt/ros/$release/setup.bash;" > /etc/ros/setup.bash
