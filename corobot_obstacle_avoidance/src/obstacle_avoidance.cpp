@@ -65,7 +65,6 @@ void scanCallback(LaserScan scan) {
     t.linear.x = p.d;
     t.angular.z = p.a;
     cmdVelPub.publish(t);
-    ROS_INFO("Cmd: %.2f, %.2f rads", p.d, p.a);
 }
 
 /**

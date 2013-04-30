@@ -39,13 +39,18 @@ class CorobotNavigator():
         """Pose subscription callback."""
         self.pose = pose
 
-    def waypoints_reached_callback(self, wp):
-        """Wayoints Reached subscription callback"""
-        top = self.wp_queue[0]
-        if (top[0].x == wp.x) and (top[0].y == wp.y):
+    def waypoints_reached_callback(self, reached):
+        """Waypoints reached subscription callback."""
+        if not self.wp_queue:
+            rospy.logerr("Waypoint reached but queue is empty.")
+            return
+        head, is_goal = self.wp_queue[0]
+        if head.x == reached.x and head.y == reached.y:
             self.wp_queue.popleft()
-            if top[1] == True:
-                self.goal_reached_pub.publish(top[0])
+            if is_goal:
+                self.goal_reached_pub.publish(head)
+        else:
+            rospy.logerr("Waypoint reached but doesn't match head of queue.")
 
     def goals_callback(self, new_goal):
         """No navigation goal queuing"""
