@@ -57,11 +57,9 @@ if ! id -u corobot >/dev/null 2>&1; then
 fi
 
 cat ./corobot-start | sed "s/wlan0/$interface/g" | sed "s/fuerte/$release/"g > /usr/sbin/corobot-start
-cat ./corobot-start-kinect | sed "s/wlan0/$interface/g" | sed "s/fuerte/$release/"g > /usr/sbin/corobot-start-kinect
 cat ./corobot-stop | sed "s/wlan0/$interface/g" | sed "s/fuerte/$release/"g > /usr/sbin/corobot-stop
 cat ./corobot.conf | sed "s/wlan0/$interface/g" > /etc/init/corobot.conf
 chmod +x /usr/sbin/corobot-start
-chmod +x /usr/sbin/corobot-start-kinect
 chmod +x /usr/sbin/corobot-stop
 
 mkdir -p /etc/ros
