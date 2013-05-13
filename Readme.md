@@ -1,6 +1,14 @@
-# Software Dependencies
+# Rochester Institute of Technology - Computer Science Department - Corobots
 
-## Installing `zbar`
+Main repository for the corobot software.
+
+[Project Website](http://www.cs.rit.edu/~robotlab/corobots/)
+
+See [corobot-extras](https://github.com/corobotics/corobot-extras) for detailed build instructions of the complete corobot platform
+
+## Software Dependencies
+
+### Installing `zbar`
 
 Needed for webcam qrcode reading.
 
