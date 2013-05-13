@@ -1,6 +1,6 @@
-# Rochester Institute of Technology - Computer Science Department - Corobots
+# Corobots
 
-Main repository for the corobot software.
+Main repository for the corobot software, a research project at the Rochester Institute of Technology (Dept. of Computer Science)
 
 [Project Website](http://www.cs.rit.edu/~robotlab/corobots/)
 
