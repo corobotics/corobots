@@ -1,0 +1,26 @@
+<package>
+  <name>corobot_common</name>
+  <version>0.0.0</version>
+  <description>Library for common components of the Corobot system.</description>
+  <maintainer email="zjb@cs.rit.edu">Zack Butler</maintainer> 
+
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/corobot_core</url>
+  <!-- <url type="bugtracker"></url> -->
+
+  <author>Max Bogue</author>
+
+  <build_depend>geometry_msgs</build_depend> 
+  <build_depend>message_generation</build_depend> 
+  <build_depend>nav_msgs</build_depend> 
+  <build_depend>roscpp</build_depend> 
+  <build_depend>sensor_msgs</build_depend> 
+  <run_depend>geometry_msgs</run_depend> 
+  <run_depend>message_runtime</run_depend>
+  <run_depend>nav_msgs</run_depend> 
+  <run_depend>roscpp</run_depend> 
+  <run_depend>sensor_msgs</run_depend> 
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>
