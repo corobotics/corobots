@@ -1,6 +1,7 @@
 # Corobots
 
-This is the main repository for the Corobotics project, where code that actually runs on the robot is stored.
+This is the main repository for the [Corobotics](http://www.cs.rit.edu/~robotlab/corobots/) research project at the Rochester Institute of Technology CS Department.
+Code that actually runs on the robot is stored here.
 
 ## Running
 
