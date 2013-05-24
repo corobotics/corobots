@@ -15,22 +15,22 @@ using corobot_common::Pose;
 int main(int argc, char **argv) {
     // Initialize the ROS node.
     ros::init(argc, argv, "corobot_qrcode");
+    //handle for the publisher
     ros::NodeHandle n;
+    //handle for getting parameters
+    ros::NodeHandle nh("~");
+    string deviceno;
+    nh.getParam("device", deviceno);
     ros::Publisher chatter_pub = n.advertise<Pose>("qrcode_pose", 1000);
-
     // Create our barcode detected handler.
     BarcodeHandler my_handler(chatter_pub);
     // Create the zbar processor; this will run in its own thread.
     Processor proc;
-    ros::NodeHandle nh("~");
-    char  dn;
-    nh.getParam("device", dn);
-    cout<<device_number;
     // Don't change the resolution, will screw up everything!
     proc.request_size(1600, 800);
     // Initialize after setting size; no X window.
     // setting it to true works on local machine.
-    proc.init("/dev/videoleft", true);
+    proc.init((char*)deviceno.c_str(), true);
     // Configure the processor to detect QR codes.
     proc.set_config(ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
     // Set the handler.
