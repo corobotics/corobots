@@ -66,3 +66,4 @@ mkdir -p /etc/ros
 mkdir -p /etc/ros/$release
 
 echo ". /opt/ros/$release/setup.bash;" > /etc/ros/setup.bash
+echo "export ROS_PACKAGE_PATH=/home/corobot/corobot_ws/src:$ROS_PACKAGE_PATH" >> /etc/ros/setup.bash

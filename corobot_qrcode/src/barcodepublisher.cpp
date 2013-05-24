@@ -1,9 +1,12 @@
 #include <zbar.h>
 #include <ros/ros.h>
 #include <corobot_common/Pose.h>
+#include <ros/console.h>
 
 #include "CSVReader.h"
 #include "barcodeHandler.h"
+
+#include <string>
 
 using namespace std;
 using namespace zbar;
@@ -17,13 +20,17 @@ int main(int argc, char **argv) {
 
     // Create our barcode detected handler.
     BarcodeHandler my_handler(chatter_pub);
-
     // Create the zbar processor; this will run in its own thread.
     Processor proc;
+    ros::NodeHandle nh("~");
+    char  dn;
+    nh.getParam("device", dn);
+    cout<<device_number;
     // Don't change the resolution, will screw up everything!
-    proc.request_size(1600, 1200);
+    proc.request_size(1600, 800);
     // Initialize after setting size; no X window.
-    proc.init("/dev/video0", false);
+    // setting it to true works on local machine.
+    proc.init("/dev/videoleft", true);
     // Configure the processor to detect QR codes.
     proc.set_config(ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
     // Set the handler.

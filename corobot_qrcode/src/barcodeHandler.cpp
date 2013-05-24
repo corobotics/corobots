@@ -38,6 +38,7 @@ void BarcodeHandler::image_callback(Image &image) {
         // Length of pixels top right and bottom right
         lengthPixelR = abs(point[3].y - point[2].y);
 
+        cout<<lengthPixelL<<" " <<lengthPixelR<<endl;
         // Calculate the distance from the barcode to camera
         distanceL = (f * D) / lengthPixelL;
         distanceR = (f * D) / lengthPixelR;

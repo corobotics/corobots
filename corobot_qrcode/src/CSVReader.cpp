@@ -11,7 +11,7 @@ using namespace std;
 void CSVReader::init()
 {
 
-    infile.open("src/barcodePoints.csv");
+    infile.open("/home/corobot/barcodePoints.csv");
 
 
 }

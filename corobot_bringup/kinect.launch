@@ -8,7 +8,7 @@
     <node pkg="nodelet" type="nodelet" name="openni_launch" args="load openni_camera/OpenNINodelet openni_manager" respawn="true">
         <param name="rgb_frame_id" value="camera_rgb_optical_frame" />
         <param name="depth_frame_id" value="camera_depth_optical_frame" />
-        <param name="depth_registration" value="true" />
+        <param name="depth_registration" value="false" />
         <param name="image_mode" value="2" />
         <param name="depth_mode" value="2" />
         <param name="debayering" value="2" />
