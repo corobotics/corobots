@@ -11,7 +11,7 @@ BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub,string dev) {
 
 bool BarcodeHandler::isLeft(string dev){
 
-    if(dev.compare("/dev/videoleft"))
+    if(dev.compare("/dev/videoleft")==0)
     return true; 
 
     return false;                                                                                          
@@ -100,7 +100,6 @@ void BarcodeHandler::image_callback(Image &image) {
         cout << realx << " " << realy << " " << bctheta << endl;
         
 	if(!(isLeft(device_name))){
-	cout<<"Right";
 	bctheta+=PI;
 	}
         // Publishing the msg
