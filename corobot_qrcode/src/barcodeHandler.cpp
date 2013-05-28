@@ -4,9 +4,18 @@
 using namespace std;
 using namespace zbar;
 
-BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub) {
+BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub,string dev) {
     publisher = chatter_pub;
+    device_name = dev;    
 }
+
+bool BarcodeHandler::isLeft(string dev){
+
+    if(dev.compare("/dev/videoleft"))
+    return true; 
+
+    return false;                                                                                          
+}  
 
 void BarcodeHandler::image_callback(Image &image) {
 
@@ -89,7 +98,10 @@ void BarcodeHandler::image_callback(Image &image) {
         }
 
         cout << realx << " " << realy << " " << bctheta << endl;
-
+        if(isLeft(device_name))
+	cout<<"Works";
+	else
+	cout<<"Nope";
         // Publishing the msg
         msg.x = realx;
         msg.y = realy;

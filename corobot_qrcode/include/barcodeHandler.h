@@ -22,12 +22,13 @@ public:
     float distanceL, distanceR, squareDistanceL, squareDistanceR, angleR, angleL, angleAvg, distanceAvg, offsetDistance, barcodeXavg;
     float cbx, cby, cbtheta, bcx, bcy, bctheta, alpha, gamma;
     float barcodeX, barcodeY;
-    std::string barcodeOrientation;
+    std::string barcodeOrientation, device_name;
     CSVReader csvreader;
     corobot_common::Pose msg;
     
-    BarcodeHandler(ros::Publisher & chatter_pub);
+    BarcodeHandler(ros::Publisher & chatter_pub,std::string dev);
     void image_callback(zbar::Image & image);
+    bool isLeft(std::string dev);
 
 };
 
