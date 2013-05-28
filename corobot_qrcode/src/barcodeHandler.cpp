@@ -98,12 +98,14 @@ void BarcodeHandler::image_callback(Image &image) {
         }
 
         cout << realx << " " << realy << " " << bctheta << endl;
-        if(isLeft(device_name))
-	cout<<"Works";
-	else
-	cout<<"Nope";
+        
+	if(!(isLeft(device_name))){
+	cout<<"Right";
+	bctheta+=PI;
+	}
         // Publishing the msg
-        msg.x = realx;
+        
+	msg.x = realx;
         msg.y = realy;
         msg.theta = bctheta;
         for (int i = 0; i < 9; i++) {
