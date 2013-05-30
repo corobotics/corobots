@@ -31,7 +31,7 @@ See [corobot-extras](https://github.com/corobotics/corobot-extras) for detailed 
         sudo git clone https://github.com/corobotics/ZBar.git zbar
         cd zbar
         sudo autoreconf --install
-        sudo ./configure --without-imagemagick
+        sudo ./configure --without-imagemagick --without-gtk
         sudo make
         sudo make install
         echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.zshrc
