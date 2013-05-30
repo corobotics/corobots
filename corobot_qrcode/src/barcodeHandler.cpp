@@ -77,7 +77,7 @@ void BarcodeHandler::image_callback(Image &image) {
         bctheta = PI / 2 + cbtheta;
 
         float realx, realy = 0.0;
-
+        cout << "Barcode: " << symbol->get_data() << endl;
         cout << "cbx " << cbx << " " << "cby " << cby << " " << "cbo " << cbtheta << " " << "alpha " << alpha << " " << "gamma " << gamma << " " << "bcx " << bcx << " " << "bcy " << bcy << " " << "bco " << bctheta << endl;
 
         if (barcodeOrientation.compare("N") == 0) {
@@ -97,11 +97,15 @@ void BarcodeHandler::image_callback(Image &image) {
             bctheta += PI * 0.5;
         }
 
-        cout << realx << " " << realy << " " << bctheta << endl;
+        cout << "realx " << realx << " " << "realy " << realy << " " << "bctheta " <<  bctheta << endl;
         
 	if(!(isLeft(device_name))){
 	bctheta+=PI;
+    cout << "Right Camera" << endl;
 	}
+    else{
+    cout << "Left Camera" << endl;
+    }
         // Publishing the msg
         
 	msg.x = realx;
