@@ -52,6 +52,11 @@ ros::Publisher cmdVelPub;
 ros::Publisher waypointsReachedPub;
 
 /**
+ * The publisher for waypoints the robot has given up on reaching.
+ */
+ros::Publisher waypointsFailedPub;
+
+/**
  * The obstacle avoider to use.
  */
 ObstacleAvoider* oa;
@@ -65,6 +70,12 @@ void scanCallback(LaserScan scan) {
     t.linear.x = p.d;
     t.angular.z = p.a;
     cmdVelPub.publish(t);
+    while (!oa->failedQueue.empty()) {
+        Point failed = oa->failedQueue.front();
+        waypointsFailedPub.publish(failed);
+        oa->failedQueue.pop();
+        ROS_INFO("Waypoint failed: (%.2f, %.2f)", failed.x, failed.y);
+    }
 }
 
 /**
@@ -93,6 +104,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle n;
     cmdVelPub = n.advertise<Twist>("cmd_vel", 1);
     waypointsReachedPub = n.advertise<Point>("waypoints_reached", 1000);
+    waypointsFailedPub = n.advertise<Point>("waypoints_failed", 1000);
     oa = new APF();
     ros::Subscriber scanSub = n.subscribe("scan", 1, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1, poseCallback);

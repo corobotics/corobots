@@ -40,6 +40,9 @@ protected:
     /** The last command given by nav(). */
     Polar cmdPrev;
 
+    /** The last time nav() produced a positive forward velocity. */
+    double timeLastMoved;
+
     /**
      * Converts a laser scan to a list of polar coordinates.
      *

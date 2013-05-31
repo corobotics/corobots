@@ -40,10 +40,13 @@ public:
 
     /**
      * A queue of waypoints that the robot has navigated to.
-     * The waypoints are here until they are passed back along
-     * waypoints_reached.
      */
     std::queue<geometry_msgs::Point> arrivedQueue;
+
+    /**
+     * A queue of waypoints that the robot has failed to navigate to.
+     */
+    std::queue<geometry_msgs::Point> failedQueue;
 
     /**
      * Abstract method to provide a navigation vector based off a laser scan.

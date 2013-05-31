@@ -27,10 +27,12 @@ class CorobotNavigator():
         rospy.init_node('corobot_navigator')
         #Publisher to obstacle_avoidance
         self.point_pub = rospy.Publisher('waypoints', Point)
-        self.goal_reached_pub = rospy.Publisher('goals_reached', Point)
+        self.goals_reached_pub = rospy.Publisher('goals_reached', Point)
+        self.goals_failed_pub = rospy.Publisher('goals_failed', Point)
         rospy.Subscriber('goals_nav', Point, self.goals_nav_callback)
         rospy.Subscriber('goals', Point, self.goals_callback)
         rospy.Subscriber('pose', Pose, self.pose_callback)
+        rospy.Subscriber('waypoints_failed', Point, self.waypoints_failed_callback)
 
     def start(self):
         rospy.spin()
@@ -39,18 +41,30 @@ class CorobotNavigator():
         """Pose subscription callback."""
         self.pose = pose
 
-    def waypoints_reached_callback(self, reached):
+    def waypoints_reached_callback(self, waypoint):
         """Waypoints reached subscription callback."""
         if not self.wp_queue:
             rospy.logerr("Waypoint reached but queue is empty.")
             return
         head, is_goal = self.wp_queue[0]
-        if head.x == reached.x and head.y == reached.y:
+        if waypoint.x == head.x and waypoint.y == head.y:
             self.wp_queue.popleft()
             if is_goal:
-                self.goal_reached_pub.publish(head)
+                self.goals_reached_pub.publish(head)
         else:
             rospy.logerr("Waypoint reached but doesn't match head of queue.")
+
+    def waypoints_failed_callback(self, waypoint):
+        if not self.wp_queue:
+            rospy.logerr("Waypoint failed but queue is empty.")
+            return
+        head, is_goal = self.wp_queue[0]
+        if waypoint.x == head.x and waypoint.y == head.y:
+            self.wp_queue.popleft()
+            if is_goal:
+                self.goals_failed_pub.publish(head)
+        else:
+            rospy.logerr("Waypoint failed but doesn't match head of queue.")
 
     def goals_callback(self, new_goal):
         """No navigation goal queuing"""

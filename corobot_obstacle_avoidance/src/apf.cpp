@@ -2,6 +2,7 @@
 #include <iostream>
 #include <list>
 
+#include "ros/console.h"
 #include "corobot_common/Pose.h"
 #include "geometry_msgs/Point.h"
 #include "sensor_msgs/LaserScan.h"
@@ -127,7 +128,7 @@ Polar APF::nav(LaserScan scan) {
 
     // Can't do anything without a goal.
     if (waypointQueue.empty()) {
-        cout << "No waypoints in queue!" << endl;
+        ROS_INFO("No waypoints in queue!");
         Polar p;
         return p;
     }
@@ -137,10 +138,7 @@ Polar APF::nav(LaserScan scan) {
     // Convert the goal into the robot reference frame.
     Point goal = rCoordTransform(goalInMap, pose);
 
-    cout << endl;
-    printf("GoalMap:\t%.2f, %.2f\n", goalInMap.x, goalInMap.y);
-    printf("Pose:\t%.2f, %.2f, %+.2f\n", pose.x, pose.y, pose.theta);
-    printf("Goal:\t%.2f, %.2f\n", goal.x, goal.y);
+    ROS_DEBUG("Goal:\t%.2f, %.2f\n", goal.x, goal.y);
 
     // The list of "objects" found; already in the robot reference frame.
     list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
@@ -155,18 +153,18 @@ Polar APF::nav(LaserScan scan) {
         netForce.x = D_GOAL * K_GOAL * goal.x / goalDist;
         netForce.y = D_GOAL * K_GOAL * goal.y / goalDist;
     }
-    printf("GoalF:\t%.2f, %.2f\n", netForce.x, netForce.y);
+    ROS_DEBUG("GoalF:\t%.2f, %.2f", netForce.x, netForce.y);
 
     // Sum over all obstacles.
     for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
         Polar o = *p;
-        printf("Obj:\t%.2f, %.2f\n", o.d * cos(o.a), o.d * sin(o.a));
+        ROS_DEBUG("Obj:\t%.2f, %.2f", o.d * cos(o.a), o.d * sin(o.a));
         if (o.d <= D_OBS) {
             // Principles of Robot Motion, pg. 83
             double f = K_OBS * (1.0/D_OBS - 1.0/o.d) / (o.d * o.d);
             netForce.x += f * cos(o.a);
             netForce.y += f * sin(o.a);
-            printf("ObjF:\t%.2f, %.2f\n", f * cos(o.a), f * sin(o.a));
+            ROS_DEBUG("ObjF:\t%.2f, %.2f", f * cos(o.a), f * sin(o.a));
         }
     }
 
@@ -175,8 +173,7 @@ Polar APF::nav(LaserScan scan) {
     cmd.d = length(netForce.x, netForce.y);
     cmd.a = atan2(netForce.y, netForce.x);
 
-    printf("NavF:\t%.2f, %.2f\n", netForce.x, netForce.y);
-    printf("Nav1:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+    ROS_DEBUG("RawNav:\t<%+.2f, %.2f>", cmd.a, cmd.d);
 
     // Don't try to go forward if the angle is more than 45 degrees.
     if (cmd.a > PI / 4.0) {
@@ -187,14 +184,18 @@ Polar APF::nav(LaserScan scan) {
         cmd.a = PI / -4.0;
     }
 
-    printf("Nav2:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
-
     // Cap the accelerations to prevent jerky movements.
     cmd.a = bound(cmd.a, cmdPrev.a, 1.0);
     cmd.d = bound(cmd.d, cmdPrev.d, 0.15);
 
-    printf("Nav3:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
-
+    double now = scan.header.stamp.toSec();
+    if (cmd.d > 0.0 || timeLastMoved == 0.0) {
+        timeLastMoved = now;
+    } else if (now - timeLastMoved > 10.0) {
+        // Haven't moved in too long; give up on this waypoint.
+        waypointQueue.pop();
+        failedQueue.push(goalInMap);
+    }
     cmdPrev = cmd;
     return cmd;
 }

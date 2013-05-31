@@ -50,11 +50,17 @@ class CorobotManager():
         """Callback for the pose ROS topic."""
         self.pose = pose
 
-    def goals_reached_callback(self, reached):
+    def goals_reached_callback(self, goal):
         """Callback for the goals_reached ROS topic."""
-        if self.goal_queue and point_equals(self.goal_queue[0][1], reached):
+        if self.goal_queue and point_equals(goal, self.goal_queue[0][1]):
             msg_id, _ = self.goal_queue.popleft()
             self.client_write(msg_id, "ARRIVED")
+
+    def goals_failed_callback(self, goal):
+        """Callback for the goals_reached ROS topic."""
+        if self.goal_queue and point_equals(goal, self.goal_queue[0][1]):
+            msg_id, _ = self.goal_queue.popleft()
+            self.client_write(msg_id, "ERROR Failed to reach goal.")
 
     def confirm_ui_callback(self, confirm):
         self.client_write(confirm.id, "CONFIRM %s" % confirm.confirmed)
@@ -64,6 +70,7 @@ class CorobotManager():
         rospy.init_node("corobot_manager")
         rospy.Subscriber("pose", Pose, self.pose_callback)
         rospy.Subscriber("goals_reached", Point, self.goals_reached_callback)
+        rospy.Subscriber("goals_failed", Point, self.goals_failed_callback)
         rospy.Subscriber("confirm_msg", UIConfirm, self.confirm_ui_callback)
         rospy.wait_for_service("get_landmark")
         self.get_landmark = rospy.ServiceProxy("get_landmark", GetLandmark)
