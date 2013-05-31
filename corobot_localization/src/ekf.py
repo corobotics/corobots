@@ -1,7 +1,11 @@
+from math import pi
+
 from numpy.matlib import matrix
 
 from corobot_common.msg import Pose
 from utils import column_vector, coord_transform, get_offset, reduce_covariance
+
+tau = pi * 2.0
 
 class EKF(object):
 
@@ -59,7 +63,7 @@ class EKF(object):
 
     def update_pos(self, pose):
         """Convenience function to do a position update."""
-        y = column_vector(pose.x, pose.y, pose.theta)
+        y = column_vector(pose.x, pose.y, pose.theta % tau)
         W = matrix(pose.cov).reshape(3, 3)
         self.update(y, W)
 
