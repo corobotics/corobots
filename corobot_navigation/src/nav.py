@@ -1,18 +1,25 @@
 #!/usr/bin/env python
 import math
 from collections import deque
-from Queue import PriorityQueue
 from contextlib import closing
+from itertools import chain, imap
+from Queue import PriorityQueue
 
 import roslib; roslib.load_manifest('corobot_navigation')
 import rospy
 from geometry_msgs.msg import Point
 
-from corobot_common import a_star, bresenham, distance, point_distance
+from corobot_common import a_star, bresenham, distance, point_distance, point_equals
 from corobot_common.srv import GetPixelOccupancy, GetNeighbors, GetLandmark, GetLandmarks, GetCoMap
 from corobot_common.msg import Pose, Landmark
 
 class CorobotNavigator():
+
+    # Maximum distance in meters to try to go straight from the start to a node.
+    MAX_ZONE_DIST = 3.0
+
+    # The maximum number of nodes that can be in a zone.
+    MAX_ZONE_SIZE = 4
 
     def __init__(self, occupancy_map, landmark_graph):
         # Robot's current position.
@@ -47,7 +54,7 @@ class CorobotNavigator():
             rospy.logerr("Waypoint reached but queue is empty.")
             return
         head, is_goal = self.wp_queue[0]
-        if waypoint.x == head.x and waypoint.y == head.y:
+        if point_equals(waypoint, head):
             self.wp_queue.popleft()
             if is_goal:
                 self.goals_reached_pub.publish(head)
@@ -59,7 +66,7 @@ class CorobotNavigator():
             rospy.logerr("Waypoint failed but queue is empty.")
             return
         head, is_goal = self.wp_queue[0]
-        if waypoint.x == head.x and waypoint.y == head.y:
+        if point_equals(waypoint, head):
             self.wp_queue.popleft()
             if is_goal:
                 self.goals_failed_pub.publish(head)
@@ -103,40 +110,49 @@ class CorobotNavigator():
         # v will be False if we found an obstacle, and None otherwise.
         return v is not False
 
-    def find_nearest_visibles(self, point, num):
+    def find_nearest_visibles(self, point, landmarks):
         """Finds landmarks visible from a point.
 
-        point -- The starting point.
-        num -- Return the closest <num> landmarks.
+        Limited to only nodes within MAX_ZONE_DIST of point, unless there
+        are none in which case the single next closest node is returned.
 
-        Returns a list of up to n closest Landmarks visible from the given point.
+        Arguments:
+          point     - The starting point.
+          landmarks - An iter of landmarks to consider.
+
+        Returns a list of up to MAX_ZONE_SIZE closest visible Landmarks.
 
         """
-        closest = []
-        for landmark, _ in self.landmark_graph.itervalues():
-            d = point_distance(point, landmark)
-            if (closest == [] or d < closest[0]) and self.navigable(point, landmark):
-                closest.append((d, landmark))
-        if closest == []:
-            rospy.logerr("Cannot find a nearby waypoint to begin navigation!")
-            return []
-        closest.sort()
-        return [landmark for d, landmark in closest[:num]]
+        visibles = []
+        for landmark in landmarks:
+            if self.navigable(point, landmark):
+                d = point_distance(point, landmark)
+                visibles.append((d, landmark))
+        visibles.sort()
+        nearest = []
+        for d, landmark in visibles[:CorobotNavigator.MAX_ZONE_SIZE]:
+            # Limit to within MAX_ZONE_DIST, but take at least one.
+            if d < CorobotNavigator.MAX_ZONE_DIST or not nearest:
+                nearest.append(landmark)
+        return nearest
 
     def navigate(self, dest):
         """Find a path from current location to the given destination."""
-        ZONE_SIZE = 4
         # Make our node objects for A*.
         start = Landmark(name="START", x=self.pose.x, y=self.pose.y)
         goal = Landmark(name="GOAL", x=dest.x, y=dest.y)
-        # Find neighbors of start and goal to add as edges to the graph.
-        start_zone = self.find_nearest_visibles(start, ZONE_SIZE)
-        goal_zone = self.find_nearest_visibles(goal, ZONE_SIZE)
-        # Manually add the edge from start to goal if it's navigable.
-        if self.navigable(start, goal):
-            start_zone.append(goal)
+        # Find visible neighbors of start and goal to add as edges to the graph.
+        landmarks = imap(lambda pair: pair[0], self.landmark_graph.itervalues())
+        # Here we manually add the goal to the candidate landmarks for start
+        # to allow for navigation directly to the goal location.
+        start_zone = self.find_nearest_visibles(start, chain(landmarks, [goal]))
+        # We have to add start here for the empty zone check below.
+        goal_zone = self.find_nearest_visibles(goal, chain(landmarks, [start]))
         rospy.logdebug("Start zone: %s" % (", ".join(l.name for l in start_zone)))
         rospy.logdebug("Goal zone: %s" % (", ".join(l.name for l in goal_zone)))
+        if not start_zone or not goal_zone:
+            rospy.logerr("Cannot connect start and goal! A* failed.")
+            return []
         # A* functions.
         is_goal = lambda node: node.name == "GOAL"
         heuristic = lambda node: point_distance(node, goal)
