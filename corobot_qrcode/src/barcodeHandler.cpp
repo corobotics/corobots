@@ -11,7 +11,7 @@ BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub,string dev) {
 
 bool BarcodeHandler::isLeft(string dev){
 
-    if(dev.compare("/dev/videoleft")==0)
+    if(dev.compare("/dev/videoleft") == 0)
     return true; 
 
     return false;                                                                                          
@@ -39,7 +39,7 @@ void BarcodeHandler::image_callback(Image &image) {
         csvreader.close();
 
         // focal length(calculated before) and test distance
-        float f = 270.0, D = 25.0;
+        float f = 275.0, D = 25.0;
 
         // Length of pixels top left and bottom left
         lengthPixelL = abs(point[1].y - point[0].y);
@@ -47,7 +47,7 @@ void BarcodeHandler::image_callback(Image &image) {
         // Length of pixels top right and bottom right
         lengthPixelR = abs(point[3].y - point[2].y);
 
-        cout<<lengthPixelL<<" " <<lengthPixelR<<endl;
+        cout << lengthPixelL << " " << lengthPixelR << endl;
         // Calculate the distance from the barcode to camera
         distanceL = (f * D) / lengthPixelL;
         distanceR = (f * D) / lengthPixelR;
@@ -116,8 +116,15 @@ void BarcodeHandler::image_callback(Image &image) {
         }
 
         msg.cov[0] = 0.05;
-        msg.cov[4] = 0.05;
+        msg.cov[4] = 0.05;	
+
+	if(cbtheta > 1.3 && cbtheta < 1.8){
         msg.cov[8] = 0.1;
+	}
+	else{
+	msg.cov[8] = 0.3;
+	}
+
         publisher.publish(msg);
 
     }

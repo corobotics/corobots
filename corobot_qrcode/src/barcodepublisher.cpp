@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     // Create the zbar processor; this will run in its own thread.
     Processor proc;
     // Don't change the resolution, will screw up everything!
-    proc.request_size(1600, 800);
+    proc.request_size(1920, 1080);
     // Initialize after setting size; no X window.
     // setting it to true works on local machine.
     proc.init((char*)devicename.c_str(), true);
