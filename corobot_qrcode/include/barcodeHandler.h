@@ -26,7 +26,7 @@ public:
     CSVReader csvreader;
     corobot_common::Pose msg;
     
-    BarcodeHandler(ros::Publisher & chatter_pub,std::string dev);
+    BarcodeHandler(ros::Publisher & chatter_pub,std::string dev,std::string csvfile);
     void image_callback(zbar::Image & image);
     bool isLeft(std::string dev);
 

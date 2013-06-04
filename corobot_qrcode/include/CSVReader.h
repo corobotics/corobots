@@ -9,7 +9,7 @@ class CSVReader {
 public:
 
     std::vector < std::vector < std::string > > data;
-    void init();
+    void init(std::string filename);
     void close();
     void readFile();
     std::string getX(std::string url);

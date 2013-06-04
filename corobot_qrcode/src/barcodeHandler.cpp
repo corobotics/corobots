@@ -4,9 +4,12 @@
 using namespace std;
 using namespace zbar;
 
-BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub,string dev) {
+BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub,string dev,string csvfile) {
     publisher = chatter_pub;
     device_name = dev;    
+    // Read csv file
+    csvreader.init(csvfile);
+
 }
 
 bool BarcodeHandler::isLeft(string dev){
@@ -26,17 +29,10 @@ void BarcodeHandler::image_callback(Image &image) {
             point[i].y = symbol->get_location_y(i);
         }
 
-        // Read csv file
-        csvreader.init();
-        csvreader.readFile();
-
         // Get data
         istringstream(csvreader.getX(symbol->get_data())) >> barcodeX;
         istringstream(csvreader.getY(symbol->get_data())) >> barcodeY;
         barcodeOrientation = csvreader.getOrientation(symbol->get_data());
-
-        // Close csv file
-        csvreader.close();
 
         // focal length(calculated before) and test distance
         float f = 275.0, D = 25.0;

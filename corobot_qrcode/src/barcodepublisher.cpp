@@ -21,9 +21,11 @@ int main(int argc, char **argv) {
     ros::NodeHandle nh("~");
     string devicename;
     nh.getParam("device", devicename);
+    string csvfilename;
+    nh.getParam("csvfile", csvfilename);
     ros::Publisher chatter_pub = n.advertise<Pose>("qrcode_pose", 1000);
     // Create our barcode detected handler.
-    BarcodeHandler my_handler(chatter_pub,devicename);
+    BarcodeHandler my_handler(chatter_pub,devicename,csvfilename);
     // Create the zbar processor; this will run in its own thread.
     Processor proc;
     // Don't change the resolution, will screw up everything!

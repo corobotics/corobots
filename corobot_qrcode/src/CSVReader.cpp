@@ -8,18 +8,17 @@
 
 using namespace std;
 
-void CSVReader::init()
+void CSVReader::init(string filename)
 {
-
-    infile.open("/home/corobot/barcodePoints.csv");
-
-
+  infile.open(filename.c_str());
+  readFile();
+  infile.close();
 }
 
 void CSVReader::close()
 {
 
-    infile.close();
+  infile.close();
 
 }
 
