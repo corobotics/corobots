@@ -202,6 +202,8 @@ Polar APF::nav(LaserScan scan) {
         // Haven't moved in too long; give up on this waypoint.
         waypointQueue.pop();
         failedQueue.push(goalInMap);
+        // Reset the timestamp so we don't give up on subsequent waypoints.
+        timeLastMoved = 0.0
     }
  
     cmdPrev = cmd;

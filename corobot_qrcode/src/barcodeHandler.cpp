@@ -11,7 +11,7 @@ BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub,string dev) {
 
 bool BarcodeHandler::isLeft(string dev){
 
-    if(dev.compare("/dev/videoleft")==0)
+    if(dev.compare("/dev/videoleft") == 0)
     return true; 
 
     return false;                                                                                          
@@ -116,8 +116,15 @@ void BarcodeHandler::image_callback(Image &image) {
         }
 
         msg.cov[0] = 0.05;
-        msg.cov[4] = 0.05;
+        msg.cov[4] = 0.05;	
+
+	if(cbtheta > 1.3 && cbtheta < 1.8){
         msg.cov[8] = 0.1;
+	}
+	else{
+	msg.cov[8] = 0.3;
+	}
+
         publisher.publish(msg);
 
     }
