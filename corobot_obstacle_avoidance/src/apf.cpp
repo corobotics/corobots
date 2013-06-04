@@ -188,12 +188,12 @@ Polar APF::nav(LaserScan scan) {
     cmd.a = bound(cmd.a, cmdPrev.a, 1.0);
     cmd.d = bound(cmd.d, cmdPrev.d, 0.15);
 
-    printf("Nav3:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+    ROS_DEBUG("Nav3:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
    // dead-band the rotational velocity to help with odometry issues
     if (((cmd.a > 0) && (cmd.a < MIN_OMEGA)) || ((cmd.a < 0) && (cmd.a > -1*MIN_OMEGA)))
       cmd.a = 0;
-    printf("NavF:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+    ROS_DEBUG("NavF:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
     double now = scan.header.stamp.toSec();
     if (cmd.d > 0.0 || timeLastMoved == 0.0) {
@@ -203,7 +203,7 @@ Polar APF::nav(LaserScan scan) {
         waypointQueue.pop();
         failedQueue.push(goalInMap);
         // Reset the timestamp so we don't give up on subsequent waypoints.
-        timeLastMoved = 0.0
+        timeLastMoved = 0.0;
     }
  
     cmdPrev = cmd;

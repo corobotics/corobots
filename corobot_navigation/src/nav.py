@@ -16,7 +16,7 @@ from corobot_common.msg import Pose, Landmark
 class CorobotNavigator():
 
     # Maximum distance in meters to try to go straight from the start to a node.
-    MAX_ZONE_DIST = 3.0
+    MAX_ZONE_DIST = 18.0
 
     # The maximum number of nodes that can be in a zone.
     MAX_ZONE_SIZE = 4
@@ -123,12 +123,16 @@ class CorobotNavigator():
         Returns a list of up to MAX_ZONE_SIZE closest visible Landmarks.
 
         """
+        rospy.loginfo("Calculating visibles for %s", point)
+        #rospy.loginfo("Selecting from %s" % (", ".join(l.name for l in landmarks)))
         visibles = []
         for landmark in landmarks:
             if self.navigable(point, landmark):
                 d = point_distance(point, landmark)
                 visibles.append((d, landmark))
         visibles.sort()
+        for d, landmark in visibles:
+            rospy.loginfo("%s at %f", landmark.name, d)
         nearest = []
         for d, landmark in visibles[:CorobotNavigator.MAX_ZONE_SIZE]:
             # Limit to within MAX_ZONE_DIST, but take at least one.
@@ -147,9 +151,10 @@ class CorobotNavigator():
         # to allow for navigation directly to the goal location.
         start_zone = self.find_nearest_visibles(start, chain(landmarks, [goal]))
         # We have to add start here for the empty zone check below.
+        landmarks = imap(lambda pair: pair[0], self.landmark_graph.itervalues())
         goal_zone = self.find_nearest_visibles(goal, chain(landmarks, [start]))
-        rospy.logdebug("Start zone: %s" % (", ".join(l.name for l in start_zone)))
-        rospy.logdebug("Goal zone: %s" % (", ".join(l.name for l in goal_zone)))
+        rospy.loginfo("Start zone: %s" % (", ".join(l.name for l in start_zone)))
+        rospy.loginfo("Goal zone: %s" % (", ".join(l.name for l in goal_zone)))
         if not start_zone or not goal_zone:
             rospy.logerr("Cannot connect start and goal! A* failed.")
             return []

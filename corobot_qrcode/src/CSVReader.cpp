@@ -51,6 +51,7 @@ void CSVReader::readFile()
 
 string CSVReader::getX(string url)
 {
+    url.erase(url.find_last_not_of(" \n\r\t")+1);
     string temp;
     for (unsigned int i = 1; i < data.size(); i++) {
         temp = data[i][6];
@@ -62,6 +63,7 @@ string CSVReader::getX(string url)
 
 string CSVReader::getY(string url)
 {
+    url.erase(url.find_last_not_of(" \n\r\t")+1);
     string temp;
     for (unsigned int i = 1; i < data.size(); i++) {
         temp = data[i][6];
@@ -73,6 +75,7 @@ string CSVReader::getY(string url)
 
 string CSVReader::getOrientation(string url)
 {
+    url.erase(url.find_last_not_of(" \n\r\t")+1);
     string temp;
     for (unsigned int i = 1; i < data.size(); i++) {
         temp = data[i][6];

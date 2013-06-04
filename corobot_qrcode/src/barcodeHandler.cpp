@@ -47,7 +47,7 @@ void BarcodeHandler::image_callback(Image &image) {
         // Length of pixels top right and bottom right
         lengthPixelR = abs(point[3].y - point[2].y);
 
-        cout << lengthPixelL << " " << lengthPixelR << endl;
+        ROS_INFO_STREAM(lengthPixelL << " " << lengthPixelR);
         // Calculate the distance from the barcode to camera
         distanceL = (f * D) / lengthPixelL;
         distanceR = (f * D) / lengthPixelR;
@@ -77,8 +77,8 @@ void BarcodeHandler::image_callback(Image &image) {
         bctheta = PI / 2 + cbtheta;
 
         float realx, realy = 0.0;
-        cout << "Barcode: " << symbol->get_data() << endl;
-        cout << "cbx " << cbx << " " << "cby " << cby << " " << "cbo " << cbtheta << " " << "alpha " << alpha << " " << "gamma " << gamma << " " << "bcx " << bcx << " " << "bcy " << bcy << " " << "bco " << bctheta << endl;
+        ROS_INFO_STREAM("Barcode: " << symbol->get_data());
+        ROS_INFO_STREAM("cbx " << cbx << " " << "cby " << cby << " " << "cbo " << cbtheta << " " << "alpha " << alpha << " " << "gamma " << gamma << " " << "bcx " << bcx << " " << "bcy " << bcy << " " << "bco " << bctheta);
 
         if (barcodeOrientation.compare("N") == 0) {
             realx = barcodeX + bcx;
@@ -97,18 +97,18 @@ void BarcodeHandler::image_callback(Image &image) {
             bctheta += PI * 0.5;
         }
 
-        cout << "realx " << realx << " " << "realy " << realy << " " << "bctheta " <<  bctheta << endl;
+        ROS_INFO_STREAM("realx " << realx << " " << "realy " << realy << " " << "bctheta " <<  bctheta);
         
-	if(!(isLeft(device_name))){
-	bctheta+=PI;
-    cout << "Right Camera" << endl;
-	}
-    else{
-    cout << "Left Camera" << endl;
-    }
-        // Publishing the msg
+        if(!(isLeft(device_name))){
+          bctheta+=PI;
+          ROS_INFO_STREAM("Right Camera");
+        }
+        else{
+          ROS_INFO_STREAM("Left Camera");
+        }
+	// Publishing the msg
         
-	msg.x = realx;
+        msg.x = realx;
         msg.y = realy;
         msg.theta = bctheta;
         for (int i = 0; i < 9; i++) {
@@ -116,14 +116,14 @@ void BarcodeHandler::image_callback(Image &image) {
         }
 
         msg.cov[0] = 0.05;
-        msg.cov[4] = 0.05;	
+        msg.cov[4] = 0.05;      
 
-	if(cbtheta > 1.3 && cbtheta < 1.8){
+        if(cbtheta > 1.3 && cbtheta < 1.8){
         msg.cov[8] = 0.1;
-	}
-	else{
-	msg.cov[8] = 0.3;
-	}
+        }
+        else{
+        msg.cov[8] = 0.3;
+        }
 
         publisher.publish(msg);
 
