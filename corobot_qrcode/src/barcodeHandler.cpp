@@ -39,7 +39,7 @@ void BarcodeHandler::image_callback(Image &image) {
         csvreader.close();
 
         // focal length(calculated before) and test distance
-        float f = 270.0, D = 25.0;
+        float f = 275.0, D = 25.0;
 
         // Length of pixels top left and bottom left
         lengthPixelL = abs(point[1].y - point[0].y);
@@ -47,7 +47,7 @@ void BarcodeHandler::image_callback(Image &image) {
         // Length of pixels top right and bottom right
         lengthPixelR = abs(point[3].y - point[2].y);
 
-        cout<<lengthPixelL<<" " <<lengthPixelR<<endl;
+        cout << lengthPixelL << " " << lengthPixelR << endl;
         // Calculate the distance from the barcode to camera
         distanceL = (f * D) / lengthPixelL;
         distanceR = (f * D) / lengthPixelR;

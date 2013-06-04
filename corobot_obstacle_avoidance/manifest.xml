@@ -11,7 +11,7 @@
   <depend package="corobot_common"/>
   <depend package="geometry_msgs"/>
   <depend package="sensor_msgs"/>
-  <depend package="turtlebot_node"/>
+  <depend package="create_node"/>
 
 </package>
 

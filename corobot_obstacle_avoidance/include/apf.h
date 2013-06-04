@@ -19,10 +19,13 @@
 #define D_OBS 1.0
 
 /** Goal gain (constant factor). */
-#define K_GOAL 1.0
+#define K_GOAL 0.25
 
 /** Obstacle gain (constant factor). */
 #define K_OBS 1.0
+
+/** Minimum rotational velocity. */
+#define MIN_OMEGA 0.25
 
 /**
  * APF implementation of the ObstacleAvoider interface.
