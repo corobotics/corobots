@@ -25,7 +25,7 @@
 #define K_OBS 1.0
 
 /** Minimum rotational velocity. */
-#define MIN_OMEGA 0.25
+#define MIN_OMEGA 0.5
 
 /**
  * APF implementation of the ObstacleAvoider interface.

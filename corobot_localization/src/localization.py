@@ -4,7 +4,7 @@ import roslib; roslib.load_manifest("corobot_localization")
 import rospy
 
 from corobot_common.msg import Pose
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist,PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 
 from ekf import EKF
@@ -28,7 +28,11 @@ def main():
     rospy.init_node("localization")
     ekf = EKF()
     pose_pub = rospy.Publisher("pose", Pose)
-    rospy.Subscriber("odom", Odometry, odom_callback)
+    #rospy.Subscriber("odom", Odometry, odom_callback)
+    # odom_combined comes from robot_pose_ekf, different message type from
+    # regular odom, but seems to have the same basic contents, so we can use
+    # the same callback (yay dynamic typing!)
+    rospy.Subscriber("odom_combined", PoseWithCovarianceStamped, odom_callback)
     rospy.Subscriber("laser_pose", Pose, laser_callback)
     rospy.Subscriber("qrcode_pose", Pose, qrcode_callback)
     rospy.spin()

@@ -15,6 +15,8 @@
 /** How close in meters to get to a waypoint before considered arrived. */
 #define ARRIVED_DISTANCE 0.2
 
+#define ARRIVED_INTER_DISTANCE 0.5
+
 /**
  * Helper struct for 2D polar coordinates.
  */

@@ -24,13 +24,19 @@ using sensor_msgs::LaserScan;
 void ObstacleAvoider::updatePose(Pose newPose) {
     pose = newPose;
     if (!waypointQueue.empty()) {
-        Point goal = waypointQueue.front();
-        while (!waypointQueue.empty() &&
-                length(pose.x - goal.x, pose.y - goal.y) < ARRIVED_DISTANCE) {
-            waypointQueue.pop();
-            arrivedQueue.push(goal);
-            goal = waypointQueue.front();
-        }
+      Point goal = waypointQueue.front();
+      double dist = ARRIVED_INTER_DISTANCE;
+      if (waypointQueue.size() == 1) 
+	dist = ARRIVED_DISTANCE;
+      while (!waypointQueue.empty() &&
+	     length(pose.x - goal.x, pose.y - goal.y) < dist) {
+	ROS_INFO("Arrived at waypoint (%.2f, %.2f)", goal.x, goal.y);
+	waypointQueue.pop();
+	arrivedQueue.push(goal);
+	goal = waypointQueue.front();
+	if (waypointQueue.size() == 1) 
+	  dist = ARRIVED_DISTANCE;
+      }
     }
 }
 
