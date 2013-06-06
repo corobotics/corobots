@@ -21,13 +21,13 @@
   <arg name="manager" value="$(arg camera)_nodelet_manager" />
 
   <!-- Depth registration -->
-  <arg name="depth_registration" default="true"/>
+  <arg name="depth_registration" default="false"/>
   <arg     if="$(arg depth_registration)" name="depth" value="depth_registered" />
   <arg unless="$(arg depth_registration)" name="depth" value="depth" />
   
   <!-- Processing Modules -->
-  <arg name="rgb_processing"     default="true"/>
-  <arg name="depth_processing"   default="true"/>
+  <arg name="rgb_processing"     default="false"/>
+  <arg name="depth_processing"   default="false"/>
   <arg name="scan_processing"    default="true"/>
 
   <group ns="$(arg camera)">

@@ -8,7 +8,7 @@
   <param name="/use_sim_time" value="$(arg simulation)"/>
   <param name="turtlebot_node/gyro_measurement_range" value="250"/>
   <param name="turtlebot_node/gyro_scale_correction" value="1.47"/>
-  <param name="turtlebot_node/odom_angular_scale_correction" value="1.05"/>
+  <param name="turtlebot_node/odom_angular_scale_correction" value="1.02"/>
   
   <include file="$(find turtlebot_bringup)/launch/includes/_zeroconf.launch"/>
   <include file="$(find turtlebot_bringup)/launch/includes/_robot.launch">

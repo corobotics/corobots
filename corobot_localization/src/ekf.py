@@ -63,7 +63,17 @@ class EKF(object):
 
     def update_pos(self, pose):
         """Convenience function to do a position update."""
-        y = column_vector(pose.x, pose.y, pose.theta % tau)
+        # assuming that the ekf is never lost by more than pi (except on startup),
+        # we can intelligently mod the incoming pose angle to be close to the current estimate
+        # note that the ordered if statements mean that if we are super-lost, we
+        # will randomly add some pi but not infinitely loop.
+        # this if statement says that if we're lost in theta, don't worry about it.
+        if self.covariance[2,2] < tau:
+            while pose.theta - self.state[2] > pi:
+                pose.theta -= tau
+            while self.state[2] - pose.theta > pi:
+                pose.theta += tau
+        y = column_vector(pose.x, pose.y, pose.theta)
         W = matrix(pose.cov).reshape(3, 3)
         self.update(y, W)
 

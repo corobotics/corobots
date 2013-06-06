@@ -188,12 +188,16 @@ Polar APF::nav(LaserScan scan) {
 
     // Cap the accelerations to prevent jerky movements.
     cmd.a = bound(cmd.a, cmdPrev.a, 1.2*MIN_OMEGA);
-    cmd.d = bound(cmd.d, cmdPrev.d, 0.15);
+    cmd.d = bound(cmd.d, cmdPrev.d, 0.05);
 
     ROS_DEBUG("Nav3:\t<%+.2f, %.2f>", cmd.a, cmd.d);
 
    // dead-band the rotational velocity to help with odometry issues
-    if (((cmd.a > 0) && (cmd.a < MIN_OMEGA)) || ((cmd.a < 0) && (cmd.a > -1*MIN_OMEGA)))
+    if (cmd.a > MIN_OMEGA)
+      cmd.a = MIN_OMEGA;
+    else if (cmd.a < -1*MIN_OMEGA)
+      cmd.a = -1*MIN_OMEGA;
+    else
       cmd.a = 0;
     /*
     else
