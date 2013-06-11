@@ -49,7 +49,7 @@ void BarcodeHandler::image_callback(Image &image) {
         distanceR = (f * D) / lengthPixelR;
 
         barcodeXavg = (point[0].x + point[1].x + point[2].x + point[3].x) / 4;
-        offsetDistance = -(5 * (800 - (barcodeXavg)) / lengthPixelL) / 39.3701;
+        offsetDistance = -(5 * (960 - (barcodeXavg)) / lengthPixelL) / 39.3701;
         squareDistanceL = pow(distanceL, 2);
         squareDistanceR = pow(distanceR, 2);
 

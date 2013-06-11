@@ -5,4 +5,4 @@ See [INSTALL.md](https://github.com/corobotics/corobots/blob/master/INSTALL.md) 
 
 Sample command to run this node:
 
-rosrun corobot_qrcode detect  _device:="/dev/video0" __name:="left"
+rosrun corobot_qrcode detect  _device:="/dev/video0" _csvfile="../barcodePoints.csv" __name:="left"
