@@ -25,7 +25,10 @@
 #define K_OBS 1.0
 
 /** Minimum rotational velocity. */
-#define MIN_OMEGA 0.75
+#define MIN_OMEGA 0.5
+
+/** Force angle beyond which we will turn instead of go straight. */
+#define ANGLE_WINDOW 0.15
 
 /**
  * APF implementation of the ObstacleAvoider interface.

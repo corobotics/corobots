@@ -1,11 +1,13 @@
-from math import pi
+from math import pi, copysign
 
 from numpy.matlib import matrix
 
 from corobot_common.msg import Pose
 from utils import column_vector, coord_transform, get_offset, reduce_covariance
+import rospy
 
 tau = pi * 2.0
+ACCEL_ANGLE_BONUS = 0.052 # should come from a file of calibration data
 
 class EKF(object):
 
@@ -25,6 +27,7 @@ class EKF(object):
             [   0.0,    0.0, 1000.0]])
         # Need to store old odom state for delta updates.
         self.odom_state = None
+        self.lastdt = rospy.get_time() - 1
 
     def state_tuple(self, state=None):
         """Returns a tuple of the given state matrix: (x, y, theta)"""
@@ -68,7 +71,7 @@ class EKF(object):
         # note that the ordered if statements mean that if we are super-lost, we
         # will randomly add some pi but not infinitely loop.
         # this if statement says that if we're lost in theta, don't worry about it.
-        if self.covariance[2,2] < tau:
+        if self.covariance[2,2] < 1000:
             while pose.theta - self.state[2] > pi:
                 pose.theta -= tau
             while self.state[2] - pose.theta > pi:
@@ -96,6 +99,14 @@ class EKF(object):
             # Can't do a delta update the first time.
             return
         dx, dy, dt = self.state_tuple(delta)
+        if abs(dt) > 0:
+            print("Nonzero rotation detected at",rospy.get_time())
+            if rospy.get_time() - self.lastdt > 0.25:
+                # give the acceleration compensation
+                bonus = copysign(ACCEL_ANGLE_BONUS,dt)
+                print("Adding",bonus,"to robot dt")
+                delta[2] += bonus
+            self.lastdt = rospy.get_time()
         # State prediction; nice and simple.
         self.state = self.state + delta
         # Use 50% of the delta x/y values as covariance, and 200% theta.

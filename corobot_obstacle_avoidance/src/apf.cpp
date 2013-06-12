@@ -175,21 +175,22 @@ Polar APF::nav(LaserScan scan) {
     cmd.d = length(netForce.x, netForce.y);
     cmd.a = atan2(netForce.y, netForce.x);
 
-    ROS_DEBUG("RawNav:\t<%+.2f, %.2f>", cmd.a, cmd.d);
+    ROS_DEBUG("TotalF:\t<%+.2f, %.2f>", cmd.a, cmd.d);
 
-    // Don't try to go forward if the angle is more than 45 degrees.
-    if (cmd.a > PI / 4.0) {
-        cmd.d = 0.0;
-        cmd.a = PI / 4.0;
-    } else if (cmd.a < PI / -4.0) {
-        cmd.d = 0.0;
-        cmd.a = PI / -4.0;
+    // Don't try to go forward if the angle is more than fixed value.
+    if (cmd.a > ANGLE_WINDOW) {
+      cmd.d = 0.0;
+      cmd.a = MIN_OMEGA;
+    } else if (cmd.a < -1*ANGLE_WINDOW) {
+      cmd.d = 0.0;
+      cmd.a = -1*MIN_OMEGA;
+    } else {
+      cmd.d = bound(cmd.d, cmdPrev.d, 0.05);
+      cmd.a = 0;
     }
-
     // Cap the accelerations to prevent jerky movements.
-    cmd.a = bound(cmd.a, cmdPrev.a, 1.2*MIN_OMEGA);
-    cmd.d = bound(cmd.d, cmdPrev.d, 0.05);
-
+    //cmd.a = bound(cmd.a, cmdPrev.a, 1.2*MIN_OMEGA);
+    /*    
     ROS_DEBUG("Nav3:\t<%+.2f, %.2f>", cmd.a, cmd.d);
 
    // dead-band the rotational velocity to help with odometry issues
@@ -203,7 +204,8 @@ Polar APF::nav(LaserScan scan) {
     else
       cmd.d = 0;
     */
-    ROS_DEBUG("NavF:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
+
+    ROS_DEBUG("NavVel:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
     double now = scan.header.stamp.toSec();
     if (cmd.d > 0.0 || timeLastMoved == 0.0) {

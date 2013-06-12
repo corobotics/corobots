@@ -28,12 +28,13 @@ def main():
     rospy.init_node("localization")
     ekf = EKF()
     pose_pub = rospy.Publisher("pose", Pose)
-    #rospy.Subscriber("odom", Odometry, odom_callback)
+    rospy.Subscriber("odom", Odometry, odom_callback)
     # odom_combined comes from robot_pose_ekf, different message type from
     # regular odom, but seems to have the same basic contents, so we can use
     # the same callback (yay dynamic typing!)
-    rospy.Subscriber("odom_combined", PoseWithCovarianceStamped, odom_callback)
-    rospy.Subscriber("laser_pose", Pose, laser_callback)
+    #rospy.Subscriber("odom_combined", PoseWithCovarianceStamped, odom_callback)
+    #rospy.Subscriber("/corobot_pose_ekf/odom_semicombined", PoseWithCovarianceStamped, odom_callback)
+    #rospy.Subscriber("laser_pose", Pose, laser_callback)
     rospy.Subscriber("qrcode_pose", Pose, qrcode_callback)
     rospy.spin()
 
