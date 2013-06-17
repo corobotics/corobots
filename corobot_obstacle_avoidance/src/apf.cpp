@@ -157,8 +157,36 @@ Polar APF::nav(LaserScan scan) {
     }
     ROS_DEBUG("GoalF:\t%.2f, %.2f", netForce.x, netForce.y);
 
-    // Sum over all obstacles.
+    ////construct an obstacle list 
     for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
+      Polar pointWrtRobot = *p;
+      if (pointWrtRobot.d <= D_OBS) {
+	corobot::SimplePose *pointWrtGlobal = convertRobotToGlobal(pointWrtRobot);
+	ROS_DEBUG("Adding Object:\t%.2f, %.2f", pointWrtRobot.d, pointWrtRobot.a);
+	ROS_DEBUG("Object in global cood:\t%.2f, %.2f", pointWrtGlobal->x, pointWrtGlobal->y);
+	Polar *polarCood = convertFromGlobalToRobotInPolar(*pointWrtGlobal);
+	ROS_DEBUG("Object in robot cood again:\t%.2f, %.2f", polarCood->d, polarCood->a);
+	pushIfUnique(convertRobotToGlobal(pointWrtRobot));
+      }
+    }
+
+    ///// throw out inactive obstacle (which are not in zone anymore).
+    ////improve: call only when the robot has changed its position
+    for (std::vector<corobot::SimplePose>::iterator it = activeObstacleList.begin() ; it != activeObstacleList.end(); ++it){
+      if(distanceFromRobot(*it) > D_OBS ){
+	activeObstacleList.erase(it);
+      } else {
+	Polar *od = convertFromGlobalToRobotInPolar(*it);
+	Polar o = *od;
+	double f = K_OBS * (1.0/D_OBS - 1.0/o.d) / (o.d * o.d);
+	netForce.x += f * cos(o.a);
+	netForce.y += f * sin(o.a);
+	ROS_DEBUG("ObjF:\t%.2f, %.2f", f * cos(o.a), f * sin(o.a));
+      }
+    }
+    
+    // Sum over all obstacles.
+    /*for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
         Polar o = *p;
         ROS_DEBUG("Obj:\t%.2f, %.2f", o.d * cos(o.a), o.d * sin(o.a));
         if (o.d <= D_OBS) {
@@ -168,14 +196,14 @@ Polar APF::nav(LaserScan scan) {
             netForce.y += f * sin(o.a);
             ROS_DEBUG("ObjF:\t%.2f, %.2f", f * cos(o.a), f * sin(o.a));
         }
-    }
+    }*/
 
     // Resulting command vector.
     Polar cmd;
     cmd.d = length(netForce.x, netForce.y);
     cmd.a = atan2(netForce.y, netForce.x);
 
-    ROS_DEBUG("TotalF:\t<%+.2f, %.2f>", cmd.a, cmd.d);
+    ROS_DEBUG("RawNav:\t<%+.2f, %.2f>", cmd.a, cmd.d);
 
     // Don't try to go forward if the angle is more than fixed value.
     if (cmd.a > ANGLE_WINDOW) {
@@ -188,9 +216,11 @@ Polar APF::nav(LaserScan scan) {
       cmd.d = bound(cmd.d, cmdPrev.d, 0.05);
       cmd.a = 0;
     }
+
     // Cap the accelerations to prevent jerky movements.
     //cmd.a = bound(cmd.a, cmdPrev.a, 1.2*MIN_OMEGA);
-    /*    
+    //cmd.d = bound(cmd.d, cmdPrev.d, 0.05);
+    /*
     ROS_DEBUG("Nav3:\t<%+.2f, %.2f>", cmd.a, cmd.d);
 
    // dead-band the rotational velocity to help with odometry issues
@@ -204,7 +234,6 @@ Polar APF::nav(LaserScan scan) {
     else
       cmd.d = 0;
     */
-
     ROS_DEBUG("NavVel:\t<%+.2f, %.2f>\n", cmd.a, cmd.d);
 
     double now = scan.header.stamp.toSec();
@@ -220,4 +249,34 @@ Polar APF::nav(LaserScan scan) {
  
     cmdPrev = cmd;
     return cmd;
+}
+
+corobot::SimplePose* APF::convertRobotToGlobal(Polar polarPoint){
+  corobot::SimplePose *sp = new corobot::SimplePose();
+  sp->x = pose.x + polarPoint.d * cos(pose.theta + polarPoint.a);
+  sp->y = pose.y + polarPoint.d * sin(pose.theta + polarPoint.a);
+  sp->a = 0;
+  return sp;
+}
+
+bool APF::pushIfUnique(corobot::SimplePose *sp){
+  for (std::vector<corobot::SimplePose>::iterator it = activeObstacleList.begin() ; it != activeObstacleList.end(); ++it){
+    corobot::SimplePose itPose = *it;
+    if(abs(sp->x - itPose.x) <= 1 && abs(sp->y - itPose.y) <= 1){ //if the point approx matches the points in the list
+      return false;
+    }
+  }
+  activeObstacleList.push_back(*sp);
+  return true;
+}
+
+double APF::distanceFromRobot(corobot::SimplePose sp){
+  return sqrt((sp.x-pose.x)*(sp.x-pose.x) + (sp.y-pose.y)*(sp.y-pose.y));
+}
+
+Polar* APF::convertFromGlobalToRobotInPolar(corobot::SimplePose sp){
+  Polar *p = new Polar();
+  p->a = atan2(sp.y-pose.y, sp.x - pose.x) - pose.theta;
+  p->d = distanceFromRobot(sp);
+  return p;
 }

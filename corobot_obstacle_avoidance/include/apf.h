@@ -28,7 +28,7 @@
 #define MIN_OMEGA 0.5
 
 /** Force angle beyond which we will turn instead of go straight. */
-#define ANGLE_WINDOW 0.15
+#define ANGLE_WINDOW 0.25
 
 /**
  * APF implementation of the ObstacleAvoider interface.
@@ -48,6 +48,8 @@ protected:
 
     /** The last time nav() produced a positive forward velocity. */
     double timeLastMoved;
+
+	std::vector<corobot::SimplePose> activeObstacleList;
 
     /**
      * Converts a laser scan to a list of polar coordinates.
@@ -77,6 +79,11 @@ protected:
      */
     std::list<Polar> findObjects(std::list<Polar> points);
 
+    double distanceFromRobot(corobot::SimplePose sp);
+    Polar* convertFromGlobalToRobotInPolar(corobot::SimplePose sp);
+    corobot::SimplePose* convertRobotToGlobal(Polar polarPoint);
+    bool pushIfUnique(corobot::SimplePose *sp);
+    
 };
 
 #endif /* corobots_apf_h */
