@@ -116,8 +116,9 @@ class CorobotManager():
             self.goal_queue.append((msg_id, Point(x=x, y=y)))
         elif msg_type.startswith("SHOW_MSG"):
             confirm = msg_type.endswith("CONFIRM")
-            self.show_msgs_pub.publish(UIMessage(id=msg_id, timeout=int(data[0]), 
-                                        msg=data[1], req_confirm=confirm))
+            themsg = " ".join(data[1:])
+            self.show_msgs_pub.publish(UIMessage(id=int(msg_id), timeout=int(data[0]), 
+                                        msg=themsg, req_confirm=confirm))
         else:
             self.client_write(msg_id, "ERROR Unknown message type \"%s\"" % msg_type)
 

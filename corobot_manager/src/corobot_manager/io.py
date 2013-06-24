@@ -47,6 +47,7 @@ class LineHandler(async_chat):
     def found_terminator(self):
         line = "".join(self.received_data)
         self.line_read(line)
+        self.received_data = []
 
     def handle_error(self):
         traceback.print_exc()
