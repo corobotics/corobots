@@ -1,9 +1,9 @@
 <launch>
-    <!--    <node pkg="corobot_qrcode" type="detect" name="left">
+    <node pkg="corobot_qrcode" type="detect" name="left">
     <param name="device" value="/dev/videoleft" />
     <param name="csvfile" value="$(find corobot_qrcode)/barcodePoints.csv" />
     </node>
--->
+
     <node pkg="corobot_localization" type="localization.py" name="ekf"/>
     <node pkg="corobot_obstacle_avoidance" type="obstacle_avoidance" name="obstacle_avoidance">
       <remap from="cmd_vel" to="mobile_base/commands/velocity" />

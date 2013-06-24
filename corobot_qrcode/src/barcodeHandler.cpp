@@ -93,8 +93,6 @@ void BarcodeHandler::image_callback(Image &image) {
             bctheta += PI * 0.5;
         }
 
-        ROS_INFO_STREAM("realx " << realx << " " << "realy " << realy << " " << "bctheta " <<  bctheta);
-        
         if(!(isLeft(device_name))){
           bctheta+=PI;
           ROS_INFO_STREAM("Right Camera");
@@ -103,6 +101,8 @@ void BarcodeHandler::image_callback(Image &image) {
           ROS_INFO_STREAM("Left Camera");
         }
 	// Publishing the msg
+        
+        ROS_INFO_STREAM("realx " << realx << " " << "realy " << realy << " " << "bctheta " <<  bctheta);
         
         msg.x = realx;
         msg.y = realy;

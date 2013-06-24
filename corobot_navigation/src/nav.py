@@ -40,6 +40,7 @@ class CorobotNavigator():
         rospy.Subscriber('goals', Point, self.goals_callback)
         rospy.Subscriber('pose', Pose, self.pose_callback)
         rospy.Subscriber('waypoints_failed', Point, self.waypoints_failed_callback)
+        rospy.Subscriber('waypoints_reached', Point, self.waypoints_reached_callback)
 
     def start(self):
         rospy.spin()
@@ -54,6 +55,7 @@ class CorobotNavigator():
             rospy.logerr("Waypoint reached but queue is empty.")
             return
         head, is_goal = self.wp_queue[0]
+        rospy.loginfo("Waypoint reached at (%f, %f), is_goal is %s", head.x, head.y, is_goal) 
         if point_equals(waypoint, head):
             self.wp_queue.popleft()
             if is_goal:
@@ -87,7 +89,7 @@ class CorobotNavigator():
         if not path:
             rospy.logerr("A* navigation failed!")
             return
-        rospy.logdebug("A* result: %s" % (", ".join(l.name for l in path)))
+        rospy.loginfo("A* result: %s" % (", ".join(l.name for l in path)))
         for node in path[:-1]:
             self.point_pub.publish(x=node.x, y=node.y)
             self.wp_queue.append((Point(x=node.x, y=node.y), False))
@@ -123,7 +125,7 @@ class CorobotNavigator():
         Returns a list of up to MAX_ZONE_SIZE closest visible Landmarks.
 
         """
-        rospy.loginfo("Calculating visibles for %s", point)
+        #rospy.loginfo("Calculating visibles for %s", point)
         #rospy.loginfo("Selecting from %s" % (", ".join(l.name for l in landmarks)))
         visibles = []
         for landmark in landmarks:
@@ -131,8 +133,10 @@ class CorobotNavigator():
                 d = point_distance(point, landmark)
                 visibles.append((d, landmark))
         visibles.sort()
+        '''
         for d, landmark in visibles:
             rospy.loginfo("%s at %f", landmark.name, d)
+            '''
         nearest = []
         for d, landmark in visibles[:CorobotNavigator.MAX_ZONE_SIZE]:
             # Limit to within MAX_ZONE_DIST, but take at least one.

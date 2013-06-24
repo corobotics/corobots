@@ -22,13 +22,16 @@
 #define K_GOAL 0.25
 
 /** Obstacle gain (constant factor). */
-#define K_OBS 1.0
+#define K_OBS 0.5
 
 /** Minimum rotational velocity. */
 #define MIN_OMEGA 0.5
 
 /** Force angle beyond which we will turn instead of go straight. */
 #define ANGLE_WINDOW 0.25
+
+/** Max allowed net force. */
+#define MAX_FORCE 0.25
 
 /**
  * APF implementation of the ObstacleAvoider interface.
@@ -83,6 +86,7 @@ protected:
     Polar* convertFromGlobalToRobotInPolar(corobot::SimplePose sp);
     corobot::SimplePose* convertRobotToGlobal(Polar polarPoint);
     bool pushIfUnique(corobot::SimplePose *sp);
+	double min(double a, double b);
     
 };
 
