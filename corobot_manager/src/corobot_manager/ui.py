@@ -1,5 +1,31 @@
 from Tkinter import *
 
+class CorobotMonitorUI(Tk):
+
+    def __init__(self):
+        """ Corobot general info monitor 
+        """
+        Tk.__init__(self)
+        self.title("Corobot Monitor")
+        
+        self.frame = Frame(self)
+        self.frame.pack(padx=8, pady=8)
+
+        self.label = Label(self.frame, text="Current Pose", font=("Helvetica", 24))
+        self.label.pack(side='top')
+        
+        self.xinfo = Label(self.frame, text="X: 0.0", font=("Helvetica", 24))
+        self.xinfo.pack(side='left',padx=5, pady=5)
+        self.yinfo = Label(self.frame, text="Y: 0.0", font=("Helvetica", 24))
+        self.yinfo.pack(side='left',padx=5, pady=5)
+        self.thinfo = Label(self.frame, text="Theta: 0.0", font=("Helvetica", 24))
+        self.thinfo.pack(side='left')
+
+    def setPose(self, x, y, theta):
+        self.xinfo.configure(text="X: {0:6.3f}".format(x))
+        self.yinfo.configure(text="Y: {0:6.3f}".format(y))
+        self.thinfo.configure(text="Theta: {0:+4.2f}".format(theta))
+
 class CorobotUIMessage(Tk):
 
     def __init__(self, display_text, timeout, confirm, okay_text="Okay"):
