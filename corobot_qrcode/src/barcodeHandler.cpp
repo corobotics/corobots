@@ -10,13 +10,15 @@ BarcodeHandler::BarcodeHandler(ros::Publisher &chatter_pub,string dev,string csv
     // Read csv file
     csvreader.init(csvfile);
 
+	ros::NodeHandle nodeHandle;
+	qrCodeCountPublisher = nodeHandle.advertise<corobot_common::Goal>("ch_qrcodecount", 1);
+	qrCount = 0;
+	seenQRPose.x = -1.0; seenQRPose.y = -1.0;
 }
 
 bool BarcodeHandler::isLeft(string dev){
-
     if(dev.compare("/dev/videoleft") == 0)
-    return true; 
-
+	    return true; 
     return false;                                                                                          
 }  
 
@@ -121,8 +123,33 @@ void BarcodeHandler::image_callback(Image &image) {
         msg.cov[8] = 0.3;
         }
 
+		checkIfNewQR(msg); // do the publisher.publish(msg); inside chechIfNewQR once it Qrcode counting works perfect
         publisher.publish(msg);
 
     }
 
+}
+
+bool BarcodeHandler::checkIfNewQR(corobot_common::Pose qrPose){
+    /*for (std::vector<corobot_common::Pose>::iterator it = qrCodeList.begin() ; it != qrCodeList.end(); ++it){
+        corobot_common::Pose itPose = *it;
+        if(abs(qrPose.x - itPose.x) <= 1.5 && abs(qrPose.y - itPose.y) <= 1.5){ //if the point approx matches the points in the list
+            return false;
+        }
+    }*/
+
+	if(seenQRPose.x != -1.0)
+		if(abs(qrPose.x - seenQRPose.x) <= 1.5 && abs(qrPose.y - seenQRPose.y) <= 1.5 && abs(qrPose.theta - seenQRPose.theta) <= 0.7) //if the point approx matches the points in the list
+            return false;
+        
+	seenQRPose.x = qrPose.x; seenQRPose.y = qrPose.y; seenQRPose.theta = qrPose.theta;
+
+	stringstream ss; corobot_common::Goal topicMsg;
+	if(isLeft(device_name))
+		ss << "L" << ++qrCount;
+	else
+		ss << "R" << ++qrCount;
+	topicMsg.name = ss.str(); qrCodeCountPublisher.publish(topicMsg);
+    
+	return true;
 }

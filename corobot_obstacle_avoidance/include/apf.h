@@ -11,24 +11,30 @@
 #include "geometry_msgs/Point.h"
 
 #include "obstacle_avoidance.h"
+#include "ros/ros.h"
+#include "corobot_common/Goal.h"
+#include <sstream>
+
+using geometry_msgs::Point;
+using namespace std;
 
 /** The distance at which to switch from conical to quadratic goal attraction. */
 #define D_GOAL 1.0
 
 /** The distance at which to start paying attention to obstacles. */
-#define D_OBS 1.0
+#define D_OBS 0.7
 
 /** Goal gain (constant factor). */
-#define K_GOAL 0.25
+#define K_GOAL 0.35
 
 /** Obstacle gain (constant factor). */
-#define K_OBS 0.5
+#define K_OBS 0.6
 
 /** Minimum rotational velocity. */
-#define MIN_OMEGA 0.5
+#define MIN_OMEGA 0.35
 
 /** Force angle beyond which we will turn instead of go straight. */
-#define ANGLE_WINDOW 0.25
+#define ANGLE_WINDOW 0.28
 
 /** Max allowed net force. */
 #define MAX_FORCE 0.25
@@ -38,6 +44,26 @@
  */
 class APF : public ObstacleAvoider {
 public:
+	int prevWayPointQuelen;
+	bool inRecovery;
+
+	APF()
+	{		
+			ros::NodeHandle n;
+		    rawnavPublisher = n.advertise<corobot_common::Goal>("ch_rawnav", 1);
+			obsPublisher = n.advertise<corobot_common::Goal>("ch_obstacle", 1);
+			absGoalPublisher = n.advertise<corobot_common::Goal>("ch_absgoal", 1);
+			netForcePublisher = n.advertise<corobot_common::Goal>("ch_netforce", 1);
+			velCmdPublisher = n.advertise<corobot_common::Goal>("ch_velcmd", 1);
+			recoveryPublisher = n.advertise<corobot_common::Goal>("ch_recovery", 1);
+			
+			cmdPrev.a = 0;
+			cmdPrev.d = 0;
+			timeSinceLastWayPoint = 0;
+			prevWayPointQuelen = 0;
+			inRecovery = false;
+
+	}
 
     /**
      * {@inheritDoc}
@@ -48,10 +74,16 @@ protected:
 
     /** The last command given by nav(). */
     Polar cmdPrev;
+	
+	/** The previous pose of the robot is stored here*/
+	corobot::SimplePose prevRobotPose;
 
-    /** The last time nav() produced a positive forward velocity. */
-    double timeLastMoved;
+	ros::Publisher rawnavPublisher, obsPublisher, absGoalPublisher,	netForcePublisher,
+		velCmdPublisher, recoveryPublisher;
 
+	/** The last time nav() produced a positive forward velocity. */
+	double timeLastMoved, timeSinceLastWayPoint;
+   
 	std::vector<corobot::SimplePose> activeObstacleList;
 
     /**
@@ -82,12 +114,22 @@ protected:
      */
     std::list<Polar> findObjects(std::list<Polar> points);
 
-    double distanceFromRobot(corobot::SimplePose sp);
-    Polar* convertFromGlobalToRobotInPolar(corobot::SimplePose sp);
-    corobot::SimplePose* convertRobotToGlobal(Polar polarPoint);
+    double distanceFromRobot(corobot::SimplePose &sp);
+    Polar* convertFromGlobalToRobotInPolar(corobot::SimplePose &sp);
+    corobot::SimplePose* convertRobotToGlobal(Polar &polarPoint);
     bool pushIfUnique(corobot::SimplePose *sp);
 	double min(double a, double b);
-    
+
+	void recoveryCheck(const double &recov_time_now);
+	void recoverRobot();
+	Polar cmdTransform(Polar &cmdInitial);
+	Point calcGoalForce(Point &goalWrtRobot);
+	void updateNetForce(Point &netForce);
+	void updateObstacleList(list<Polar>& objects);
+	//void publishTopic1(stringstream *ss, ros::Publisher *pub);
+	
+	Polar doRecoveryNav(sensor_msgs::LaserScan &scan);
+	
 };
 
 #endif /* corobots_apf_h */

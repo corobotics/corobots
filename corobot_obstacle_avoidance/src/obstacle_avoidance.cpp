@@ -6,6 +6,7 @@
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Twist.h"
 #include "sensor_msgs/LaserScan.h"
+#include "corobot_common/Goal.h"
 
 #include "corobot.h"
 #include "obstacle_avoidance.h"
@@ -97,6 +98,14 @@ void poseCallback(Pose pose) {
     }
 }
 
+
+//callback when the robot sees a barcode
+void stopRecovery(corobot_common::Goal topicMsg){
+	//settings to set when the robot has recovered
+	(dynamic_cast<APF*>(oa))->inRecovery = false;
+	(dynamic_cast<APF*>(oa))->prevWayPointQuelen = 0; // this should also set timeSinceLastWayPoint
+}
+
 /**
  * Callback for new waypoint messages.
  */
@@ -115,6 +124,7 @@ int main(int argc, char** argv) {
     ros::Subscriber scanSub = n.subscribe("scan", 1, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1, poseCallback);
     ros::Subscriber waypointSub = n.subscribe("waypoints", 1000, waypointCallback);
+	ros::Subscriber qrCountSubscriber = n.subscribe("ch_qrcodecount", 1, stopRecovery);
     ros::spin();
     delete oa;
     return 0;

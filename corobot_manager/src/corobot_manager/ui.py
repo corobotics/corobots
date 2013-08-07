@@ -1,4 +1,5 @@
 from Tkinter import *
+#from corobot import Robot
 
 class CorobotMonitorUI(Tk):
 
@@ -15,16 +16,80 @@ class CorobotMonitorUI(Tk):
         self.label.pack(side='top')
         
         self.xinfo = Label(self.frame, text="X: 0.0", font=("Helvetica", 24))
-        self.xinfo.pack(side='left',padx=5, pady=5)
+        self.xinfo.pack()
         self.yinfo = Label(self.frame, text="Y: 0.0", font=("Helvetica", 24))
-        self.yinfo.pack(side='left',padx=5, pady=5)
+        self.yinfo.pack()
         self.thinfo = Label(self.frame, text="Theta: 0.0", font=("Helvetica", 24))
-        self.thinfo.pack(side='left')
+        self.thinfo.pack()
+
+		self.absGoalInfo = Label(self.frame, text="AbsGoal: -", font=("Helvetica", 24))
+		self.absGoalInfo.pack()
+
+		self.rawnavinfo = Label(self.frame, text="RawNav: -", font=("Helvetica", 24))
+		self.rawnavinfo.pack()
+
+		self.velCmdInfo = Label(self.frame, text="ActVel: -", font=("Helvetica", 24))
+		self.velCmdInfo.pack()
+
+		self.obsinfo = Label(self.frame, text="ObsLoc: -", font=("Helvetica", 24))
+		self.obsinfo.pack()
+
+		self.netForceInfo = Label(self.frame, text="NetForce: -", font=("Helvetica", 24))
+		self.netForceInfo.pack()
+
+		self.qrCountInfo = Label(self.frame, text="QRLeft: 0 ; QRRight: 0", font=("Helvetica", 24))
+		self.qrCountInfo.pack()
+
+		self.recoveryInfo = Label(self.frame, text="Recovery: -", font=("Helvetica", 24))
+		self.recoveryInfo.pack()
+
+		self.tBox = Entry(self.frame, width=10)
+		self.tBox.pack()
+
+		#Button(self.frame, text = 'Submit', command = navigate).pack(side=LEFT)
+
+	def navigate():
+		pass
+		"""with Robot("127.0.0.1", 15001) as r:
+			r.nav_to(self.tBox.get())"""
 
     def setPose(self, x, y, theta):
         self.xinfo.configure(text="X: {0:6.3f}".format(x))
         self.yinfo.configure(text="Y: {0:6.3f}".format(y))
         self.thinfo.configure(text="Theta: {0:+4.2f}".format(theta))
+	
+	def setRawnavMsg(self, txt):
+		txt = "RawNav: " + txt
+		self.rawnavinfo.configure(text=txt)
+	
+	def setObsMsg(self, txt):
+		txt = "Obs: " + txt
+		self.obsinfo.configure(text=txt)
+
+	def setAbsGoalMsg(self, txt):
+		txt = "AbsGoal: " + txt
+		self.absGoalInfo.configure(text=txt)
+
+	def setNetForceMsg(self, txt):
+		txt = "NetForce: " + txt
+		self.netForceInfo.configure(text=txt)
+
+	def setVelCmdMsg(self, txt):
+		txt = "ActVel: " + txt
+		self.velCmdInfo.configure(text=txt)
+
+	def setQrCountMsg(self, txt):
+		"""qrInfoText = self.qrCountInfo.cget("text")
+		if txt[0] == 'L':
+			rightPart = qrInfoText[qrInfoText.index(";") : ]
+			txt = "QRLeft: " + txt[1 : ] + " " + rightPart
+		else:
+			leftPart = qrInfoText[0 : qrInfoText.index(";")]
+			txt = leftPart + "; QRRight: " + txt[1 : ]"""
+		self.qrCountInfo.configure(text=txt)
+
+	def setRecoveryMsg(self, txt):
+		self.recoveryInfo.configure(text=txt)
 
 class CorobotUIMessage(Tk):
 
