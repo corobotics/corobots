@@ -8,6 +8,13 @@ See [corobot-extras](https://github.com/corobotics/corobot-extras) for detailed 
         wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
         sudo apt-get update
         sudo apt-get install -y ros-groovy-desktop-full ros-groovy-turtlebot
+		sudo rosdep init
+		rosdep update
+		
+- Environment setup
+
+		echo "source /opt/ros/groovy/setup.bash" >> ~/.bashrc
+		source ~/.bashrc
 
 - Put source in a workspace folder for compatibility with Groovy.
 
