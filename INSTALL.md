@@ -58,3 +58,8 @@ See [corobot-extras](https://github.com/corobotics/corobot-extras) for detailed 
         cd ~/corobot_ws
         rosmake corobot_obstacle_avoidance
         rosmake corobot_qrcode
+        
+        [ TODO: figure out why ROS_ROOT is blank. temp fix below that fixes compilation error]
+        export ROS_PACKAGE_PATH=/opt/ros/groovy/share:$ROS_PACKAGE_PATH
+        export ROS_PACKAGE_PATH=/opt/ros/groovy/stacks:$ROS_PACKAGE_PATH
+        export ROS_ROOT=/opt/ros/groovy/share/ros/
