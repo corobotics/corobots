@@ -44,9 +44,6 @@ See [corobot-extras](https://github.com/corobotics/corobot-extras) for detailed 
         sudo make
         sudo make install
         
-        echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.zshrc
-        echo "export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libv4l/v4l1compat.so" >> ~/.zshrc
-        [OR FOR BASH]
         echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
         echo "export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libv4l/v4l1compat.so" >> ~/.bashrc
         [on corobot3, v4l1compat.so is at /usr/lib/i386-linux-gnu/libv4l/v4l1compat.so ]
