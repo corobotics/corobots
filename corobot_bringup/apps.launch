@@ -11,6 +11,7 @@
     <node pkg="corobot_navigation" type="nav.py" name="nav"/>
     <node pkg="corobot_manager" type="manage.py" name="manage"/>
     <node pkg="corobot_manager" type="corobot_ui.py" name="popup"/>
+    <node pkg="corobot_manager" type="monitor.py" name="monitor"/>
     <node pkg="corobot_qrcode" type="detect" name="right">
      <param name="device" value="/dev/videoright" />
      <param name="csvfile" value="$(find corobot_qrcode)/barcodePoints.csv" />
