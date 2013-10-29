@@ -2,7 +2,9 @@
 
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
+import math
 
+from diagnostic_msgs.msg import *
 from corobot_common.msg import Pose
 from corobot_common.msg import Goal
 from corobot_manager.ui import CorobotMonitorUI
@@ -49,7 +51,7 @@ class CorobotMonitor():
             print dArray.status[2].values[i].key'''
         if(len(dArray.status[2].values) >= 5):
             batteryLevel = float(dArray.status[2].values[3].value) / float(dArray.status[2].values[4].value)*100
-            batteryLevel = ceil(batteryLevel * 100) / 100
+            batteryLevel = math.ceil(batteryLevel * 100) / 100
         else:
             batteryLevel = "low"
         #print batteryLevel
