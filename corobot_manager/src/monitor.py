@@ -39,6 +39,23 @@ class CorobotMonitor():
 
     def recovery_callback(self, recovery_msg):
         self.win.setRecoveryMsg(recovery_msg.name)	
+    
+    def diagnostics_callback(self, dArray):
+
+        #print len(dArray.status)
+        #print len(dArray.status[2].values)
+
+        '''for i in range(len(dArray.status[2].values)):
+            print dArray.status[2].values[i].key'''
+        if(len(dArray.status[2].values) >= 5):
+            batteryLevel = float(dArray.status[2].values[3].value) / float(dArray.status[2].values[4].value)*100
+            batteryLevel = ceil(batteryLevel * 100) / 100
+        else:
+            batteryLevel = "low"
+        #print batteryLevel
+        self.win.setBatteryMsg(str(batteryLevel))
+
+
 
     def init_ros_node(self):
         """Initialize all ROS node/sub/pub/srv stuff."""
@@ -52,6 +69,8 @@ class CorobotMonitor():
         rospy.Subscriber("ch_netforce", Goal, self.netForce_callback)
         rospy.Subscriber("ch_qrcodecount", Goal, self.qrCount_callback)
         rospy.Subscriber("ch_recovery", Goal, self.recovery_callback)
+        rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
+
 
 def main():
     cm = CorobotMonitor()
