@@ -10,6 +10,7 @@ import threading
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
 from geometry_msgs.msg import Point
+from diagnostic_msgs.msg import *
 
 from corobot_common import point_equals
 from corobot_common.srv import GetLandmark
@@ -65,6 +66,13 @@ class CorobotManager():
     def confirm_ui_callback(self, confirm):
         self.client_write(confirm.id, "CONFIRM %s" % confirm.confirmed)
 
+    def diagnostics_callback(self, dArray):
+        pass
+    '''status[2] is the DiagnosticStatus related to Battery, 
+        values[3] is the KeyValue related to Charge, values[4] is KeyValue related to Capacity'''
+        #batteryLevel = float(dArray.status[2].values[3].value) / float(dArray.status[2].values[4].value) 
+        #print("battery %: ", batteryLevel)
+
     def init_ros_node(self):
         """Initialize all ROS node/sub/pub/srv stuff."""
         rospy.init_node("corobot_manager")
@@ -72,6 +80,7 @@ class CorobotManager():
         rospy.Subscriber("goals_reached", Point, self.goals_reached_callback)
         rospy.Subscriber("goals_failed", Point, self.goals_failed_callback)
         rospy.Subscriber("confirm_msg", UIConfirm, self.confirm_ui_callback)
+        rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
         rospy.wait_for_service("get_landmark")
         self.get_landmark = rospy.ServiceProxy("get_landmark", GetLandmark)
         self.goals_pub = rospy.Publisher("goals", Point)
@@ -118,7 +127,7 @@ class CorobotManager():
             confirm = msg_type.endswith("CONFIRM")
             themsg = " ".join(data[1:])
             self.show_msgs_pub.publish(UIMessage(id=int(msg_id), timeout=int(data[0]), 
-                                        msg=themsg, req_confirm=confirm))
+                msg=themsg, req_confirm=confirm))
         else:
             self.client_write(msg_id, "ERROR Unknown message type \"%s\"" % msg_type)
 

@@ -8,13 +8,13 @@ class CorobotMonitorUI(Tk):
         """
         Tk.__init__(self)
         self.title("Corobot Monitor")
-        
+
         self.frame = Frame(self)
         self.frame.pack(padx=8, pady=8)
 
         self.label = Label(self.frame, text="Current Pose", font=("Helvetica", 24))
         self.label.pack(side='top')
-        
+
         self.xinfo = Label(self.frame, text="X: 0.0", font=("Helvetica", 24))
         self.xinfo.pack()
         self.yinfo = Label(self.frame, text="Y: 0.0", font=("Helvetica", 24))
@@ -22,74 +22,82 @@ class CorobotMonitorUI(Tk):
         self.thinfo = Label(self.frame, text="Theta: 0.0", font=("Helvetica", 24))
         self.thinfo.pack()
 
-		self.absGoalInfo = Label(self.frame, text="AbsGoal: -", font=("Helvetica", 24))
-		self.absGoalInfo.pack()
+        self.absGoalInfo = Label(self.frame, text="AbsGoal: -", font=("Helvetica", 24))
+        self.absGoalInfo.pack()
 
-		self.rawnavinfo = Label(self.frame, text="RawNav: -", font=("Helvetica", 24))
-		self.rawnavinfo.pack()
+        self.rawnavinfo = Label(self.frame, text="RawNav: -", font=("Helvetica", 24))
+        self.rawnavinfo.pack()
 
-		self.velCmdInfo = Label(self.frame, text="ActVel: -", font=("Helvetica", 24))
-		self.velCmdInfo.pack()
+        self.velCmdInfo = Label(self.frame, text="ActVel: -", font=("Helvetica", 24))
+        self.velCmdInfo.pack()
 
-		self.obsinfo = Label(self.frame, text="ObsLoc: -", font=("Helvetica", 24))
-		self.obsinfo.pack()
+        self.obsinfo = Label(self.frame, text="ObsLoc: -", font=("Helvetica", 24))
+        self.obsinfo.pack()
 
-		self.netForceInfo = Label(self.frame, text="NetForce: -", font=("Helvetica", 24))
-		self.netForceInfo.pack()
+        self.netForceInfo = Label(self.frame, text="NetForce: -", font=("Helvetica", 24))
+        self.netForceInfo.pack()
 
-		self.qrCountInfo = Label(self.frame, text="QRLeft: 0 ; QRRight: 0", font=("Helvetica", 24))
-		self.qrCountInfo.pack()
+        self.qrCountInfo = Label(self.frame, text="QRLeft: 0 ; QRRight: 0", font=("Helvetica", 24))
+        self.qrCountInfo.pack()
 
-		self.recoveryInfo = Label(self.frame, text="Recovery: -", font=("Helvetica", 24))
-		self.recoveryInfo.pack()
+        self.batteryInfo = Label(self.frame, text="Battery: -", font=("Helvetica", 24))
+        self.batteryInfo.pack()
 
-		self.tBox = Entry(self.frame, width=10)
-		self.tBox.pack()
+        self.recoveryInfo = Label(self.frame, text="Recovery: -", font=("Helvetica", 24))
+        self.recoveryInfo.pack()
 
-		#Button(self.frame, text = 'Submit', command = navigate).pack(side=LEFT)
+        self.tBox = Entry(self.frame, width=10)
+        self.tBox.pack()
 
-	def navigate():
-		pass
-		"""with Robot("127.0.0.1", 15001) as r:
-			r.nav_to(self.tBox.get())"""
+        #Button(self.frame, text = 'Submit', command = navigate).pack(side=LEFT)
+
+    def navigate():
+        pass
+    """with Robot("127.0.0.1", 15001) as r:
+            r.nav_to(self.tBox.get())"""
 
     def setPose(self, x, y, theta):
         self.xinfo.configure(text="X: {0:6.3f}".format(x))
         self.yinfo.configure(text="Y: {0:6.3f}".format(y))
         self.thinfo.configure(text="Theta: {0:+4.2f}".format(theta))
-	
-	def setRawnavMsg(self, txt):
-		txt = "RawNav: " + txt
-		self.rawnavinfo.configure(text=txt)
-	
-	def setObsMsg(self, txt):
-		txt = "Obs: " + txt
-		self.obsinfo.configure(text=txt)
 
-	def setAbsGoalMsg(self, txt):
-		txt = "AbsGoal: " + txt
-		self.absGoalInfo.configure(text=txt)
+    def setRawnavMsg(self, txt):
+        txt = "RawNav: " + txt
+        self.rawnavinfo.configure(text=txt)
 
-	def setNetForceMsg(self, txt):
-		txt = "NetForce: " + txt
-		self.netForceInfo.configure(text=txt)
+    def setObsMsg(self, txt):
+        txt = "Obs: " + txt
+        self.obsinfo.configure(text=txt)
 
-	def setVelCmdMsg(self, txt):
-		txt = "ActVel: " + txt
-		self.velCmdInfo.configure(text=txt)
+    def setAbsGoalMsg(self, txt):
+        txt = "AbsGoal: " + txt
+        self.absGoalInfo.configure(text=txt)
 
-	def setQrCountMsg(self, txt):
-		"""qrInfoText = self.qrCountInfo.cget("text")
-		if txt[0] == 'L':
-			rightPart = qrInfoText[qrInfoText.index(";") : ]
-			txt = "QRLeft: " + txt[1 : ] + " " + rightPart
-		else:
-			leftPart = qrInfoText[0 : qrInfoText.index(";")]
-			txt = leftPart + "; QRRight: " + txt[1 : ]"""
-		self.qrCountInfo.configure(text=txt)
+    def setNetForceMsg(self, txt):
+        txt = "NetForce: " + txt
+        self.netForceInfo.configure(text=txt)
 
-	def setRecoveryMsg(self, txt):
-		self.recoveryInfo.configure(text=txt)
+    def setVelCmdMsg(self, txt):
+        txt = "ActVel: " + txt
+        self.velCmdInfo.configure(text=txt)
+
+    def setQrCountMsg(self, txt):
+        """qrInfoText = self.qrCountInfo.cget("text")
+        if txt[0] == 'L':
+            rightPart = qrInfoText[qrInfoText.index(";") : ]
+            txt = "QRLeft: " + txt[1 : ] + " " + rightPart
+        else:
+            leftPart = qrInfoText[0 : qrInfoText.index(";")]
+            txt = leftPart + "; QRRight: " + txt[1 : ]"""
+        self.qrCountInfo.configure(text=txt)
+
+    def setRecoveryMsg(self, txt):
+        self.recoveryInfo.configure(text=txt)
+
+    def setBatteryMsg(self, txt):
+        txt = "Battery: " + txt + "%"
+        self.batteryInfo.configure(text=txt)
+
 
 class CorobotUIMessage(Tk):
 
@@ -101,7 +109,7 @@ class CorobotUIMessage(Tk):
         timeout --- Timeout in seconds after which the popup closes and is assumed unconfirmed.
         confirm --- True if message requires confirmation, False if not.
         okay_text --- Text for the confirmation button, defaults to "Okay"
-        
+
         """
         Tk.__init__(self)
         self.title("Corobot Message")
@@ -116,11 +124,11 @@ class CorobotUIMessage(Tk):
         # Text wraps at half of screen width.
         label = Label(frame, text=display_text, font=("Helvetica", 24), wraplength=(self.winfo_screenwidth()/2))
         label.pack(side='top')
-        
+
         if self.confirm:
             btn1 = Button(frame, text=okay_text, command=self.okay, font=("Helvetica", 16))
             btn1.pack(side='bottom', padx=4, pady=4)
-        
+
         self.update()
         width = self.winfo_width()
         height = self.winfo_height()
@@ -131,7 +139,7 @@ class CorobotUIMessage(Tk):
 
         self.geometry("%dx%d%+d%+d" % (width, height, xp, yp))
         self.minsize(width, height)
-        
+
         # Prevent closing via the 'X' button, forcing either confirmation
         # or timeout.
         self.protocol("WM_DELETE_WINDOW", self.ignore)
@@ -153,7 +161,7 @@ class CorobotUIMessage(Tk):
     def was_confirmed(self):
         """Getter for whether the message was confirmed"""
         return self.response
-    
+
     def ignore(self):
         """Used to override close behavior of 'X' button"""
         pass
