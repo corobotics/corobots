@@ -3,11 +3,31 @@
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
 import math
+import subprocess
+import threading
+import time
 
 from diagnostic_msgs.msg import *
 from corobot_common.msg import Pose
 from corobot_common.msg import Goal
 from corobot_manager.ui import CorobotMonitorUI
+
+class batteryThread(threading.Thread):
+    def __init__(self, delay, win):
+        threading.Thread.__init__(self)
+        self.delay = delay
+        self.win = win
+
+    def run(self):
+        self.laptop_battery(self.delay, self.win)
+
+    def laptop_battery(self, delay, win):
+        while True:
+            p = subprocess.Popen(["acpi", "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            self.win.setLaptopBatteryMsg(out.split('\n')[0].split(', ')[1])
+            time.sleep(delay)
+
 
 class CorobotMonitor():
     """ROS Node for data monitoring and interaction"""
@@ -57,6 +77,11 @@ class CorobotMonitor():
         #print batteryLevel
         self.win.setBatteryMsg(str(batteryLevel))
 
+    def laptop_battery(self):
+        while True:
+            p = subprocess.Popen(["acpi", "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            print out.split('\n')[0].split(', ')[1]
 
 
     def init_ros_node(self):
@@ -72,7 +97,10 @@ class CorobotMonitor():
         rospy.Subscriber("ch_qrcodecount", Goal, self.qrCount_callback)
         rospy.Subscriber("ch_recovery", Goal, self.recovery_callback)
         rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
-
+        
+        t = batteryThread(2, self.win)
+        t.daemon = True
+        t.start()
 
 def main():
     cm = CorobotMonitor()
