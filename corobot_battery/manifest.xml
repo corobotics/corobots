@@ -1,0 +1,14 @@
+<package>
+  <description brief="corobot_battery">
+
+     corobot_battery
+
+  </description>
+  <author>corobot</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/corobot_battery</url>
+
+</package>
+
+

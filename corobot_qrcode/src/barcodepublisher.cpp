@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
     ROS_INFO_STREAM("Opening device " << devicename); 
     string csvfilename;
     nh.getParam("csvfile", csvfilename);
+    //cout<<csvfilename<<endl;
     ros::Publisher chatter_pub = n.advertise<Pose>("qrcode_pose", 1000);
     // Create our barcode detected handler.
     BarcodeHandler my_handler(chatter_pub,devicename,csvfilename);

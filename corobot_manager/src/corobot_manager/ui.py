@@ -43,6 +43,9 @@ class CorobotMonitorUI(Tk):
         self.batteryInfo = Label(self.frame, text="Battery: -", font=("Helvetica", 24))
         self.batteryInfo.pack()
 
+        self.laptopBatteryInfo = Label(self.frame, text="Laptop Battery: -", font=("Helvetica", 24))
+        self.laptopBatteryInfo.pack()
+
         self.recoveryInfo = Label(self.frame, text="Recovery: -", font=("Helvetica", 24))
         self.recoveryInfo.pack()
 
@@ -97,6 +100,11 @@ class CorobotMonitorUI(Tk):
     def setBatteryMsg(self, txt):
         txt = "Battery: " + txt + "%"
         self.batteryInfo.configure(text=txt)
+
+    def setLaptopBatteryMsg(self, txt):
+        txt = "Laptop Battery: " + txt
+        self.laptopBatteryInfo.configure(text=txt)
+
 
 
 class CorobotUIMessage(Tk):
