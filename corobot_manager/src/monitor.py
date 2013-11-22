@@ -11,6 +11,7 @@ from diagnostic_msgs.msg import *
 from corobot_common.msg import Pose
 from corobot_common.msg import Goal
 from corobot_manager.ui import CorobotMonitorUI
+from std_msgs.msg import String
 
 class batteryThread(threading.Thread):
     def __init__(self, delay, win):
@@ -22,10 +23,16 @@ class batteryThread(threading.Thread):
         self.laptop_battery(self.delay, self.win)
 
     def laptop_battery(self, delay, win):
-        while True:
+        pub = rospy.Publisher('laptopBatman', String)
+        while not rospy.is_shutdown():
             p = subprocess.Popen(["acpi", "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
-            self.win.setLaptopBatteryMsg(out.split('\n')[0].split(', ')[1])
+            #print out
+            batteryPercentage = out.split('\n')[0].split(', ')[1]
+            #self.win.setLaptopBatteryMsg(out.split('\n')[0].split(', ')[1])
+            self.win.setLaptopBatteryMsg(batteryPercentage)
+            #rospy.loginfo(batteryPercentage)
+            pub.publish(String(batteryPercentage))
             time.sleep(delay)
 
 
@@ -66,15 +73,16 @@ class CorobotMonitor():
 
         #print len(dArray.status)
         #print len(dArray.status[2].values)
-
+        pub = rospy.Publisher("batman", String);
         '''for i in range(len(dArray.status[2].values)):
             print dArray.status[2].values[i].key'''
-        if(len(dArray.status[2].values) >= 5):
+        if(len(dArray.status) >= 3):
             batteryLevel = float(dArray.status[2].values[3].value) / float(dArray.status[2].values[4].value)*100
             batteryLevel = math.ceil(batteryLevel * 100) / 100
         else:
             batteryLevel = "low"
         #print batteryLevel
+        pub.publish(String(str(batteryLevel)))
         self.win.setBatteryMsg(str(batteryLevel))
 
     def laptop_battery(self):
@@ -98,7 +106,7 @@ class CorobotMonitor():
         rospy.Subscriber("ch_recovery", Goal, self.recovery_callback)
         rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
         
-        t = batteryThread(2, self.win)
+        t = batteryThread(0.5, self.win)
         t.daemon = True
         t.start()
 

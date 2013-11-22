@@ -30,4 +30,4 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #target_link_libraries(example ${PROJECT_NAME})
 
 include_directories(include)
-rosbuild_add_executable(publisher src/batteryStatus.cpp)
+rosbuild_add_executable(batman  src/batteryStatus.cpp)

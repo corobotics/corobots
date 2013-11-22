@@ -133,10 +133,10 @@ class CorobotNavigator():
                 d = point_distance(point, landmark)
                 visibles.append((d, landmark))
         visibles.sort()
-        '''
+
         for d, landmark in visibles:
             rospy.loginfo("%s at %f", landmark.name, d)
-            '''
+
         nearest = []
         for d, landmark in visibles[:CorobotNavigator.MAX_ZONE_SIZE]:
             # Limit to within MAX_ZONE_DIST, but take at least one.
