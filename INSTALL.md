@@ -31,7 +31,7 @@ See [corobot-extras](https://github.com/corobotics/corobot-extras) for detailed 
 
         cd src/corobot_bringup/system
         sudo ./install.bash
-        echo "export ROS_PACKAGE_PATH=/home/corobot/corobot_ws/src:$ROS_PACKAGE_PATH" >> /etc/ros/setup.bash
+        echo "export ROS_PACKAGE_PATH=/home/corobot/corobot_ws/src:$ROS_PACKAGE_PATH" >> ~/.bashrc
 
 - Install `zbar` for webcam QR code reading.
 
