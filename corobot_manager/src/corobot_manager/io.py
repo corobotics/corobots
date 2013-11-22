@@ -22,9 +22,13 @@ class CorobotServer(dispatcher):
     def handle_accept(self):
         sock, addr = self.accept()
         if self.handler is None:
-            self.handler = CorobotHandler(self, sock)
+            self.handler = CorobotHandler(self, sock, self.manager)
+            self.manager.STATUS_FLAG = "BUSY"
+            #print "IDLE"
         else:
             # Can only have one client connected at a time.
+            #self.manager.STATUS_FLAG = "BUSY"
+            #print "BUSY"
             sock.sendall("INUSE\n")
             sock.close()
 
@@ -57,10 +61,12 @@ class CorobotHandler(LineHandler):
 
     """Customize LineHandler for Corobot specific things."""
 
-    def __init__(self, server, sock):
+    def __init__(self, server, sock, manager):
         LineHandler.__init__(self, sock, server.manager.handle_command)
         self.server = server
+        self.manager = manager
 
     def handle_close(self):
         self.server.handler = None
+        self.manager.STATUS_FLAG = "IDLE"
         self.close()

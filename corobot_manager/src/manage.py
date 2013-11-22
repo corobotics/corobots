@@ -6,6 +6,7 @@ from contextlib import closing
 import socket
 import time
 import threading
+import thread
 
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
@@ -17,19 +18,57 @@ from corobot_common.srv import GetLandmark
 from corobot_common.msg import Pose, Landmark, UIMessage, UIConfirm
 from corobot_manager.io import CorobotServer
 
+# Akshay - Make a global status flag
+SERVER_DELIMITER = ':'
+HOST = "129.21.30.80"
+PORT = 51000
+
 class CorobotManager():
 
     def __init__(self):
+        global HOST, PORT
         # Robot"s current position.  Defaults to a test position.
         self.pose = Pose(x=67.7648,y=14.9568,theta=0) # Close to EInter
         # Track goals.
         self.goal_queue = deque()
         # The asyncore.dispatcher object wrapping our server socket.
         self.server = None
+        self.STATUS_FLAG = "IDLE"
+        self.serverSocket = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
 
+    # Akshay - Function to communicate continuously with the Web Server
+    def communicate (self, event):
+        
+        global SERVER_DELIMITER
+        #while True:
+        try:
+            self.serverSocket.send (self.STATUS_FLAG + SERVER_DELIMITER + str(self.pose.x) + SERVER_DELIMITER + str(self.pose.y))
+            #print self.goal_queue
+            '''if(len(self.goal_queue) > 0):
+                self.STATUS_FLAG = "BUSY"
+            else:
+                self.STATUS_FLAG = "IDLE"'''
+        except socket.error, msg:
+            print ("Server socket error! Error no: %d. Error message : %s" % (msg[0], msg[1]))
+        #print 'Timer called at ' + str(event.current_real)
+        #break
+        #print ("Closing server socket connection.")
+        #serverSocket.close()
+        #print ("Server socket closed.")
+
+        
     def start(self):
         self.init_ros_node()
         try:
+
+            # Akshay - Spawn a new thread that communicates with Web Server.
+            self.serverSocket.connect ((HOST,PORT))
+            self.serverSocket.send ("corobot3" +SERVER_DELIMITER+ self.STATUS_FLAG)
+            data = self.serverSocket.recv (1024)
+            print data
+            #thread.start_new_thread (self.communicate, (serverSocket,))
+            rospy.Timer(rospy.Duration(1), self.communicate)
+            # Akshay - End of new code
             self.listen_for_clients()
         except SystemExit:
             rospy.signal_shutdown("Requested by user.")
