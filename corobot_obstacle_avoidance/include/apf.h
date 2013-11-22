@@ -19,7 +19,7 @@ using geometry_msgs::Point;
 using namespace std;
 
 /** The distance at which to switch from conical to quadratic goal attraction. */
-#define D_GOAL 1.0
+#define D_GOAL 0.2
 
 /** The distance at which to start paying attention to obstacles. */
 #define D_OBS 0.7
