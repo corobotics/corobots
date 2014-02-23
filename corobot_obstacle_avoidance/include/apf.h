@@ -37,7 +37,7 @@ using namespace std;
 #define ANGLE_WINDOW 0.28
 
 /** Max allowed net force. */
-#define MAX_FORCE 0.25
+#define MAX_FORCE 0.3
 
 /**
  * APF implementation of the ObstacleAvoider interface.

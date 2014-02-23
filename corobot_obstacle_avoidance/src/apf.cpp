@@ -384,7 +384,8 @@ void APF::recoverRobot(){
 }
 
 Polar APF::doRecoveryNav(LaserScan &scan){
-	Polar cmd; cmd.d = 0.1; cmd.a = 0;
+	//Polar cmd; cmd.d = 0.1; cmd.a = 0;
+	Polar cmd; cmd.d = 0.2; cmd.a = 0;
 	list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
 	for (list<Polar>::iterator it = objects.begin(); it != objects.end(); ++it) {
         Polar objWrtRobot = *it;
