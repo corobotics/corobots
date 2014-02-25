@@ -284,8 +284,8 @@ Polar APF::cmdTransform(Polar &cmdInitial){
             cmd.d = cmdInitial.d;
     }
 
-	if(cmd.d > 0.14)
-		cmd.d = 0.14;
+	if(cmd.d > MAX_FORCE)
+		cmd.d = MAX_FORCE;
 	cmd.d = bound(cmd.d, cmdPrev.d, 0.010);
 
 	stringstream ss; corobot_common::Goal topicMsg;
