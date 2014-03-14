@@ -56,10 +56,16 @@ void BarcodeHandler::image_callback(Image &image) {
         squareDistanceR = pow(distanceR, 2);
 
         //Calculating the angle from the barcode to camera
-        angleR = acos((squareDistanceR + 25 - squareDistanceL) / (2 * distanceR * 5));
-        angleL = (PI) - (acos((squareDistanceL + 25 - squareDistanceR) / (2 * distanceL * 5)));
+	float tmp1 = min(1.0f, ((squareDistanceR + 25 - squareDistanceL) / (2 * distanceR * 5)));
+        angleR = acos(tmp1);
+	float tmp2 = min(1.0f, ((squareDistanceL + 25 - squareDistanceR) / (2 * distanceL * 5)));
+        angleL = (PI) - (acos(tmp2));
         angleAvg = (angleR + angleL) / 2;
 
+        if (isnan(angleAvg))
+	    return;
+
+        ROS_INFO_STREAM("ANGLE RRRRRRRRRRR:"<< angleR  <<"ANGLE LLLLLLLLL:"<< angleL << "AVERAGE! :"<<angleAvg);
         // Calculate Average and convert to meters
         distanceAvg = ((distanceL + distanceR) / 2) / 39.3701;
 
@@ -67,12 +73,19 @@ void BarcodeHandler::image_callback(Image &image) {
         cby = sqrt((distanceAvg * distanceAvg) - (offsetDistance * offsetDistance));
         cbtheta = angleAvg;
 
-        alpha = acos(offsetDistance / distanceAvg);
+        ROS_INFO_STREAM(" ____---CBTHETA!:--- "<<cbtheta);
+	alpha = acos(offsetDistance / distanceAvg);
+
+	ROS_INFO_STREAM("ALPHA!-----------"<<alpha);
         gamma = ((PI) - (alpha + angleAvg));
+
+	ROS_INFO_STREAM("GAMMA!----------"<<gamma);
 
         bcx = distanceAvg * cos((PI / 2) - gamma);
         bcy = distanceAvg * sin((PI / 2) - gamma);
         bctheta = PI / 2 + cbtheta;
+
+	ROS_INFO_STREAM("BCTHETA:! ----------"<<bctheta);
 
         float realx, realy = 0.0;
         ROS_INFO_STREAM("Barcode: " << symbol->get_data());
@@ -124,10 +137,13 @@ void BarcodeHandler::image_callback(Image &image) {
         }
 
 		checkIfNewQR(msg); // do the publisher.publish(msg); inside chechIfNewQR once it Qrcode counting works perfect
+	ROS_INFO_STREAM("FFFFFFFFFFFFFFFFFFFFFFFF");
+	ROS_INFO_STREAM(msg);
+	ros::Time timeNow = ros::Time::now();
+	ROS_INFO_STREAM(timeNow);
+	ROS_INFO_STREAM("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
         publisher.publish(msg);
-
     }
-
 }
 
 bool BarcodeHandler::checkIfNewQR(corobot_common::Pose qrPose){
