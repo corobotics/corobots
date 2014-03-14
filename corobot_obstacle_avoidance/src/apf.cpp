@@ -284,8 +284,8 @@ Polar APF::cmdTransform(Polar &cmdInitial){
             cmd.d = cmdInitial.d;
     }
 
-	if(cmd.d > 0.14)
-		cmd.d = 0.14;
+	if(cmd.d > MAX_FORCE)
+		cmd.d = MAX_FORCE;
 	cmd.d = bound(cmd.d, cmdPrev.d, 0.010);
 
 	stringstream ss; corobot_common::Goal topicMsg;
@@ -384,6 +384,7 @@ void APF::recoverRobot(){
 }
 
 Polar APF::doRecoveryNav(LaserScan &scan){
+	//Polar cmd; cmd.d = 0.1; cmd.a = 0;
 	Polar cmd; cmd.d = 0.1; cmd.a = 0;
 	list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
 	for (list<Polar>::iterator it = objects.begin(); it != objects.end(); ++it) {

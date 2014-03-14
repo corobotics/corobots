@@ -63,7 +63,7 @@ class CorobotManager():
 
             # Akshay - Spawn a new thread that communicates with Web Server.
             self.serverSocket.connect ((HOST,PORT))
-            self.serverSocket.send (socket.gethostname() +SERVER_DELIMITER+ self.STATUS_FLAG)
+            self.serverSocket.send ("corobot3" +SERVER_DELIMITER+ self.STATUS_FLAG)
             data = self.serverSocket.recv (1024)
             print data
             #thread.start_new_thread (self.communicate, (serverSocket,))
