@@ -38,7 +38,7 @@ const char *facerecAlgorithm = "FaceRecognizer.Fisherfaces";
 // conditions, and if you use a different Face Recognition algorithm.
 // Note that a higher threshold value means accepting more faces as known people,
 // whereas lower values mean more faces will be classified as "unknown".
-const float UNKNOWN_PERSON_THRESHOLD = 0.53f;
+const float UNKNOWN_PERSON_THRESHOLD = 0.65f;
 
 
 // Cascade Classifier file, used for Face Detection.

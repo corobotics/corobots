@@ -219,7 +219,7 @@ void loadDatabase()
 		bool lFaces = false;
 		bool fLabels = false;
 		bool pNames = false;
-		cout << "Loaded Data:" << endl;
+		
 		while (getline(iFILE,line))
 		{
 			if (pNames)
