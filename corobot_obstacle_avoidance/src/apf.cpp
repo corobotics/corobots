@@ -6,7 +6,6 @@
 #include "corobot.h"
 #include "apf.h"
 
-
 using corobot::bound;
 using corobot::length;
 using corobot::rCoordTransform;
@@ -118,6 +117,20 @@ list<Polar> APF::findObjects(list<Polar> points) {
 
 /**
  * {@inheritDoc}
+ * Navigates using an artificial potential field technique with cached
+ * obstacles to assist with the narrow field of view of the Kinect.
+ * Order of operations:
+ * 1. Compute goal location relative to robot
+ * 2. Compute goal force: calcGoalForce
+ * 3. Turn Kinect scan into list of discrete obstacles: findObjects
+ * 4. Updates obstacle cache - delete old/far-away obstacles, 
+ *     add new obstacles: updateObstacleList
+ * 5. Add force due to obstacles: updateNetForce
+ * 6. Convert (x,y) force vector to polar (relative to robot heading)
+ * 7. Convert force vector to command velocity: cmdTransform
+ * 8. Check for timeout to reach current waypoint
+ * 9. Check for recovery (is robot lost) - not sure this check is
+ *      being done properly at present
  */
 Polar APF::nav(LaserScan scan) {
     // Can't do anything without a goal.
@@ -126,39 +139,42 @@ Polar APF::nav(LaserScan scan) {
         Polar p; p.a = 0; p.d = 0;
         return p;
     }
-	
-	if(inRecovery){
-		return doRecoveryNav(scan);
-	}
 
-	stringstream ss; corobot_common::Goal topicMsg;
+    lastScanTime = scan.header.stamp.toSec();
 
-	//clear obstacleList for if the robot sees a barcode and there is a difference in odometer and the qrcode's localization
-	if(abs(prevRobotPose.x - pose.x) > 1.0 || abs(prevRobotPose.y - pose.y) > 1.0 || abs(prevRobotPose.a - pose.theta) > 1.0){
-		activeObstacleList.clear();
+    if(inRecovery){
+        return doRecoveryNav(scan);
+    }
 
-		ss.str(""); ss << "obs cleared: " << activeObstacleList.size();
-		topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
-		ROS_DEBUG("clearing ObstacleList: %lu", activeObstacleList.size());
-	}
+    stringstream ss; corobot_common::Goal topicMsg;
 
-	ROS_DEBUG("Pose:\t(%.2f, %.2f), <%.2f>", pose.x, pose.y, pose.theta);
+    //clear obstacleList for if the robot sees a barcode and there is a difference in odometer and the qrcode's localization
+    if(abs(prevRobotPose.x - pose.x) > 1.0 || abs(prevRobotPose.y - pose.y) > 1.0 || abs(prevRobotPose.a - pose.theta) > 1.0){
+        activeObstacleList.clear();
 
-	// The goal is the head of the waypoint queue.
+        ss.str(""); ss << "obs cleared: " << activeObstacleList.size();
+        topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
+        ROS_DEBUG("clearing ObstacleList: %u", activeObstacleList.size());
+    }
+
+    ROS_DEBUG("Pose:\t(%.2f, %.2f), <%.2f>", pose.x, pose.y, pose.theta);
+
+    // The goal is the head of the waypoint queue.
     Point goalInMap = waypointQueue.front();
-	ROS_DEBUG("Abs Goal:\t(%.2f, %.2f)", goalInMap.x, goalInMap.y);
-	ss.str(""); ss << "(" << goalInMap.x << ", " << goalInMap.y << ")";
-	topicMsg.name = ss.str(); absGoalPublisher.publish(topicMsg);
+    ROS_DEBUG("Abs Goal:\t(%.2f, %.2f)", goalInMap.x, goalInMap.y);
+    ss.str(""); ss << "(" << goalInMap.x << ", " << goalInMap.y << ")";
+    topicMsg.name = ss.str(); absGoalPublisher.publish(topicMsg);
 
     // Convert the goal into the robot reference frame.
     Point goalWrtRobot = rCoordTransform(goalInMap, pose);
     ROS_DEBUG("Rel Goal:\t(%.2f, %.2f)", goalWrtRobot.x, goalWrtRobot.y);
 
+    // Stores the object force vector summation. z is ignored.
+    Point netForce = calcGoalForce(goalWrtRobot);
+
     // The list of "objects" found; already in the robot reference frame.
     list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
 
-    // Stores the object force vector summation. z is ignored.
-    Point netForce = calcGoalForce(goalWrtRobot);
     updateObstacleList(objects);
     updateNetForce(netForce);
 
@@ -172,20 +188,14 @@ Polar APF::nav(LaserScan scan) {
         cmdInitial.a = atan2(netForce.y, netForce.x);
     }
     
-    ROS_DEBUG("RawNav:\t<%+.2f, %.2f>", cmdInitial.d, cmdInitial.a);
-	// publishing raw navigation command to the ch_rawnav topic
-	ss.str(""); ss << "<" << cmdInitial.d << ", " << cmdInitial.a << ">";
-	topicMsg.name = ss.str(); rawnavPublisher.publish(topicMsg);
+    ROS_DEBUG("TotalF:\t<%+.2f, %.2f>", cmdInitial.d, cmdInitial.a);
+    // publishing raw navigation command to the ch_rawnav topic
+    ss.str(""); ss << "<" << cmdInitial.d << ", " << cmdInitial.a << ">";
+    topicMsg.name = ss.str(); rawnavPublisher.publish(topicMsg);
 
-	/*if(abs(cmdInitial.a) > 1.2)
-		cmdInitial.d = 0;
-	//limiting speed when initial cmd.a is greater
-	else if(abs(cmdInitial.a) > .4)
-		cmdInitial.d = 0.1;*/
+    Polar cmd = cmdTransform(cmdInitial);
 
-	Polar cmd = cmdTransform(cmdInitial);
-
-	double now = scan.header.stamp.toSec();
+    double now = lastScanTime;
     if (cmd.d > 0.0 || timeLastMoved == 0.0) {
         timeLastMoved = now;
     } else if (now - timeLastMoved > 10.0) {
@@ -196,16 +206,20 @@ Polar APF::nav(LaserScan scan) {
         timeLastMoved = 0.0;
     }
 
-	if(waypointQueue.size() != 0)
-		recoveryCheck(scan.header.stamp.toSec());
+    if(waypointQueue.size() != 0)
+        recoveryCheck(scan.header.stamp.toSec());
  
-	//capture things for the next cycle
-	cmdPrev = cmd;
-	prevRobotPose.x = pose.x; prevRobotPose.y = pose.y; prevRobotPose.a = pose.theta; 
+    //capture things for the next cycle
+    cmdPrev = cmd;
+    prevRobotPose.x = pose.x; prevRobotPose.y = pose.y; prevRobotPose.a = pose.theta; 
 
     return cmd;
 }
 
+/**
+ * Convert the given polar (relative to robot) coordinate to the
+ * global coordinate system.
+ */
 corobot::SimplePose* APF::convertRobotToGlobal(Polar &polarPoint){
     corobot::SimplePose *sp = new corobot::SimplePose();
     sp->x = pose.x + polarPoint.d * cos(pose.theta + polarPoint.a);
@@ -215,24 +229,33 @@ corobot::SimplePose* APF::convertRobotToGlobal(Polar &polarPoint){
     return sp;
 }
 
+/**
+ * Add the given point to the obstacle cache if it is farther than
+ * OBS_MATCH_DIST away from all other cached obstacles.
+ */
 bool APF::pushIfUnique(corobot::SimplePose *sp){
-    for (std::vector<corobot::SimplePose>::iterator it = activeObstacleList.begin() ; it != activeObstacleList.end(); ++it){
-        corobot::SimplePose itPose = *it;
-        if(abs(sp->x - itPose.x) <= 0.6 && abs(sp->y - itPose.y) <= 0.6){ //if the point approx matches the points in the list
+    for (std::vector<CachedPoint>::iterator it = activeObstacleList.begin() ; it != activeObstacleList.end(); ++it){
+        Point obsPt = it->p;
+        if(length(sp->x - obsPt.x,sp->y - obsPt.y) <= OBS_MATCH_DIST) { //if the point approx matches the points in the list
             ROS_DEBUG("APF, PushUnique returns False");
+            it->lastT = lastScanTime;
             return false;
         }
     }
-        
+    
     //ROS_DEBUG("APF, Pushing Object into activeObstacleList: %.2f, %.2f", sp->x, sp->y);
-    activeObstacleList.push_back(*sp);
+    CachedPoint newObs;
+    newObs.p.x = sp->x;
+    newObs.p.y = sp->y;
+    newObs.lastT = lastScanTime;
+    activeObstacleList.push_back(newObs);
 
-	//publishing the obstacle's coordinates to the ch_obstacle topic
-	stringstream ss; corobot_common::Goal topicMsg;
-	ss << "(" << sp->x << "," << sp->y << "), add : " << activeObstacleList.size();
-	topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
+    //publishing the obstacle's coordinates to the ch_obstacle topic
+    stringstream ss; corobot_common::Goal topicMsg;
+    ss << "(" << sp->x << "," << sp->y << "), add : " << activeObstacleList.size();
+    topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
 
-    ROS_DEBUG("APF, current list Size: %lu", activeObstacleList.size());
+    ROS_DEBUG("APF, current list Size: %u", activeObstacleList.size());
     return true;
 }
 
@@ -240,7 +263,11 @@ double APF::distanceFromRobot(corobot::SimplePose &sp){
     return sqrt((sp.x-pose.x)*(sp.x-pose.x) + (sp.y-pose.y)*(sp.y-pose.y));
 }
 
-Polar* APF::convertFromGlobalToRobotInPolar(corobot::SimplePose &sp){
+/**
+ * Convert the given point in the global coordinates to the robot's
+ * relative coordinate system.
+ */
+Polar* APF::convertFromGlobalToRobotInPolar(Point &sp){
     Polar *p = new Polar();
     if(abs(sp.y-pose.y) <= 0.099 && abs(sp.x - pose.x) <= 0.099){
         p->a = 0;
@@ -249,7 +276,7 @@ Polar* APF::convertFromGlobalToRobotInPolar(corobot::SimplePose &sp){
     }
     else{ 
         p->a = atan2(sp.y-pose.y, sp.x - pose.x) - pose.theta;
-        p->d = distanceFromRobot(sp);
+        p->d = sqrt((sp.x-pose.x)*(sp.x-pose.x) + (sp.y-pose.y)*(sp.y-pose.y));
     }
     //ROS_DEBUG("APF, Returning GToR coordinates");
     return p;
@@ -261,8 +288,12 @@ double APF::min(double a, double b){
     return b;
 }
 
+/**
+ * Convert a force vector into fwd/angular velocity
+ * cmd.d is forward vel command, cmd.a is angular vel command
+ */
 Polar APF::cmdTransform(Polar &cmdInitial){
-	Polar cmd;
+    Polar cmd;
     // Don't try to go forward if the angle is more than fixed value.
     if (cmdInitial.a > ANGLE_WINDOW) {
         cmd.a = MIN_OMEGA;
@@ -277,71 +308,93 @@ Polar APF::cmdTransform(Polar &cmdInitial){
         } else
             cmd.d = 0;
     } else {
+        // if force is near straight, just head straight for now.
         cmd.a = 0;
-        /*if (cmdInitial.d > 0.18)
-            cmd.d = 0.18;
-        else*/
-            cmd.d = cmdInitial.d;
+        // forward velocity equal to force (for now, then gets capped below)
+        cmd.d = cmdInitial.d;
     }
 
-	if(cmd.d > MAX_FORCE)
-		cmd.d = MAX_FORCE;
-	cmd.d = bound(cmd.d, cmdPrev.d, 0.010);
+    if(cmd.d > MAX_VEL)
+        cmd.d = MAX_VEL;
+    cmd.d = bound(cmd.d, cmdPrev.d, 0.010);
 
-	stringstream ss; corobot_common::Goal topicMsg;
-	ss << "<" << cmd.d << ", " << cmd.a << ">";
-	topicMsg.name = ss.str(); velCmdPublisher.publish(topicMsg);
-	ROS_DEBUG("NavVel:\t<%+.2f, %.2f>\n", cmd.d, cmd.a);
-	
-	return cmd;
+    stringstream ss; corobot_common::Goal topicMsg;
+    ss << "<" << cmd.d << ", " << cmd.a << ">";
+    topicMsg.name = ss.str(); velCmdPublisher.publish(topicMsg);
+    ROS_DEBUG("NavVel:\t<%+.2f, %.2f>\n", cmd.d, cmd.a);
+    
+    return cmd;
 }
 
+/**
+ * Compute the goal force for the given relative goal location.
+ */
 Point APF::calcGoalForce(Point &goalWrtRobot){
-	Point netForce;
+    Point netForce;
     double goalDist = length(goalWrtRobot.x, goalWrtRobot.y);
     if (goalDist <= D_GOAL) {
-        netForce.x = K_GOAL * goalWrtRobot.x;
-        netForce.y = K_GOAL * goalWrtRobot.y;
+        netForce.x = (K_GOAL / D_GOAL) * goalWrtRobot.x;
+        netForce.y = (K_GOAL / D_GOAL) * goalWrtRobot.y;
     } else {
-        netForce.x = D_GOAL * K_GOAL * goalWrtRobot.x / goalDist;
-        netForce.y = D_GOAL * K_GOAL * goalWrtRobot.y / goalDist;
+        netForce.x = K_GOAL * goalWrtRobot.x / goalDist;
+        netForce.y = K_GOAL * goalWrtRobot.y / goalDist;
     }
-	ROS_DEBUG("GoalF:\t%.2f, %.2f", netForce.x, netForce.y);
-	return netForce;
+    ROS_DEBUG("GoalF:\t%.2f, %.2f", netForce.x, netForce.y);
+    return netForce;
 }
 
+/**
+ * Add obstacle force from all cached obstacles to the given (goal) 
+ * currently active force.
+ */
 void APF::updateNetForce(Point &netForce){
-	////call obstacleList looping only when the robot has changed its position
-	//if(prevRobotPose.x != pose.x  || prevRobotPose.y != pose.y || prevRobotPose.a != pose.theta){
-	///// throw out inactive obstacle (which are not in zone anymore).
-    	stringstream ss; corobot_common::Goal topicMsg;
-		int objIndex = 0;
-		for (std::vector<corobot::SimplePose>::iterator it = activeObstacleList.begin() ; it != activeObstacleList.end(); ++it){
-			ROS_DEBUG("APF, Obj(%d) Distance :\t%.2f", ++objIndex, distanceFromRobot(*it));
-			if(distanceFromRobot(*it) > D_OBS ){
-				ss.str(""); ss << "(" << (*it).x << ", " << (*it).y << "), rem : " << objIndex;
-				activeObstacleList.erase(it);
-				
-				ROS_DEBUG("APF: Object(%d) removed", objIndex);
-				topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
-
-				if(it == activeObstacleList.end())
-					break;
-			} else {
-				Polar *od = convertFromGlobalToRobotInPolar(*it);
-				double f = K_OBS * (1.0/D_OBS - 1.0/od->d) / (od->d * od->d);
-				netForce.x += f * cos(od->a);
-				netForce.y += f * sin(od->a);
-				ROS_DEBUG("Obj(%d)F:\t%.2f, %.2f", objIndex, f * cos(od->a), f * sin(od->a));
-			}
-		}
-		ss.str(""); ss << "(" << netForce.x << ", " << netForce.y << ")";
-		topicMsg.name = ss.str(); netForcePublisher.publish(topicMsg);		
-    //}
+    stringstream ss; corobot_common::Goal topicMsg;
+    int objIndex = 0;
+    for (std::vector<CachedPoint>::iterator it = activeObstacleList.begin() ; it != activeObstacleList.end(); ++it){
+        Polar *od = convertFromGlobalToRobotInPolar(it->p);
+        double f = K_OBS * (1.0/D_OBS - 1.0/od->d) / (od->d * od->d);
+        netForce.x += f * cos(od->a);
+        netForce.y += f * sin(od->a);
+        ROS_DEBUG("Obj(%d)F:\t%.2f, %.2f", ++objIndex, f * cos(od->a), f * sin(od->a));
+    }
+    ss.str(""); ss << "(" << netForce.x << ", " << netForce.y << ")";
+    topicMsg.name = ss.str(); netForcePublisher.publish(topicMsg);      
 }
 
+/**
+ * Update the obstacle cache: 
+ * - Eliminate any obstacles not seen in OBS_CACHE_TIMEOUT seconds
+ * - Eliminate any obstacles farther than D_OBS away
+ * - Eliminate any obstacles behind the robot (necessary?)
+ * - Add any new unique obstacles
+ * - Update time-last-seen of present obstacles already in cache
+ */
 void APF::updateObstacleList(list<Polar>& objects){
-	////construct an obstacle list 
+    stringstream ss; corobot_common::Goal topicMsg;
+    int objIndex = 0;
+    // First throw away old obstacles, or those behind us or far away.
+    for (std::vector<CachedPoint>::iterator it = activeObstacleList.begin() ; it != activeObstacleList.end(); ++it){
+        Point obs = it->p;
+        double obsD = length(obs.x-pose.x,obs.y-pose.y);
+        double obsAbsA = atan2(obs.y-pose.y,obs.x-pose.x);
+        double obsRelA = pose.theta - obsAbsA;
+        while (obsRelA > 2*M_PI) obsRelA -= 2*M_PI;
+        while (obsRelA < -2*M_PI) obsRelA += 2*M_PI;
+        ROS_DEBUG("APF, Obj(%d) Distance:\t%.2f Angle:\t%.3f ", ++objIndex, obsD, obsRelA);
+
+        if((obsD > D_OBS) || (lastScanTime - it->lastT > OBS_CACHE_TIMEOUT) ||
+           (obsRelA < -M_PI/2) || (obsRelA > M_PI/2)) {
+            ss.str(""); ss << "(" << obs.x << ", " << obs.y << "), rem : " << objIndex;
+            activeObstacleList.erase(it);
+            
+            ROS_DEBUG("APF: Object(%d) removed", objIndex);
+            topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
+            
+            if(it == activeObstacleList.end())
+                break;
+        }
+    }
+    // now add in new ones if they are close enough to worry about.
     for (list<Polar>::iterator it = objects.begin(); it != objects.end(); ++it) {
         Polar pointWrtRobot = *it;
         if (pointWrtRobot.d <= D_OBS) {
@@ -350,90 +403,66 @@ void APF::updateObstacleList(list<Polar>& objects){
             ROS_DEBUG("Object in global cood:\t(%.2f, %.2f)", pointWrtGlobal->x, pointWrtGlobal->y);
             pushIfUnique(pointWrtGlobal);
         }
-    }
+    } 
+
 }
 
+/**
+ * Supposedly used to check whether the robot needs to ignore the
+ * potential field and go into recovery mode.
+ */
 void APF::recoveryCheck(const double &recov_time_now){
     if( ( waypointQueue.size() - prevWayPointQuelen ) == 0)
     {
        if( recov_time_now - timeSinceLastWayPoint > 60)
-			recoverRobot();
+            recoverRobot();
     }
     else
     {
          timeSinceLastWayPoint = recov_time_now;
          prevWayPointQuelen = waypointQueue.size();
-	     stringstream ss; corobot_common::Goal topicMsg;
-      	 ss << "Not in Recovery";
-		 topicMsg.name = ss.str(); recoveryPublisher.publish(topicMsg);	
+         stringstream ss; corobot_common::Goal topicMsg;
+         ss << "Not in Recovery";
+         topicMsg.name = ss.str(); recoveryPublisher.publish(topicMsg); 
     }
 }
 
+/**
+ * Start the recovery process.
+ */
 void APF::recoverRobot(){
-	activeObstacleList.clear(); //clear obstacles for when recovery started because the robot might be surrounded by obstacles
+    activeObstacleList.clear(); //clear obstacles for when recovery started because the robot might be surrounded by obstacles
 
-	ROS_DEBUG("Recovery protocol triggered");
-	stringstream ss; corobot_common::Goal topicMsg;
-	ss << "Recovery Started";
-	topicMsg.name = ss.str(); recoveryPublisher.publish(topicMsg);
-	recoveryPublisher.publish(topicMsg);
+    ROS_DEBUG("Recovery protocol triggered");
+    stringstream ss; corobot_common::Goal topicMsg;
+    ss << "Recovery Started";
+    topicMsg.name = ss.str(); recoveryPublisher.publish(topicMsg);
+    recoveryPublisher.publish(topicMsg);
 
-	//some recovery loop here in which the robot just moves around until it sees a barcode
-	//
-	inRecovery = true;
+    //some recovery loop here in which the robot just moves around until it sees a barcode
+    //
+    inRecovery = true;
 }
 
+/**
+ * Wander safely (until we find a barcode and reorient ourselves)
+ */
 Polar APF::doRecoveryNav(LaserScan &scan){
-	//Polar cmd; cmd.d = 0.1; cmd.a = 0;
-	Polar cmd; cmd.d = 0.1; cmd.a = 0;
-	list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
-	for (list<Polar>::iterator it = objects.begin(); it != objects.end(); ++it) {
+    //Polar cmd; cmd.d = 0.1; cmd.a = 0;
+    Polar cmd; cmd.d = 0.1; cmd.a = 0;
+    list<Polar> objects = findLocalMinima(findObjects(scanToList(scan)));
+    for (list<Polar>::iterator it = objects.begin(); it != objects.end(); ++it) {
         Polar objWrtRobot = *it;
         if (objWrtRobot.d <= 1 && abs(objWrtRobot.a) <= 0.6) { // if there's any object within the defined window, then turn in place
-			cmd.d = 0; cmd.a = 0.4;
-			cmd.d = bound(cmd.d, cmdPrev.d, 0.05); // for decelerating faster
-			return cmd;
+            cmd.d = 0; cmd.a = 0.4;
+            cmd.d = bound(cmd.d, cmdPrev.d, 0.05); // for decelerating faster
+            return cmd;
             //corobot::SimplePose *pointWrtGlobal = convertRobotToGlobal(objWrtRobot);
             //ROS_DEBUG("Polar Object that might be added:\t(%.2f, %.2f)", objWrtRobot.d, objWrtRobot.a);
             //ROS_DEBUG("Object in global cood:\t(%.2f, %.2f)", pointWrtGlobal->x, pointWrtGlobal->y);
         }
     }
-	cmd.d = bound(cmd.d, cmdPrev.d, 0.010);
-	return cmd;
+    cmd.d = bound(cmd.d, cmdPrev.d, 0.010);
+    return cmd;
 }
 
- //setting the angles and velocities based on the net force
-    /*if(cmd.a >= -ANGLE_WINDOW && cmd.a < ANGLE_WINDOW ){ // quadV, if the net Force is not from the side, but from the front
-      cmd.d = min(MAX_FORCE, cmd.d);
-      cmd.a = 0;
-      } else if(cmd.a >=-1.57 && cmd.a < -ANGLE_WINDOW) { // quad1
-      cmd.d = min(MAX_FORCE, cmd.d * cos(cmd.a));
-      cmd.a = -MIN_OMEGA;
-      } else if (cmd.a < -1.57 && cmd.a >= -3.15) // quad4
-      { 
-      cmd.d = 0;
-      cmd.a = -MIN_OMEGA;
-      } else if (cmd.a < 3.15 && cmd.a > 1.57 ) // quad3
-      { 
-      cmd.d = 0;
-      cmd.a = MIN_OMEGA;
-      }
-      else{ // quad2
-      cmd.d = min(MAX_FORCE, cmd.d * cos(cmd.a));
-      cmd.a = MIN_OMEGA;
-      }*/
-    
-	
-    // Sum over all obstacles.
-    /*for (list<Polar>::iterator p = objects.begin(); p != objects.end(); ++p) {
-      Polar o = *p;
-      ROS_DEBUG("Obj:\t%.2f, %.2f", o.d * cos(o.a), o.d * sin(o.a));
-      if (o.d <= D_OBS) {
-      // Principles of Robot Motion, pg. 83
-      double f = K_OBS * (1.0/D_OBS - 1.0/o.d) / (o.d * o.d);
-      netForce.x += f * cos(o.a);
-      netForce.y += f * sin(o.a);
-      ROS_DEBUG("ObjF:\t%.2f, %.2f", f * cos(o.a), f * sin(o.a));
-      }
-      }*/
-    
