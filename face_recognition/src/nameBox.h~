@@ -1,0 +1,32 @@
+#ifndef NAMEBOX_H
+#define NAMEBOX_H
+
+#include <QtWidgets/QDialog>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QLineEdit>
+#include <QtWidgets/QGridLayout>
+
+class NameBox : public QDialog
+{
+    Q_OBJECT
+
+public:
+    NameBox(QWidget *parent = 0);
+	//QWidget *gridLayoutWidget;
+    QGridLayout *gridLayout;
+    QLabel *myLabel;
+    //QPushButton *cancelButton;
+    QLineEdit *myText;
+    //QPushButton *okButton;
+
+	std::string getText();
+	void showWindow();
+
+private slots:
+    void on_okButton_clicked();
+    void on_cancelButton_clicked();
+    void on_myText_returnPressed();
+};
+
+#endif // NAMEBOX_H
+

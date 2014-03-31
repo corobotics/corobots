@@ -1,0 +1,122 @@
+#include <QtGui/QtGui>
+
+#include "nameBox.h"
+
+std::string text = "";
+
+NameBox::NameBox(QWidget *parent) : QDialog(parent)
+{
+	
+	QWidget *gridLayoutWidget;
+    QGridLayout *gridLayout;
+    QLabel *myLabel;
+    QPushButton *cancelButton;
+    QLineEdit *myText;
+    QPushButton *okButton;
+
+	this.setObjectName(QStringLiteral("NameBox"));
+	this.resize(400, 100);
+    gridLayoutWidget = new QWidget(this);
+    gridLayoutWidget->setObjectName(QStringLiteral("gridLayoutWidget"));
+    gridLayoutWidget->setGeometry(QRect(0, 0, 400, 90));
+    gridLayout = new QGridLayout(gridLayoutWidget);
+    gridLayout->setSpacing(6);
+    gridLayout->setContentsMargins(11, 11, 11, 11);
+    gridLayout->setObjectName(QStringLiteral("gridLayout"));
+    gridLayout->setContentsMargins(0, 0, 0, 0);
+    myLabel = new QLabel(gridLayoutWidget);
+    myLabel->setObjectName(QStringLiteral("myLabel"));
+
+    gridLayout->addWidget(myLabel, 0, 0, 1, 3, Qt::AlignHCenter);
+	
+	//CANCEL BUTTON
+    cancelButton = new QPushButton(gridLayoutWidget);
+    cancelButton->setObjectName(QStringLiteral("cancelButton"));
+	connect(cancelButton, SIGNAL(clicked()), this, SLOT(on_cancelButton_clicked()));
+
+    gridLayout->addWidget(cancelButton, 2, 2, 1, 1);
+
+    myText = new QLineEdit(gridLayoutWidget);
+    myText->setObjectName(QStringLiteral("myText"));
+	connect(myText, SIGNAL(returnPressed()), this, SLOT(on_myText_returnPressed()));
+	
+    gridLayout->addWidget(myText, 2, 0, 1, 1);
+
+	//OK BUTTON
+    okButton = new QPushButton(gridLayoutWidget);
+    okButton->setObjectName(QStringLiteral("okButton"));
+	connect(okButton, SIGNAL(clicked()), this, SLOT(on_okButton_clicked()));
+
+    gridLayout->addWidget(okButton, 2, 1, 1, 1);
+
+	setLayout(gridLayout);
+	setWindowTitle(QApplication::translate("NameBox", "Person's Name", 0));
+    myLabel->setText(QApplication::translate("NameBox", "Please enter person's name (No Spaces):", 0));
+    cancelButton->setText(QApplication::translate("NameBox", "Cancel", 0));
+    okButton->setText(QApplication::translate("NameBox", "OK", 0));
+
+	QMetaObject::connectSlotsByName(NameBox);
+	
+
+	/*
+	QPushButton *okButton;
+	okButton = new QPushButton("OK");
+	//connect(okButton, SIGNAL(clicked()), this, SLOT(on_okButton_clicked()));
+
+	QPushButton *cancelButton;
+	cancelButton = new QPushButton("Cancel");
+	//connect(cancelButton, SIGNAL(clicked()), this, SLOT(on_cancelButton_clicked()));
+
+	myLabel = new QLabel("Please enter person's name (No Spaces):", 0, 0);
+	myText = new QLineEdit("");
+	QGridLayout gridLayout = new QGridLayout();
+
+	gridLayout->addWidget(myLabel);
+	gridLayout->addWidget(myText, 1, 0);
+	gridLayout->addWidget(okButton, 1, 1);
+	gridLayout->addWidget(cancelButton, 1, 2);
+
+	this.setLayout(gridLayout);
+	this.setWindowTitle("Person's Name");
+	QMetaObject::connectSlotsByName(NameBox);
+	*/
+
+}
+
+void NameBox::on_okButton_clicked()
+{
+    if (myText->text().isEmpty())
+    {
+        text = myText->text().toStdString();
+    }
+    else
+    {
+        text = "";
+    }
+
+    myText->setText("");
+    hide();
+}
+
+void NameBox::on_cancelButton_clicked()
+{
+    text = "";
+    myText->setText("");
+    hide();
+}
+
+std::string NameBox::getText()
+{
+    return text;
+}
+
+void NameBox::on_myText_returnPressed()
+{
+    on_okButton_clicked();
+}
+
+void NameBox::showWindow()
+{
+	show();
+}
+
