@@ -38,7 +38,7 @@ const char *facerecAlgorithm = "FaceRecognizer.Fisherfaces";
 // conditions, and if you use a different Face Recognition algorithm.
 // Note that a higher threshold value means accepting more faces as known people,
 // whereas lower values mean more faces will be classified as "unknown".
-const float UNKNOWN_PERSON_THRESHOLD = 0.65f;
+const float UNKNOWN_PERSON_THRESHOLD = 0.55f;
 
 
 // Cascade Classifier file, used for Face Detection.
@@ -92,6 +92,7 @@ bool m_debug = false;
 #include "preprocessFace.h"     // Easily preprocess face images, for face recognition.
 #include "recognition.h"     // Train the face recognition system and recognize a person from an image.
 #include "ImageUtils.h"      // Shervin's handy OpenCV utility functions.
+#include "../../corobot_common/srv_gen/cpp/include/corobot_common/WebcamService.h" // The WebcamService for ROS
 
 using namespace cv;
 using namespace std;
@@ -116,6 +117,8 @@ Ptr<FaceRecognizer> model; //SAVING
 vector<Mat> preprocessedFaces; //SAVING
 vector<int> faceLabels; //SAVING
 String name; //NOTSAVING
+String lastseen; //NOTSAVING
+String currentseen; //NOTSAVING
 
 // Position of GUI buttons:
 Rect m_rcBtnAdd;
@@ -219,7 +222,7 @@ void loadDatabase()
 		bool lFaces = false;
 		bool fLabels = false;
 		bool pNames = false;
-		cout << "Loaded Data:" << endl;
+		
 		while (getline(iFILE,line))
 		{
 			if (pNames)
@@ -620,10 +623,13 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
                     // Identify who the person is in the preprocessed face image.
                     identity = model->predict(preprocessedFace);
                     outputStr = m_names[atoi(toString(identity).c_str())];
+					currentseen = outputStr;
+					lastseen = outputStr;
                 }
                 else {
                     // Since the confidence is low, assume it is an unknown person.
                     outputStr = "Unknown";
+					currentseen = outputStr;
                 }
                 cout << "Identity: " << outputStr << ". Similarity: " << similarity << endl;
 
@@ -642,6 +648,9 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
                 // Show the gray border of the bar.
                 rectangle(displayedFrame, ptTopLeft, ptBottomRight, CV_RGB(200,200,200), 1, CV_AA);
             }
+			else {
+				currentseen = "None";
+			}
         }
         else if (m_mode == MODE_DELETE_ALL) {
             // Restart everything!
@@ -772,6 +781,7 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
         
         // IMPORTANT: Wait for atleast 20 milliseconds, so that the image can be displayed on the screen!
         // Also checks if a key was pressed in the GUI window. Note that it should be a "char" to support Linux.
+		ros::spinOnce();
         char keypress = waitKey(20);  // This is needed if you want to see anything!
 
         if (keypress == VK_ESCAPE) {   // Escape Key
@@ -783,6 +793,20 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
     }//end while
 }
 
+bool callback(face_recognition::WebcamService::Request  &req, face_recognition::WebcamService::Response &res)
+{
+	String command = req.command;
+	transform(command.begin(), command.end(), command.begin(), ::tolower);
+	if (command == "lastseen")
+	{
+		res.answer = lastseen;
+	}
+	else if (command == "currentseen")
+	{
+		res.answer = currentseen;
+	}
+	return true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -821,6 +845,11 @@ int main(int argc, char *argv[])
     namedWindow(windowName); // Resizable window, might not work on Windows.
     // Get OpenCV to automatically call my "onMouse()" function when the user clicks in the GUI window.
     setMouseCallback(windowName, onMouse, 0);
+
+	//Start the WebcamService service
+	ros::init(argc, argv, "WebcamService");
+	ros::NodeHandle n;
+	ros::ServiceServer service = n.advertiseService("WebcamService", callback);
 
     // Run Face Recogintion interactively from the webcam. This function runs until the user quits.
 
