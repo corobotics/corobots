@@ -38,18 +38,18 @@ const char *facerecAlgorithm = "FaceRecognizer.Fisherfaces";
 // conditions, and if you use a different Face Recognition algorithm.
 // Note that a higher threshold value means accepting more faces as known people,
 // whereas lower values mean more faces will be classified as "unknown".
-const float UNKNOWN_PERSON_THRESHOLD = 0.55f;
+const float UNKNOWN_PERSON_THRESHOLD = 0.65f;
 
 
 // Cascade Classifier file, used for Face Detection.
 const char *faceCascadeFilename = "lbpcascade_frontalface.xml";     // LBP face detector.
 //const char *faceCascadeFilename = "haarcascade_frontalface_alt_tree.xml";  // Haar face detector.
-//const char *eyeCascadeFilename1 = "haarcascade_lefteye_2splits.xml";   // Best eye detector for open-or-closed eyes.
-//const char *eyeCascadeFilename2 = "haarcascade_righteye_2splits.xml";   // Best eye detector for open-or-closed eyes.
+const char *eyeCascadeFilename1 = "haarcascade_lefteye_2splits.xml";   // Best eye detector for open-or-closed eyes.
+const char *eyeCascadeFilename2 = "haarcascade_righteye_2splits.xml";   // Best eye detector for open-or-closed eyes.
 //const char *eyeCascadeFilename1 = "haarcascade_mcs_lefteye.xml";       // Good eye detector for open-or-closed eyes.
 //const char *eyeCascadeFilename2 = "haarcascade_mcs_righteye.xml";       // Good eye detector for open-or-closed eyes.
-const char *eyeCascadeFilename1 = "haarcascade_eye.xml";               // Basic eye detector for open eyes only.
-const char *eyeCascadeFilename2 = "haarcascade_eye_tree_eyeglasses.xml"; // Basic eye detector for open eyes if they might wear glasses.
+//const char *eyeCascadeFilename1 = "haarcascade_eye.xml";               // Basic eye detector for open eyes only.
+//const char *eyeCascadeFilename2 = "haarcascade_eye_tree_eyeglasses.xml"; // Basic eye detector for open eyes if they might wear glasses.
 
 
 // Set the desired face dimensions. Note that "getPreprocessedFace()" will return a square face.
@@ -83,6 +83,8 @@ bool m_debug = false;
 #include <algorithm>
 #include <ros/ros.h>
 #include <signal.h>
+#include <deque>
+#include <utility>
 
 // Include OpenCV's C++ Interface
 #include "opencv2/opencv.hpp"
@@ -117,8 +119,12 @@ Ptr<FaceRecognizer> model; //SAVING
 vector<Mat> preprocessedFaces; //SAVING
 vector<int> faceLabels; //SAVING
 String name; //NOTSAVING
-String lastseen; //NOTSAVING
+String lastseen = ""; //NOTSAVING
+double lastseensimilarity = 0; //NOTSAVING
 String currentseen; //NOTSAVING
+
+deque< pair<String,double> > lastTenSeen; //NOTSAVING
+deque< pair<String,double> > lastTenSeenOutput; //NOTSAVING
 
 // Position of GUI buttons:
 Rect m_rcBtnAdd;
@@ -328,6 +334,44 @@ void saveDatabase()
 			oFILE << format("%s\n",m_names[i].c_str());
 		}
 		oFILE.close();
+	}
+}
+
+void printDeque(deque< pair<String, double> > d)
+{
+	cout << "PRINT DEQUE" << endl;
+	for (int i=0; i < d.size(); i++)
+	{
+		cout << d.at(i).first << " " << d.at(i).second << endl;
+	}
+	cout << "----" << endl;
+}
+
+int dequeContains(deque< pair<String, double> > d, String s)
+{
+	for (int i=0; i < d.size(); i++)
+	{
+		if (d.at(i).first == s)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+void calculateLastLikelyPerson()
+{
+	for(int i=0; i < lastTenSeen.size(); i++)
+	{
+		int answer = dequeContains(lastTenSeenOutput, lastTenSeen.at(i).first);
+		if (answer >= 0)
+		{
+			lastTenSeenOutput[answer].second += lastTenSeen.at(i).second;
+		}
+		else
+		{
+			lastTenSeenOutput.push_back(lastTenSeen.at(i));
+		}
 	}
 }
 
@@ -624,7 +668,14 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
                     identity = model->predict(preprocessedFace);
                     outputStr = m_names[atoi(toString(identity).c_str())];
 					currentseen = outputStr;
-					lastseen = outputStr;
+					//lastseen = outputStr;
+					if(lastTenSeen.size() >= 10) {
+						lastTenSeen.pop_front();
+					}
+					lastTenSeenOutput.clear(); //Not sure if it is correct method
+					pair<String,double> lTSO (outputStr, 1-similarity);
+					lastTenSeen.push_back(lTSO);
+					calculateLastLikelyPerson();
                 }
                 else {
                     // Since the confidence is low, assume it is an unknown person.
@@ -718,8 +769,8 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
 
         // Draw the GUI buttons into the main image.
         m_rcBtnAdd = drawButton(displayedFrame, "Add Person", Point(BORDER, BORDER));
-        m_rcBtnDel = drawButton(displayedFrame, "Delete All", Point(m_rcBtnAdd.x, m_rcBtnAdd.y + m_rcBtnAdd.height), m_rcBtnAdd.width);
-        m_rcBtnDebug = drawButton(displayedFrame, "Debug", Point(m_rcBtnDel.x, m_rcBtnDel.y + m_rcBtnDel.height), m_rcBtnAdd.width);
+        //m_rcBtnDel = drawButton(displayedFrame, "Delete All", Point(m_rcBtnAdd.x, m_rcBtnAdd.y + m_rcBtnAdd.height), m_rcBtnAdd.width);
+        //m_rcBtnDebug = drawButton(displayedFrame, "Debug", Point(m_rcBtnDel.x, m_rcBtnDel.y + m_rcBtnDel.height), m_rcBtnAdd.width);
 		
         // Show the most recent face for each of the collected people, on the right side of the display.
         m_gui_faces_left = displayedFrame.cols - BORDER - faceWidth;
@@ -781,7 +832,7 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
         
         // IMPORTANT: Wait for atleast 20 milliseconds, so that the image can be displayed on the screen!
         // Also checks if a key was pressed in the GUI window. Note that it should be a "char" to support Linux.
-		ros::spinOnce();
+		ros::spinOnce();  // This checks the services and sees if any information needs to be sent out to the client
         char keypress = waitKey(20);  // This is needed if you want to see anything!
 
         if (keypress == VK_ESCAPE) {   // Escape Key
@@ -799,6 +850,14 @@ bool callback(corobot_common::WebcamService::Request  &req, corobot_common::Webc
 	transform(command.begin(), command.end(), command.begin(), ::tolower);
 	if (command == "lastseen")
 	{
+		for (int i = 0; i < lastTenSeenOutput.size(); i++)
+		{
+			if (lastTenSeenOutput.at(i).second > lastseensimilarity)
+			{
+				lastseensimilarity = lastTenSeenOutput.at(i).second;
+				lastseen = lastTenSeenOutput.at(i).first;
+			}
+		}
 		res.answer = lastseen;
 	}
 	else if (command == "currentseen")
