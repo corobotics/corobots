@@ -895,7 +895,7 @@ bool callback(corobot_common::WebcamService::Request  &req, corobot_common::Webc
 {
 	String command = req.command;
 	transform(command.begin(), command.end(), command.begin(), ::tolower);
-	if (command == "lastseen")
+	if (command == "LASTSEEN")
 	{
 		for (int i = 0; i < lastTenSeenOutput.size(); i++)
 		{
@@ -907,7 +907,7 @@ bool callback(corobot_common::WebcamService::Request  &req, corobot_common::Webc
 		}
 		res.answer = lastseen;
 	}
-	else if (command == "currentseen")
+	else if (command == "CURRENTSEEN")
 	{
 		res.answer = currentseen;
 	}

@@ -14,7 +14,7 @@ from geometry_msgs.msg import Point
 from diagnostic_msgs.msg import *
 
 from corobot_common import point_equals
-from corobot_common.srv import GetLandmark
+from corobot_common.srv import GetLandmark, WebcamService
 from corobot_common.msg import Pose, Landmark, UIMessage, UIConfirm
 from corobot_manager.io import CorobotServer
 
@@ -122,6 +122,10 @@ class CorobotManager():
         rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
         rospy.wait_for_service("get_landmark")
         self.get_landmark = rospy.ServiceProxy("get_landmark", GetLandmark)
+		#Tristan-WebcamServices
+		rospy.wait_for_service("WebcamService")
+		self.webcam_service = rospy.ServiceProxy("WebcamService", WebcamService)
+		#!Tristan
         self.goals_pub = rospy.Publisher("goals", Point)
         self.goals_nav_pub = rospy.Publisher("goals_nav", Point)
         self.show_msgs_pub = rospy.Publisher("show_msg", UIMessage)
@@ -167,6 +171,14 @@ class CorobotManager():
             themsg = " ".join(data[1:])
             self.show_msgs_pub.publish(UIMessage(id=int(msg_id), timeout=int(data[0]), 
                 msg=themsg, req_confirm=confirm))
+		#Tristan-Handle LASTSEEN and CURRENTSEEN requests to WebcamService
+		elif msg_type.endswith("SEEN"):
+			try:
+				self.webcam_response = WebcamService(msg_type)
+				self.client_write(msg_id, "WebcamService %s: %s" % (self.msg_type, self.webcam_response) 
+			except rospy.ServiceException as e:
+				self.client_write(msg_id, "WebcamService ERROR " % e)
+			
         else:
             self.client_write(msg_id, "ERROR Unknown message type \"%s\"" % msg_type)
 

@@ -879,7 +879,7 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
 			// For demonstration purposes...
 			printDeque(totalDetection);
 			int totalFaces = 0;
-			for (int i=0; i <= totalDetection.size(); i++)
+			for (int i=0; i < totalDetection.size(); i++)
 			{
 				totalFaces += totalDetection.at(i).second;
 			}
