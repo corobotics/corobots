@@ -29,8 +29,8 @@
 //    "FaceRecognizer.Eigenfaces":  Eigenfaces, also referred to as PCA (Turk and Pentland, 1991).
 //    "FaceRecognizer.Fisherfaces": Fisherfaces, also referred to as LDA (Belhumeur et al, 1997).
 //    "FaceRecognizer.LBPH":        Local Binary Pattern Histograms (Ahonen et al, 2006).
-const char *facerecAlgorithm = "FaceRecognizer.Fisherfaces";
-//const char *facerecAlgorithm = "FaceRecognizer.Eigenfaces";
+//const char *facerecAlgorithm = "FaceRecognizer.Fisherfaces";
+const char *facerecAlgorithm = "FaceRecognizer.Eigenfaces";
 
 
 // Sets how confident the Face Verification algorithm should be to decide if it is an unknown person or a known person.
@@ -38,7 +38,7 @@ const char *facerecAlgorithm = "FaceRecognizer.Fisherfaces";
 // conditions, and if you use a different Face Recognition algorithm.
 // Note that a higher threshold value means accepting more faces as known people,
 // whereas lower values mean more faces will be classified as "unknown".
-const float UNKNOWN_PERSON_THRESHOLD = 0.65f;
+const float UNKNOWN_PERSON_THRESHOLD = 0.5f;
 
 
 // Cascade Classifier file, used for Face Detection.
@@ -125,6 +125,7 @@ String currentseen; //NOTSAVING
 
 deque< pair<String,double> > lastTenSeen; //NOTSAVING
 deque< pair<String,double> > lastTenSeenOutput; //NOTSAVING
+deque< pair<String,int> > totalDetection; //NOTSAVING
 
 // Position of GUI buttons:
 Rect m_rcBtnAdd;
@@ -347,7 +348,29 @@ void printDeque(deque< pair<String, double> > d)
 	cout << "----" << endl;
 }
 
+void printDeque(deque< pair<String, int> > d)
+{
+	cout << "PRINT DEQUE" << endl;
+	for (int i=0; i < d.size(); i++)
+	{
+		cout << d.at(i).first << " " << d.at(i).second << endl;
+	}
+	cout << "----" << endl;
+}
+
 int dequeContains(deque< pair<String, double> > d, String s)
+{
+	for (int i=0; i < d.size(); i++)
+	{
+		if (d.at(i).first == s)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+int dequeContains(deque< pair<String, int> > d, String s)
 {
 	for (int i=0; i < d.size(); i++)
 	{
@@ -503,10 +526,11 @@ void onMouse(int event, int x, int y, int, void*)
         // Otherwise they clicked in the center.
         else {
             // Change to training mode if it was collecting faces.
-            if (m_mode == MODE_COLLECT_FACES) {
+            //SPYDER
+			//if (m_mode == MODE_COLLECT_FACES) {
                 cout << "User wants to begin training." << endl;
                 m_mode = MODE_TRAINING;
-            }
+            //}
         }
     }
 }
@@ -666,12 +690,15 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
                 if (similarity < UNKNOWN_PERSON_THRESHOLD) {
                     // Identify who the person is in the preprocessed face image.
                     identity = model->predict(preprocessedFace);
+
                     outputStr = m_names[atoi(toString(identity).c_str())];
+
 					currentseen = outputStr;
-					//lastseen = outputStr;
+
 					if(lastTenSeen.size() >= 10) {
 						lastTenSeen.pop_front();
 					}
+
 					lastTenSeenOutput.clear(); //Not sure if it is correct method
 					pair<String,double> lTSO (outputStr, 1-similarity);
 					lastTenSeen.push_back(lTSO);
@@ -682,6 +709,17 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
                     outputStr = "Unknown";
 					currentseen = outputStr;
                 }
+				
+				int cont = dequeContains(totalDetection, outputStr);
+				if (cont >= 0)
+				{
+					totalDetection[cont].second += 1;
+				}
+				else {
+					pair<String,int> tD (outputStr, 1);
+					totalDetection.push_back(tD);
+				}
+				
                 cout << "Identity: " << outputStr << ". Similarity: " << similarity << endl;
 
                 // Show the confidence rating for the recognition in the mid-top of the display.
@@ -838,6 +876,15 @@ void recognizeAndTrainUsingWebcam(VideoCapture &videoCapture, CascadeClassifier 
         if (keypress == VK_ESCAPE) {   // Escape Key
             // Quit the program!
 			saveDatabase();
+			// For demonstration purposes...
+			printDeque(totalDetection);
+			int totalFaces = 0;
+			for (int i=0; i < totalDetection.size(); i++)
+			{
+				totalFaces += totalDetection.at(i).second;
+			}
+			cout << "Total faces detected: " << totalFaces << endl;
+
             break;
         }
 
