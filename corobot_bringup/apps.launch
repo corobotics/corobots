@@ -16,5 +16,5 @@
      <param name="device" value="/dev/videoright" />
      <param name="csvfile" value="$(find corobot_qrcode)/barcodePoints.csv" />
     </node>
-
+	<node pkg="face_recognition" type="WebcamFaceRec" name="WebcamFaceRec" args="1" />
 </launch>
