@@ -379,11 +379,11 @@ void APF::updateObstacleList(list<Polar>& objects){
         double obsAbsA = atan2(obs.y-pose.y,obs.x-pose.x);
         double obsRelA = pose.theta - obsAbsA;
         while (obsRelA > 2*M_PI) obsRelA -= 2*M_PI;
-        while (obsRelA < -2*M_PI) obsRelA += 2*M_PI;
+        while (obsRelA <= 0) obsRelA += 2*M_PI;
         ROS_DEBUG("APF, Obj(%d) Distance:\t%.2f Angle:\t%.3f ", ++objIndex, obsD, obsRelA);
 
-        if((obsD > D_OBS) || (lastScanTime - it->lastT > OBS_CACHE_TIMEOUT) ||
-           (obsRelA < -M_PI/2) || (obsRelA > M_PI/2)) {
+        if ((obsD > D_OBS) || (lastScanTime - it->lastT > OBS_CACHE_TIMEOUT) ||
+           ((obsRelA > M_PI/2) && (obsRelA < 3*M_PI/2))) {
             ss.str(""); ss << "(" << obs.x << ", " << obs.y << "), rem : " << objIndex;
             activeObstacleList.erase(it);
             

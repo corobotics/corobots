@@ -6,6 +6,7 @@ from corobot_common.msg import Pose
 
 def reduce_covariance(cov):
     """Convert a flat 6x6 covariance matrix into a flat 3x3."""
+    """ 6 variances are for linear x, y, z and rotate x, y, z """
     return (cov[0],  cov[1],  cov[5],
             cov[6],  cov[7],  cov[11],
             cov[30], cov[31], cov[35])
