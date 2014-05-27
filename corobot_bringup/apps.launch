@@ -5,6 +5,7 @@
     </node>
 
     <node pkg="corobot_localization" type="localization.py" name="ekf"/>
+<!--    <node pkg="corobot_localization" type="raj_test.py" name="raj_test"/> -->
     <node pkg="corobot_obstacle_avoidance" type="obstacle_avoidance" name="obstacle_avoidance">
       <remap from="cmd_vel" to="mobile_base/commands/velocity" />
     </node>
@@ -16,5 +17,5 @@
      <param name="device" value="/dev/videoright" />
      <param name="csvfile" value="$(find corobot_qrcode)/barcodePoints.csv" />
     </node>
-	<node pkg="face_recognition" type="WebcamFaceRec" name="WebcamFaceRec" args="1" />
+    <!--<node pkg="face_recognition" type="WebcamFaceRec" args="1" name="WebcamFaceRec"/>-->
 </launch>

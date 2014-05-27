@@ -10,11 +10,14 @@ from nav_msgs.msg import Odometry
 from ekf import EKF
 from utils import odom_to_pose
 
+from raj_test import *
+
 # Expected frequency of odom updates, in Hz.
 ODOM_FREQ = 10.0
 
 def odom_callback(odom):
     ekf.predict(odom_to_pose(odom))
+    #print ekf.get_pose()
     pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):

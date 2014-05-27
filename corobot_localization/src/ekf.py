@@ -1,10 +1,12 @@
-from math import pi, copysign
+from math import pi, copysign, sqrt, cos, sin
 
 from numpy.matlib import matrix
 
 from corobot_common.msg import Pose
 from utils import column_vector, coord_transform, get_offset, reduce_covariance
 import rospy
+
+from raj_test import *
 
 tau = pi * 2.0
 ACCEL_ANGLE_BONUS = 0.052 # should come from a file of calibration data
@@ -29,7 +31,7 @@ class EKF(object):
         self.odom_state = None
         self.lastdt = rospy.get_time() - 1
 
-    def state_tuple(self, state=None):
+    def state_tuple(self, state = None):
         """Returns a tuple of the given state matrix: (x, y, theta)"""
         if state is None:
             state = self.state
@@ -73,6 +75,7 @@ class EKF(object):
         # this if statement says that if we're lost in theta, don't worry about it.
         if self.covariance[2,2] < 1000:
             while pose.theta - self.state[2] > pi:
+		# why do this? instead of fmod(pose.theta, 2*math.pi)?
                 pose.theta -= tau
             while self.state[2] - pose.theta > pi:
                 pose.theta += tau
@@ -95,10 +98,12 @@ class EKF(object):
     def predict(self, odom_pose):
         """Perform an EKF prediction step using odometry information."""
         delta = self.get_odom_delta(odom_pose)
+
         if delta is None:
             # Can't do a delta update the first time.
             return
         dx, dy, dt = self.state_tuple(delta)
+
         if abs(dt) > 0:
             print("Nonzero rotation detected at",rospy.get_time())
             if rospy.get_time() - self.lastdt > 0.25:
@@ -110,9 +115,25 @@ class EKF(object):
         # State prediction; nice and simple.
         self.state = self.state + delta
         # Use 50% of the delta x/y values as covariance, and 200% theta.
+
+	dist = sqrt(dx*dx + dy*dy)
+	fwderr = 0.05 * dist
+	sideerr = 0.1 * dist
+	yawerr  = 0.2 * dt
+	cth = cos(odom_pose.theta)
+	sth = sin(odom_pose.theta)
+
+	V = matrix([
+		[cth*cth*fwderr + sth*sth*sideerr, sth*cth*(sideerr - fwderr)      , 0.0   ],
+		[sth*cth*(sideerr - fwderr)      , sth*sth*fwderr + cth*cth*sideerr, 0.0   ],
+		[0.0                             , 0.0                             , yawerr]])
+
+	"""
         V = matrix([
             [abs(dx) * 0.5, 0.0, 0.0],
             [0.0, abs(dy) * 0.5, 0.0],
             [0.0, 0.0, abs(dt) * 2.0]])
+	"""
+
         # Covariance prediction; add our custom covariance assumptions.
         self.covariance = self.covariance + V
