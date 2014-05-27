@@ -9,6 +9,8 @@
 #include "CSVReader.h"
 
 #define PI 3.14159265
+// distance from camera to center of robot
+#define CAMERA_OFFSET 0.16 
 
 typedef struct {
 	 int x, y;

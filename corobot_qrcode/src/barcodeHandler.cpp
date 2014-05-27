@@ -87,40 +87,46 @@ void BarcodeHandler::image_callback(Image &image) {
 
 	ROS_INFO_STREAM("BCTHETA:! ----------"<<bctheta);
 
-        float realx, realy = 0.0;
+        float camx, camy = 0.0;
         ROS_INFO_STREAM("Barcode: " << symbol->get_data());
         ROS_INFO_STREAM("cbx " << cbx << " " << "cby " << cby << " " << "cbo " << cbtheta << " " << "alpha " << alpha << " " << "gamma " << gamma << " " << "bcx " << bcx << " " << "bcy " << bcy << " " << "bco " << bctheta);
 
         if (barcodeOrientation.compare("N") == 0) {
-            realx = barcodeX + bcx;
-            realy = barcodeY + bcy;
+            camx = barcodeX + bcx;
+            camy = barcodeY + bcy;
         } else if (barcodeOrientation.compare("S") == 0) {
-            realx = barcodeX - bcx;
-            realy = barcodeY - bcy;
+            camx = barcodeX - bcx;
+            camy = barcodeY - bcy;
             bctheta += PI;
         } else if (barcodeOrientation.compare("E") == 0) {
-            realx = barcodeX + bcy;
-            realy = barcodeY - bcx;
+            camx = barcodeX + bcy;
+            camy = barcodeY - bcx;
             bctheta += PI * 1.5;
         } else if (barcodeOrientation.compare("W") == 0) {
-            realx = barcodeX - bcy;
-            realy = barcodeY + bcx;
+            camx = barcodeX - bcy;
+            camy = barcodeY + bcx;
             bctheta += PI * 0.5;
         }
 
+        float robx, roby;
         if(!(isLeft(device_name))){
-          bctheta+=PI;
-          ROS_INFO_STREAM("Right Camera");
+            bctheta+=PI;
+            robx += CAMERA_OFFSET*cos(bctheta+PI/2);
+            roby += CAMERA_OFFSET*sin(bctheta+PI/2);
+            ROS_INFO_STREAM("Right Camera");
         }
         else{
-          ROS_INFO_STREAM("Left Camera");
+            robx += CAMERA_OFFSET*cos(bctheta-PI/2);
+            roby += CAMERA_OFFSET*sin(bctheta-PI/2);
+            ROS_INFO_STREAM("Left Camera");
         }
 	// Publishing the msg
         
-        ROS_INFO_STREAM("realx " << realx << " " << "realy " << realy << " " << "bctheta " <<  bctheta);
+        ROS_INFO_STREAM("camx " << camx << " " << "camy " << camy << " " << "bctheta " <<  bctheta);
+        ROS_INFO_STREAM("robx " << robx << " " << "roby " << roby << " " << "bctheta " <<  bctheta);
         
-        msg.x = realx;
-        msg.y = realy;
+        msg.x = robx;
+        msg.y = roby;
         msg.theta = bctheta;
         for (int i = 0; i < 9; i++) {
             msg.cov[i] = 0;
