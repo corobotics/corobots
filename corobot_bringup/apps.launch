@@ -18,5 +18,4 @@
      <param name="csvfile" value="$(find corobot_qrcode)/barcodePoints.csv" />
     </node>
     <!--<node pkg="face_recognition" type="WebcamFaceRec" args="1" name="WebcamFaceRec"/>-->
-
 </launch>
