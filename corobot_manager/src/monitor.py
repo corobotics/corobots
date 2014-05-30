@@ -45,7 +45,7 @@ class CorobotMonitor():
         self.win.mainloop()
 
     def pose_callback(self, pose_message):
-        self.win.setPose(pose_message.x, pose_message.y, pose_message.theta)
+        self.win.setPose(pose_message.x, pose_message.y, pose_message.theta, pose_message.cov)
         #self.win.after(100,rospy.spin_once())
 
     def rawnav_callback(self, rawnav_message):
