@@ -19,12 +19,24 @@ def odom_callback(odom):
     ekf.predict(odom_to_pose(odom))
     #print ekf.get_pose()
     pose_pub.publish(ekf.get_pose())
+    pose = ekf.get_pose()
+    rospy.loginfo("After odom pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
 
 def laser_callback(pose):
-    ekf.update_pos(pose)
+    if ekf.uselaser:
+    	rospy.loginfo("Laser says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
+    	ekf.update_pos(pose)
+    	pose = ekf.get_pose()
+    	rospy.loginfo("After laser pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
+	ekf.uselaser = False
 
 def qrcode_callback(pose):
-    ekf.update_pos(pose)
+    if ekf.useqr:
+    	rospy.loginfo("QR says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
+    	ekf.update_pos(pose)
+    	pose = ekf.get_pose()
+    	rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
+	ekf.useqr = False
 
 def main():
     global ekf, pose_pub;
@@ -37,7 +49,7 @@ def main():
     # the same callback (yay dynamic typing!)
     #rospy.Subscriber("odom_combined", PoseWithCovarianceStamped, odom_callback)
     #rospy.Subscriber("/corobot_pose_ekf/odom_semicombined", PoseWithCovarianceStamped, odom_callback)
-    #rospy.Subscriber("laser_pose", Pose, laser_callback)
+    rospy.Subscriber("laser_pose", Pose, laser_callback)
     rospy.Subscriber("qrcode_pose", Pose, qrcode_callback)
     rospy.spin()
 

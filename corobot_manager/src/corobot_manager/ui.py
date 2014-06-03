@@ -1,5 +1,6 @@
 from Tkinter import *
 #from corobot import Robot
+import math
 
 class CorobotMonitorUI(Tk):
 
@@ -21,6 +22,8 @@ class CorobotMonitorUI(Tk):
         self.yinfo.pack()
         self.thinfo = Label(self.frame, text="Theta: 0.0", font=("Helvetica", 24))
         self.thinfo.pack()
+	self.covinfo = Label(self.frame, text="StDev: (0.0, 0.0, 0.0)", font=("Helvetica",18))
+	self.covinfo.pack()
 
         self.absGoalInfo = Label(self.frame, text="AbsGoal: -", font=("Helvetica", 24))
         self.absGoalInfo.pack()
@@ -59,10 +62,11 @@ class CorobotMonitorUI(Tk):
     """with Robot("127.0.0.1", 15001) as r:
             r.nav_to(self.tBox.get())"""
 
-    def setPose(self, x, y, theta):
+    def setPose(self, x, y, theta, cov):
         self.xinfo.configure(text="X: {0:6.3f}".format(x))
         self.yinfo.configure(text="Y: {0:6.3f}".format(y))
         self.thinfo.configure(text="Theta: {0:+4.2f}".format(theta))
+	self.covinfo.configure(text="StDev: ({0:6.3g},{1:6.3g},{2:6.3g})".format(math.sqrt(cov[0]),math.sqrt(cov[4]),math.sqrt(cov[8])))
 
     def setRawnavMsg(self, txt):
         txt = "RawNav: " + txt

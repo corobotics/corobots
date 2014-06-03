@@ -108,16 +108,18 @@ void BarcodeHandler::image_callback(Image &image) {
             bctheta += PI * 0.5;
         }
 
+	//bctheta = fmod(bctheta,2*PI);
+
         float robx, roby;
         if(!(isLeft(device_name))){
             bctheta+=PI;
-            robx += CAMERA_OFFSET*cos(bctheta+PI/2);
-            roby += CAMERA_OFFSET*sin(bctheta+PI/2);
+            robx = camx + CAMERA_OFFSET*cos(bctheta+PI/2);
+            roby = camy + CAMERA_OFFSET*sin(bctheta+PI/2);
             ROS_INFO_STREAM("Right Camera");
         }
         else{
-            robx += CAMERA_OFFSET*cos(bctheta-PI/2);
-            roby += CAMERA_OFFSET*sin(bctheta-PI/2);
+            robx = camx + CAMERA_OFFSET*cos(bctheta-PI/2);
+            roby = camy + CAMERA_OFFSET*sin(bctheta-PI/2);
             ROS_INFO_STREAM("Left Camera");
         }
 	// Publishing the msg
@@ -132,14 +134,14 @@ void BarcodeHandler::image_callback(Image &image) {
             msg.cov[i] = 0;
         }
 
-        msg.cov[0] = 0.05;
-        msg.cov[4] = 0.05;      
+        msg.cov[0] = 0.01; // 10 cm stdev, squared for variance
+        msg.cov[4] = 0.01; // ditto - should be dependent on angle but not for now     
 
         if(cbtheta > 1.3 && cbtheta < 1.8){
-        msg.cov[8] = 0.1;
+        msg.cov[8] = 0.01; // near-to-perpendicular, std(theta) of 0.1 rad
         }
         else{
-        msg.cov[8] = 0.3;
+        msg.cov[8] = 0.09; // otherwise, 0.3rad
         }
 
 		checkIfNewQR(msg); // do the publisher.publish(msg); inside chechIfNewQR once it Qrcode counting works perfect

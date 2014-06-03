@@ -30,6 +30,8 @@ class EKF(object):
         # Need to store old odom state for delta updates.
         self.odom_state = None
         self.lastdt = rospy.get_time() - 1
+	self.useqr = True
+	self.uselaser = True
 
     def state_tuple(self, state = None):
         """Returns a tuple of the given state matrix: (x, y, theta)"""
@@ -67,8 +69,8 @@ class EKF(object):
         return odom_delta
 
     def update_pos(self, pose):
-        """Convenience function to do a position update."""
-        # assuming that the ekf is never lost by more than pi (except on startup),
+	"""Convenience function to do a position update."""
+	# assuming that the ekf is never lost by more than pi (except on startup),
         # we can intelligently mod the incoming pose angle to be close to the current estimate
         # note that the ordered if statements mean that if we are super-lost, we
         # will randomly add some pi but not infinitely loop.
@@ -103,6 +105,9 @@ class EKF(object):
             # Can't do a delta update the first time.
             return
         dx, dy, dt = self.state_tuple(delta)
+	#skip the update if we aren't moving
+	if abs(dx) < 0.00001 and abs(dy) < 0.00001 and abs(dt) < 0.00001:
+	    return
 
         if abs(dt) > 0:
             print("Nonzero rotation detected at",rospy.get_time())
@@ -117,17 +122,21 @@ class EKF(object):
         # Use 50% of the delta x/y values as covariance, and 200% theta.
 
 	dist = sqrt(dx*dx + dy*dy)
-	fwderr = 0.05 * dist
-	sideerr = 0.1 * dist
-	yawerr  = 0.2 * dt
+	fwderr = 0.2 * dist
+	sideerr = 0.2 * dist
+	yawerr  = 0.5 * dt + 0.1 * dist
 	cth = cos(odom_pose.theta)
 	sth = sin(odom_pose.theta)
+	dev = matrix([cth*fwderr - sth*sideerr, sth*fwderr + cth*sideerr, yawerr])
+	V = dev.transpose()*dev
+	rospy.loginfo("Odom cov: %s",V)
 
+	'''
 	V = matrix([
 		[cth*cth*fwderr + sth*sth*sideerr, sth*cth*(sideerr - fwderr)      , 0.0   ],
 		[sth*cth*(sideerr - fwderr)      , sth*sth*fwderr + cth*cth*sideerr, 0.0   ],
 		[0.0                             , 0.0                             , yawerr]])
-
+	'''
 	"""
         V = matrix([
             [abs(dx) * 0.5, 0.0, 0.0],
@@ -137,3 +146,7 @@ class EKF(object):
 
         # Covariance prediction; add our custom covariance assumptions.
         self.covariance = self.covariance + V
+	# now we can get a sensor update again:
+	self.uselaser = True
+	self.useqr = True
+
