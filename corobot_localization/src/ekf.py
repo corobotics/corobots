@@ -68,8 +68,18 @@ class EKF(object):
         self.odom_origin = get_offset(self.state, self.odom_state)
         return odom_delta
 
-    def update_pos(self, pose):
+    def update_pos(self, pose, absolute=False):
 	"""Convenience function to do a position update."""
+	# if we have absolute (i.e. QR-code) data, and it's far from our current
+	# estimate, then assume we're lost and reset the EKF.
+	if absolute:
+		dx = self.state[0]-pose.x
+		dy = self.state[1]-pose.y
+		dt = fmod(self.state[2]-pose.theta,2*pi)
+		if dx*dx + dy*dy > 0.5 or abs(dt) > 0.5:
+			self.state = column_vector(pose.x, pose.y, pose.theta)
+			self.covariance = matrix(pose.cov).reshape(3, 3)
+			return
 	# assuming that the ekf is never lost by more than pi (except on startup),
         # we can intelligently mod the incoming pose angle to be close to the current estimate
         # note that the ordered if statements mean that if we are super-lost, we
@@ -124,7 +134,7 @@ class EKF(object):
 	dist = sqrt(dx*dx + dy*dy)
 	fwderr = 0.2 * dist
 	sideerr = 0.2 * dist
-	yawerr  = 0.5 * dt + 0.1 * dist
+	yawerr  = (0.5 * dt + 0.1 * dist) * 4
 	cth = cos(odom_pose.theta)
 	sth = sin(odom_pose.theta)
 	dev = matrix([cth*fwderr - sth*sideerr, sth*fwderr + cth*sideerr, yawerr])

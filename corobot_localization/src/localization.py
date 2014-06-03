@@ -33,7 +33,7 @@ def laser_callback(pose):
 def qrcode_callback(pose):
     if ekf.useqr:
     	rospy.loginfo("QR says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
-    	ekf.update_pos(pose)
+    	ekf.update_pos(pose,True)
     	pose = ekf.get_pose()
     	rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
 	ekf.useqr = False
