@@ -1,4 +1,4 @@
-from math import pi, copysign, sqrt, cos, sin
+from math import pi, copysign, sqrt, cos, sin, fmod
 
 from numpy.matlib import matrix
 

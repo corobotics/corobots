@@ -129,13 +129,13 @@ def get_expected_scan(pose):
 def get_sample_points(pose):
 	dx = 0.25
 	dy = 0.25
-	dt = 0.1
+	dt = 0.05
 	sample_offsets = [(0, 0, 0), (-2*dx, 0, 0), (-dx, 0, 0), (dx, 0, 0), (2*dx, 0, 0), \
 		(0, -2*dy, 0), (0, -dy, 0), (0, dy, 0), (0, 2*dy, 0), \
-		(0, 0, -3*dt), (0, 0, -2*dt), (0, 0, -dt), (0, 0, dt), (0, 0, 2*dt), (0, 0, 3*dt), \
-		(-0.25, -0.25, 0), (-0.25, 0.25, 0), (0.25, 0.25, 0), (0.25, -0.25, 0), \
-		(-0.25, 0, -0.2), (-0.25, 0, 0.2), (0.25, 0, -0.2), (0.25, 0, 0.2), \
-		(0, -0.25, -0.2), (0, -0.25, 0.2), (0, 0.25, -0.2), (0, 0.25, 0.2)]
+		(0,0,-4*dt),(0, 0, -3*dt), (0, 0, -2*dt), (0, 0, -dt), (0, 0, dt), (0, 0, 2*dt), (0, 0, 3*dt), (0,0,4*dt),\
+		(-dx, -dy, 0), (-dx, dy, 0), (dx, dy, 0), (dx, -dy, 0), \
+		(-dx, 0, -2*dt), (-dx, 0, 2*dt), (dx, 0, -2*dt), (dx, 0, 2*dt), \
+		(0, -dy, -2*dt), (0, -dy, 2*dt), (0, dy, -2*dt), (0, dy, 2*dt)]
 
 	samples = []
 	#pose = [i[0] for i in mat_pose.tolist()]
@@ -185,9 +185,9 @@ def get_laser_probability(obs, exp):
 	#rospy.loginfo("Obsv: %f Exp: %f",obs,exp)
 
 	# probability on y axis
-	p1 = 0.4
-	p2 = 0.6
-	p3 = 0.2 
+	p1 = 0.4 # obstacle closer than expected
+	p2 = 0.6 # obstacle near expected
+	p3 = 0.2 # obstacle farther than expected
 
 	# differences on x axis
 	d1 = 0.8
@@ -216,13 +216,16 @@ def get_laser_probability(obs, exp):
 def get_sample_probability(obs, exp):
 	
 	sample_probability = 1
+	goodscans = 0
 	for i in range(0, 640, laser_samples_inc):
 		if math.isnan(obs[i]):
 			continue
+		goodscans += 1
 		prob = get_laser_probability(obs[i], exp[int(i/laser_samples_inc)])
 		sample_probability *= prob 
 		#rospy.loginfo("Obs %f Exp %f Prob %f",obs[i],exp[int(i/laser_samples_inc)],prob)
-	
+		rospy.loginfo("%d good scan points",goodscans)
+
 	return sample_probability
 
 def laser_callback(scan):
@@ -263,7 +266,7 @@ def laser_callback(scan):
 	# this is probably wrong, but may help when lost or when
 	# there are too many obstacles about.
 	if count < probThresh:
-		rospy.loginfo("Skipping laser estimate, sum(P) = %6.3f",count)
+		rospy.loginfo("Skipping laser estimate, sum(P) = %6.3g",count)
 		return
 
 	mean_pose = [sum_x/count, sum_y/count, sum_theta/count]

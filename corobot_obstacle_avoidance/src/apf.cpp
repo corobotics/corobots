@@ -252,7 +252,7 @@ bool APF::pushIfUnique(corobot::SimplePose *sp){
 
     //publishing the obstacle's coordinates to the ch_obstacle topic
     stringstream ss; corobot_common::Goal topicMsg;
-    ss << "(" << sp->x << "," << sp->y << "), add : " << activeObstacleList.size();
+    ss << "(" << sp->x << ", " << sp->y << "), add : " << activeObstacleList.size();
     topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
 
     ROS_DEBUG("APF, current list Size: %u", activeObstacleList.size());

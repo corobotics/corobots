@@ -7,6 +7,7 @@ import subprocess
 import threading
 import time
 
+from sensor_msgs.msg import LaserScan
 from diagnostic_msgs.msg import *
 from corobot_common.msg import Pose
 from corobot_common.msg import Goal
@@ -69,6 +70,9 @@ class CorobotMonitor():
     def recovery_callback(self, recovery_msg):
         self.win.setRecoveryMsg(recovery_msg.name)	
     
+    def laserDisp_callback(self, laserDat):
+	self.win.setLaserMap(laserDat.angle_min, laserDat.range_min, laserDat.range_max, laserDat.angle_increment, laserDat.ranges)
+
     def diagnostics_callback(self, dArray):
 
         #print len(dArray.status)
@@ -105,10 +109,11 @@ class CorobotMonitor():
         rospy.Subscriber("ch_qrcodecount", Goal, self.qrCount_callback)
         rospy.Subscriber("ch_recovery", Goal, self.recovery_callback)
         rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
-        
+        rospy.Subscriber("scan", LaserScan, self.laserDisp_callback, queue_size = 1)
         t = batteryThread(0.5, self.win)
         t.daemon = True
         t.start()
+
 
 def main():
     cm = CorobotMonitor()
