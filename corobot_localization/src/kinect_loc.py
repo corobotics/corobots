@@ -224,9 +224,9 @@ def get_sample_probability(obs, exp):
 		prob = get_laser_probability(obs[i], exp[int(i/laser_samples_inc)])
 		sample_probability *= prob 
 		#rospy.loginfo("Obs %f Exp %f Prob %f",obs[i],exp[int(i/laser_samples_inc)],prob)
-		rospy.loginfo("%d good scan points",goodscans)
-
-	return sample_probability
+		
+	#rospy.loginfo("%d good scan points",goodscans)
+	return (sample_probability, goodscans)
 
 def laser_callback(scan):
 	print("laser callback")
@@ -245,10 +245,9 @@ def laser_callback(scan):
 	sample = pose
 	for sample in samplePoints:
 		newLaser = get_expected_scan(sample)
-		currentProbability = get_sample_probability(scan.ranges, newLaser)
+		(currentProbability, goodscans) = get_sample_probability(scan.ranges, newLaser)
 		sampleProbability.append(currentProbability)
 		#rospy.loginfo("Prob: %g",currentProbability)
-	#rospy.loginfo("%s",sampleProbability)
 	
 	sum_x = 0.0
 	sum_y = 0.0
@@ -261,6 +260,8 @@ def laser_callback(scan):
 		sum_y += sampleProbability[i] * sample[1]
 		sum_theta += sampleProbability[i] * sample[2]
 		count = count + sampleProbability[i]
+
+	rospy.loginfo("Prob: %6.3g from %d scan points", count, goodscans)
 
 	# if we don't like any of the samples, don't say anything.
 	# this is probably wrong, but may help when lost or when
