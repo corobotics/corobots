@@ -18,25 +18,35 @@ ODOM_FREQ = 10.0
 def odom_callback(odom):
     ekf.predict(odom_to_pose(odom))
     #print ekf.get_pose()
-    pose_pub.publish(ekf.get_pose())
     pose = ekf.get_pose()
     rospy.loginfo("After odom pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
+    if ekf.lastlaser is not None:
+        ekf.update_pos(ekf.lastlaser)
+        ekf.lastlaser = None
+        pose = ekf.get_pose()
+        rospy.loginfo("After laser pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
+    if ekf.lastqr is not None:
+        ekf.update_pos(ekf.lastqr,True)
+        ekf.lastqr = None
+        pose = ekf.get_pose()
+        rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
+    pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):
-    if ekf.uselaser:
-    	rospy.loginfo("Laser says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
-    	ekf.update_pos(pose)
-    	pose = ekf.get_pose()
-    	rospy.loginfo("After laser pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
-	ekf.uselaser = False
+    if ekf.lastlaser is None:
+        rospy.loginfo("Laser says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
+        ekf.lastlaser = pose
+        #pose = ekf.get_pose()
+        #rospy.loginfo("After laser pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
+        #ekf.uselaser = False
 
 def qrcode_callback(pose):
-    if ekf.useqr:
-    	rospy.loginfo("QR says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
-    	ekf.update_pos(pose,True)
-    	pose = ekf.get_pose()
-    	rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
-	ekf.useqr = False
+    if ekf.lastqr is None:
+        rospy.loginfo("QR says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
+        ekf.lastqr = pose
+        #pose = ekf.get_pose()
+        #rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
+        #ekf.useqr = False
 
 def main():
     global ekf, pose_pub;
