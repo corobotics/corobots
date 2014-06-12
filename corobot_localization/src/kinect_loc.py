@@ -33,7 +33,7 @@ startTheta = -0.513185441494
 endTheta = 0.49990695715
 thetaIncrement = 0.00158295687288 * laser_samples_inc
 
-probThresh = 1e-13
+probThresh = 0.5 # per good scan sample 
 
 def get_distance(x1, y1, x2, y2):
 	return math.sqrt(((x2 - x1)*(x2 - x1)) + ((y2 - y1)*(y2 - y1)))
@@ -262,16 +262,15 @@ def laser_callback(scan):
 		count = count + sampleProbability[i]
 
 	rospy.loginfo("Prob: %6.3g from %d scan points", count, goodscans)
+	mean_pose = [sum_x/count, sum_y/count, sum_theta/count]
+	rospy.loginfo("Mean pose: (%f, %f, %f)",mean_pose[0],mean_pose[1],mean_pose[2])
 
 	# if we don't like any of the samples, don't say anything.
 	# this is probably wrong, but may help when lost or when
 	# there are too many obstacles about.
-	if count < probThresh:
-		rospy.loginfo("Skipping laser estimate, sum(P) = %6.3g",count)
+	if count < (probThresh**goodscans):
+		rospy.loginfo("Skipping laser estimate, thresh = %6.3g",probThresh**goodscans)
 		return
-
-	mean_pose = [sum_x/count, sum_y/count, sum_theta/count]
-	rospy.loginfo("Mean pose: (%f, %f, %f)",mean_pose[0],mean_pose[1],mean_pose[2])
 
 	sum_cx = 0.0
 	sum_cy = 0.0

@@ -31,7 +31,7 @@ using namespace std;
 #define K_OBS 0.6
 
 /** Minimum rotational velocity. */
-#define MIN_OMEGA 0.35
+#define MIN_OMEGA 0.5
 
 /** Force angle beyond which we will turn instead of go straight. */
 #define ANGLE_WINDOW 0.28
