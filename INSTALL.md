@@ -7,7 +7,9 @@ See [corobot-extras](https://github.com/corobotics/corobot-extras) for detailed 
 		sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu quantal main" > /etc/apt/sources.list.d/ros-latest.list'
         wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
         sudo apt-get update
+        sudo apt-get install openni-dev libusb-1.0-0-dev
         sudo apt-get install -y ros-groovy-desktop-full ros-groovy-turtlebot
+        sudo apt-get install ros-groovy-openni-launch
 		sudo rosdep init
 		rosdep update
 		sudo apt-get install python-rosinstall 
