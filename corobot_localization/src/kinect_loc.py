@@ -268,7 +268,7 @@ def laser_callback(scan):
 	# if we don't like any of the samples, don't say anything.
 	# this is probably wrong, but may help when lost or when
 	# there are too many obstacles about.
-	if count < (probThresh**goodscans):
+	if count < (probThresh**goodscans) or goodscans <= 10:
 		rospy.loginfo("Skipping laser estimate, thresh = %6.3g",probThresh**goodscans)
 		return
 

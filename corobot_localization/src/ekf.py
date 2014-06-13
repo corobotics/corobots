@@ -6,7 +6,7 @@ from corobot_common.msg import Pose
 from utils import column_vector, coord_transform, get_offset, reduce_covariance
 import rospy
 
-from raj_test import *
+#from raj_test import *
 
 tau = pi * 2.0
 ACCEL_ANGLE_BONUS = 0.052 # should come from a file of calibration data
@@ -30,8 +30,10 @@ class EKF(object):
         # Need to store old odom state for delta updates.
         self.odom_state = None
         self.lastdt = rospy.get_time() - 1
-	self.useqr = True
-	self.uselaser = True
+        self.lastqr = None
+        self.lastlaser = None
+        self.useqr = True
+        self.uselaser = True
 
     def state_tuple(self, state = None):
         """Returns a tuple of the given state matrix: (x, y, theta)"""

@@ -10,7 +10,7 @@ from nav_msgs.msg import Odometry
 from ekf import EKF
 from utils import odom_to_pose
 
-from raj_test import *
+#from raj_test import *
 
 # Expected frequency of odom updates, in Hz.
 ODOM_FREQ = 10.0
@@ -20,20 +20,22 @@ def odom_callback(odom):
     #print ekf.get_pose()
     pose = ekf.get_pose()
     rospy.loginfo("After odom pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
-    if ekf.lastlaser is not None:
+    if ekf.lastlaser is not None and ekf.uselaser:
         ekf.update_pos(ekf.lastlaser)
         ekf.lastlaser = None
+        ekf.uselaser = False
         pose = ekf.get_pose()
         rospy.loginfo("After laser pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
-    if ekf.lastqr is not None:
+    if ekf.lastqr is not None and ekf.useqr:
         ekf.update_pos(ekf.lastqr,True)
         ekf.lastqr = None
+        ekf.useqr = False
         pose = ekf.get_pose()
         rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
     pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):
-    if ekf.lastlaser is None:
+    if ekf.uselaser:
         rospy.loginfo("Laser says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
         ekf.lastlaser = pose
         #pose = ekf.get_pose()
@@ -41,7 +43,7 @@ def laser_callback(pose):
         #ekf.uselaser = False
 
 def qrcode_callback(pose):
-    if ekf.lastqr is None:
+    if ekf.useqr:
         rospy.loginfo("QR says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
         ekf.lastqr = pose
         #pose = ekf.get_pose()
