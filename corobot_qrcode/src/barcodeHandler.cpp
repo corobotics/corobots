@@ -147,7 +147,7 @@ void BarcodeHandler::image_callback(Image &image) {
         }
         // OK, this is really horrible.  Will think more about why these values
         // seem to fit the data based on geometry and clean it up.
-        offthetav = thetav * offaxisv / (thetav + offaxisv);
+        double offthetav = thetav * offaxisv / (thetav + offaxisv);
         if ((barcodeOrientation.compare("N") == 0) ||
             (barcodeOrientation.compare("S") == 0)) {
             msg.cov[0] = onaxisv;
@@ -156,19 +156,19 @@ void BarcodeHandler::image_callback(Image &image) {
                 msg.cov[2] = msg.cov[6] = -1*thetav;
                 if (bcx < 0) {
                     msg.cov[1] = msg.cov[3] = offthetav;
-                    msg.cov[5] = msg.gov[7] = -offthetav;
+                    msg.cov[5] = msg.cov[7] = -offthetav;
                 } else {
                     msg.cov[1] = msg.cov[3] = -offthetav;
-                    msg.cov[5] = msg.gov[7] = offthetav;
+                    msg.cov[5] = msg.cov[7] = offthetav;
                 }
             } else {
                 msg.cov[2] = msg.cov[6] = thetav;
                 if (bcx < 0) {
                     msg.cov[1] = msg.cov[3] = offthetav;
-                    msg.cov[5] = msg.gov[7] = offthetav;
+                    msg.cov[5] = msg.cov[7] = offthetav;
                 } else {
                     msg.cov[1] = msg.cov[3] = -offthetav;
-                    msg.cov[5] = msg.gov[7] = -offthetav;
+                    msg.cov[5] = msg.cov[7] = -offthetav;
                 }
             }
         } else {
@@ -178,19 +178,19 @@ void BarcodeHandler::image_callback(Image &image) {
                 msg.cov[5] = msg.cov[7] = -1*thetav;
                 if (bcx < 0) {
                     msg.cov[1] = msg.cov[3] = -offthetav;
-                    msg.cov[2] = msg.gov[6] = offthetav;
+                    msg.cov[2] = msg.cov[6] = offthetav;
                 } else {
                     msg.cov[1] = msg.cov[3] = offthetav;
-                    msg.cov[2] = msg.gov[6] = -offthetav;
+                    msg.cov[2] = msg.cov[6] = -offthetav;
                 }
             } else {
                 msg.cov[5] = msg.cov[7] = thetav;
                 if (bcx < 0) {
                     msg.cov[1] = msg.cov[3] = -offthetav;
-                    msg.cov[2] = msg.gov[6] = -offthetav;
+                    msg.cov[2] = msg.cov[6] = -offthetav;
                 } else {
                     msg.cov[1] = msg.cov[3] = offthetav;
-                    msg.cov[2] = msg.gov[6] = offthetav;
+                    msg.cov[2] = msg.cov[6] = offthetav;
                 }
 
             }
