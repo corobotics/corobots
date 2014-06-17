@@ -134,17 +134,75 @@ void BarcodeHandler::image_callback(Image &image) {
             msg.cov[i] = 0;
         }
 
-        msg.cov[0] = 0.01; // 10 cm stdev, squared for variance
-        msg.cov[4] = 0.01; // ditto - should be dependent on angle but not for now     
-
-        if(cbtheta > 1.3 && cbtheta < 1.8){
-        msg.cov[8] = 0.01; // near-to-perpendicular, std(theta) of 0.1 rad
+        double onaxisv, offaxisv, thetav;
+        // theta variance depends on distance, not angle, apparently
+        if (distanceAvg < 0.7) {
+            thetav = 0.0008; 
+            onaxisv = 0.0001;
+            offaxisv = 0.00001;
+        } else {
+            thetav = 0.008;
+            onaxisv = 0.005 * distanceAvg;
+            offaxisv = 0.001 * distanceAvg;
         }
-        else{
-        msg.cov[8] = 0.09; // otherwise, 0.3rad
-        }
+        // OK, this is really horrible.  Will think more about why these values
+        // seem to fit the data based on geometry and clean it up.
+        offthetav = thetav * offaxisv / (thetav + offaxisv);
+        if ((barcodeOrientation.compare("N") == 0) ||
+            (barcodeOrientation.compare("S") == 0)) {
+            msg.cov[0] = onaxisv;
+            msg.cov[4] = offaxisv;
+            if (barcodeOrientation.compare("N") == 0) {
+                msg.cov[2] = msg.cov[6] = -1*thetav;
+                if (bcx < 0) {
+                    msg.cov[1] = msg.cov[3] = offthetav;
+                    msg.cov[5] = msg.gov[7] = -offthetav;
+                } else {
+                    msg.cov[1] = msg.cov[3] = -offthetav;
+                    msg.cov[5] = msg.gov[7] = offthetav;
+                }
+            } else {
+                msg.cov[2] = msg.cov[6] = thetav;
+                if (bcx < 0) {
+                    msg.cov[1] = msg.cov[3] = offthetav;
+                    msg.cov[5] = msg.gov[7] = offthetav;
+                } else {
+                    msg.cov[1] = msg.cov[3] = -offthetav;
+                    msg.cov[5] = msg.gov[7] = -offthetav;
+                }
+            }
+        } else {
+            msg.cov[0] = offaxisv;
+            msg.cov[4] = onaxisv;
+            if (barcodeOrientation.compare("W") == 0) {
+                msg.cov[5] = msg.cov[7] = -1*thetav;
+                if (bcx < 0) {
+                    msg.cov[1] = msg.cov[3] = -offthetav;
+                    msg.cov[2] = msg.gov[6] = offthetav;
+                } else {
+                    msg.cov[1] = msg.cov[3] = offthetav;
+                    msg.cov[2] = msg.gov[6] = -offthetav;
+                }
+            } else {
+                msg.cov[5] = msg.cov[7] = thetav;
+                if (bcx < 0) {
+                    msg.cov[1] = msg.cov[3] = -offthetav;
+                    msg.cov[2] = msg.gov[6] = -offthetav;
+                } else {
+                    msg.cov[1] = msg.cov[3] = offthetav;
+                    msg.cov[2] = msg.gov[6] = offthetav;
+                }
 
-		checkIfNewQR(msg); // do the publisher.publish(msg); inside chechIfNewQR once it Qrcode counting works perfect
+            }
+        }
+        msg.cov[8] = thetav;
+        if ((barcodeOrientation.compare("N") == 0) ||
+            (barcodeOrientation.compare("W") == 0))
+
+
+
+
+        checkIfNewQR(msg); // do the publisher.publish(msg); inside chechIfNewQR once it Qrcode counting works perfect
 	ROS_INFO_STREAM("FFFFFFFFFFFFFFFFFFFFFFFF");
 	ROS_INFO_STREAM(msg);
 	ros::Time timeNow = ros::Time::now();
