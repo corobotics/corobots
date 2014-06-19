@@ -135,8 +135,8 @@ class EKF(object):
 
 	dist = sqrt(dx*dx + dy*dy)
 	fwderr = 0.2 * dist
-	sideerr = 0.2 * dist
-	yawerr  = (0.5 * dt + 0.1 * dist) * 4
+	sideerr = 0.1 * dist
+	yawerr  = 0.5 * dt + 0.1 * dist #  * 4
 	cth = cos(odom_pose.theta)
 	sth = sin(odom_pose.theta)
 	dev = matrix([cth*fwderr - sth*sideerr, sth*fwderr + cth*sideerr, yawerr])
@@ -157,7 +157,13 @@ class EKF(object):
 	"""
 
         # Covariance prediction; add our custom covariance assumptions.
-        self.covariance = self.covariance + V
+        vel = dist * 30.0
+        F = matrix([
+                [1.0, 0.0, -sin(odom_pose.theta) * vel],
+                [0.0, 1.0, cos(odom_pose.theta) * vel],
+                [0.0, 0.0, 1.0]])
+                
+        self.covariance = F*self.covariance*F.transpose() + V
 	# now we can get a sensor update again:
 	self.uselaser = True
 	self.useqr = True
