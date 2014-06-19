@@ -153,7 +153,7 @@ void BarcodeHandler::image_callback(Image &image) {
             msg.cov[0] = onaxisv;
             msg.cov[4] = offaxisv;
             if (barcodeOrientation.compare("N") == 0) {
-                msg.cov[2] = msg.cov[6] = -1*thetav;
+                msg.cov[2] = msg.cov[6] = -0.5*thetav;
                 if (bcx < 0) {
                     msg.cov[1] = msg.cov[3] = offthetav;
                     msg.cov[5] = msg.cov[7] = -offthetav;
@@ -162,7 +162,7 @@ void BarcodeHandler::image_callback(Image &image) {
                     msg.cov[5] = msg.cov[7] = offthetav;
                 }
             } else {
-                msg.cov[2] = msg.cov[6] = thetav;
+                msg.cov[2] = msg.cov[6] = 0.5*thetav;
                 if (bcx < 0) {
                     msg.cov[1] = msg.cov[3] = offthetav;
                     msg.cov[5] = msg.cov[7] = offthetav;
@@ -175,7 +175,7 @@ void BarcodeHandler::image_callback(Image &image) {
             msg.cov[0] = offaxisv;
             msg.cov[4] = onaxisv;
             if (barcodeOrientation.compare("W") == 0) {
-                msg.cov[5] = msg.cov[7] = -1*thetav;
+                msg.cov[5] = msg.cov[7] = -0.5*thetav;
                 if (bcx < 0) {
                     msg.cov[1] = msg.cov[3] = -offthetav;
                     msg.cov[2] = msg.cov[6] = offthetav;
@@ -184,7 +184,7 @@ void BarcodeHandler::image_callback(Image &image) {
                     msg.cov[2] = msg.cov[6] = -offthetav;
                 }
             } else {
-                msg.cov[5] = msg.cov[7] = thetav;
+                msg.cov[5] = msg.cov[7] = 0.5*thetav;
                 if (bcx < 0) {
                     msg.cov[1] = msg.cov[3] = -offthetav;
                     msg.cov[2] = msg.cov[6] = -offthetav;
