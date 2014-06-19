@@ -270,6 +270,13 @@ def laser_callback(scan):
 	# there are too many obstacles about.
 	if count < (probThresh**goodscans) or goodscans <= 10:
 		rospy.loginfo("Skipping laser estimate, thresh = %6.3g",probThresh**goodscans)
+                # we'll spit out a bogus pose to let the GUI know we're still alive
+                posemsg = Pose()
+                posemsg.x = -1
+                posemsg.y = -1
+                posemsg.theta = 0
+                posemsg.cov = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                posepub.publish(posemsg)
 		return
 
 	sum_cx = 0.0
