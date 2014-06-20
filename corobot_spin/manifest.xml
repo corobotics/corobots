@@ -1,0 +1,18 @@
+<package>
+  <description brief="corobot_spinn">
+
+     corobot_spinn
+
+  </description>
+  <author>corobot</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/corobot_spin</url>
+  <depend package="corobot_common"/>
+  <depend package="corobot_localization"/>
+  <depend package="rospy"/>
+  <depend package="geometry_msgs"/>
+  <depend package="nav_msgs"/>
+</package>
+
+
