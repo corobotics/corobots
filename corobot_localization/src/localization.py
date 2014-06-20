@@ -35,6 +35,9 @@ def odom_callback(odom):
     pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):
+    # negative values are impossible, used as a sentinel to the GUI, ignore here
+    if pose.x < 0:
+        return
     if ekf.uselaser:
         rospy.loginfo("Laser says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
         ekf.lastlaser = pose
