@@ -51,8 +51,10 @@ class spin():
 
 
 def main():
-    argv = rospy.myargv(argv=sys.argv)
-    spin(10, 1, .35).start()
+    argv = sys.argv
+    for arg in argv:
+    	rospy.loginfo(arg)
+    spin(rospy.get_param("/rotate/nTurns"), rospy.get_param("/rotate/timePerTurn"),rospy.get_param("/rotate/angularV")).start()
 
 if __name__ == "__main__":
     main()

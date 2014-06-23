@@ -1,8 +1,12 @@
 <launch>
+	<arg name = "turn" />
+	<arg name = "time" />
+	<arg name = "vel" />
+
 	<node pkg="corobot_spin" type = "spin.py" name = "rotate">
-		<param name="nTurns" value="3"/>
-		<param name="timePerTurn" value="10"/>
-		<param name="angularV" value=".35"/>
+		<param name="nTurns" value="$(arg turn)"/>
+		<param name="timePerTurn" value="$(arg time)"/>
+		<param name="angularV" value="$(arg vel)"/>
 		<remap from="cmd_vel" to="mobile_base/commands/velocity"/>
 	</node>
 </launch>
