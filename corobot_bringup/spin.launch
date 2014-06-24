@@ -3,7 +3,7 @@
 	<arg name = "time" />
 	<arg name = "vel" />
 
-	<node pkg="corobot_spin" type = "spin.py" name = "rotate">
+	<node pkg="corobot_spin" type = "spin.py" name = "rotate" output = "screen">
 		<param name="nTurns" value="$(arg turn)"/>
 		<param name="timePerTurn" value="$(arg time)"/>
 		<param name="angularV" value="$(arg vel)"/>
