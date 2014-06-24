@@ -5,7 +5,7 @@ import sys
 from corobot_common.msg import Pose
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from math import atan2
+from math import atan2,pi
 
 pub = rospy.Publisher("cmd_vel", Twist)
 
@@ -26,34 +26,40 @@ class spin():
 	self.angularV = angularV
 
     def pose_callback(self, pose):
-	self.observed = odom_to_pose(pose).theta
+	self.observed =odom_to_pose(pose).theta
 
-    def timer_callback(self, event):
-	go = Twist()
-	go.linear.x = 0
-	go.angular.z = 0
-	pub.publish(go)
-	self.done = True
-	rospy.loginfo(self.expected)
-	rospy.loginfo(self.observed)
-    def start(self):
+    def pause_callback(self, event):
+	rospy.Timer(rospy.Duration(secs = self.timePerTurn),self.timer_callback,True)
 	self.done = False
-	rospy.init_node("rotate")
-	rospy.Subscriber("odom", Odometry, self.pose_callback)
-	self.expected = self.nTurns * self.timePerTurn * self.angularV
-	rospy.Timer(rospy.Duration(secs = self.nTurns * self.timePerTurn),self.timer_callback)
 	go = Twist()
 	go.linear.x = 0
 	go.angular.z = self.angularV
 	while(not self.done):
   	    pub.publish(go)
+
+    def timer_callback(self, event):
+	if(self.nTurns  > 1):
+	    rospy.Timer(rospy.Duration(secs = .5),self.pause_callback,True)
+	self.nTurns-=1
+	self.done = True
+	go = Twist()
+	go.linear.x = 0
+	go.angular.z = 0
+	rospy.loginfo(self.observed)
+	while(self.done):
+	    pub.publish(go)
+	
+
+    def start(self):
+	self.done = False
+	rospy.init_node("rotate")
+	rospy.Subscriber("odom", Odometry, self.pose_callback)
+	self.expected = self.nTurns * self.timePerTurn * self.angularV
+	self.pause_callback(None)
 	rospy.spin()
 
 
 def main():
-    argv = sys.argv
-    for arg in argv:
-    	rospy.loginfo(arg)
     spin(rospy.get_param("/rotate/nTurns"), rospy.get_param("/rotate/timePerTurn"),rospy.get_param("/rotate/angularV")).start()
 
 if __name__ == "__main__":
