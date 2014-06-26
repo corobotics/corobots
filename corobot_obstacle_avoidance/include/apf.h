@@ -19,7 +19,7 @@ using geometry_msgs::Point;
 using namespace std;
 
 /** The distance at which to switch from conical to constant goal attraction. */
-#define D_GOAL 0.2
+#define D_GOAL 0.25
 
 /** The distance at which to start paying attention to obstacles. */
 #define D_OBS 0.7
@@ -37,7 +37,7 @@ using namespace std;
 #define ANGLE_WINDOW 0.28
 
 /** Max allowed forward velocity. */
-#define MAX_VEL 0.3
+#define MAX_VEL 0.30
 
 /** Num seconds after which obstacles leave the cache (unless seen again). */
 #define OBS_CACHE_TIMEOUT 10

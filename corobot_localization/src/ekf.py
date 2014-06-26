@@ -29,7 +29,8 @@ class EKF(object):
             [   0.0,    0.0, 1000.0]])
         # Need to store old odom state for delta updates.
         self.odom_state = None
-        self.lastdt = rospy.get_time() - 1
+        self.lastposdt = rospy.get_time() - 1
+        self.lastnegdt = rospy.get_time() - 1 
         self.lastqr = None
         self.lastlaser = None
         self.useqr = True
@@ -123,12 +124,16 @@ class EKF(object):
 
         if abs(dt) > 0:
             print("Nonzero rotation detected at",rospy.get_time())
-            if rospy.get_time() - self.lastdt > 0.25:
+            if (dt > 0 and rospy.get_time() - self.lastposdt > 0.25) \
+                or (dt < 0 and rospy.get_time - self.lastnegdt > 0.25):
                 # give the acceleration compensation
                 bonus = copysign(ACCEL_ANGLE_BONUS,dt)
                 print("Adding",bonus,"to robot dt")
                 delta[2] += bonus
-            self.lastdt = rospy.get_time()
+            if dt > 0:
+                self.lastposdt = rospy.get_time()
+            else:
+                self.lastnegdt = rospy.get_time()
         # State prediction; nice and simple.
         self.state = self.state + delta
         # Use 50% of the delta x/y values as covariance, and 200% theta.
@@ -157,10 +162,10 @@ class EKF(object):
 	"""
 
         # Covariance prediction; add our custom covariance assumptions.
-        vel = dist * 30.0
+        #vel = dist * 30.0
         F = matrix([
-                [1.0, 0.0, -sin(odom_pose.theta) * vel],
-                [0.0, 1.0, cos(odom_pose.theta) * vel],
+                [1.0, 0.0, -sin(odom_pose.theta) * dist],
+                [0.0, 1.0, cos(odom_pose.theta) * dist],
                 [0.0, 0.0, 1.0]])
                 
         self.covariance = F*self.covariance*F.transpose() + V
