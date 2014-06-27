@@ -49,6 +49,12 @@ class CorobotMonitor():
         self.win.setPose(pose_message.x, pose_message.y, pose_message.theta, pose_message.cov)
         #self.win.after(100,rospy.spin_once())
 
+    def laserpose_callback(self,pose_message):
+        if pose_message.x < 0 and pose_message.y < 0:
+            self.win.lasercolor = 'red'
+        else:
+            self.win.lasercolor = 'green'
+
     def rawnav_callback(self, rawnav_message):
         self.win.setRawnavMsg(rawnav_message.name)
 
@@ -101,6 +107,7 @@ class CorobotMonitor():
         rospy.init_node("corobot_monitor")
 
         rospy.Subscriber("pose", Pose, self.pose_callback)
+        rospy.Subscriber("laser_pose", Pose, self.laserpose_callback)
         rospy.Subscriber("ch_rawnav", Goal, self.rawnav_callback)
         rospy.Subscriber("ch_velcmd", Goal, self.velcmd_callback)
         rospy.Subscriber("ch_obstacle", Goal, self.obstacle_callback)

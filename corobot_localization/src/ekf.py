@@ -72,28 +72,28 @@ class EKF(object):
         return odom_delta
 
     def update_pos(self, pose, absolute=False):
-	"""Convenience function to do a position update."""
-	# if we have absolute (i.e. QR-code) data, and it's far from our current
-	# estimate, then assume we're lost and reset the EKF.
-	if absolute:
-		dx = self.state[0]-pose.x
-		dy = self.state[1]-pose.y
-		dt = fmod(self.state[2]-pose.theta,2*pi)
-		if dx*dx + dy*dy > 0.5 or abs(dt) > 0.5:
-			self.state = column_vector(pose.x, pose.y, pose.theta)
-			self.covariance = matrix(pose.cov).reshape(3, 3)
-			return
-	# assuming that the ekf is never lost by more than pi (except on startup),
+        """Convenience function to do a position update."""
+        # assuming that the ekf is never lost by more than pi (except on startup),
         # we can intelligently mod the incoming pose angle to be close to the current estimate
         # note that the ordered if statements mean that if we are super-lost, we
         # will randomly add some pi but not infinitely loop.
         # this if statement says that if we're lost in theta, don't worry about it.
         if self.covariance[2,2] < 1000:
             while pose.theta - self.state[2] > pi:
-		# why do this? instead of fmod(pose.theta, 2*math.pi)?
+                # why do this? instead of fmod(pose.theta, 2*math.pi)?
                 pose.theta -= tau
             while self.state[2] - pose.theta > pi:
                 pose.theta += tau
+        # if we have absolute (i.e. QR-code) data, and it's far from our current
+        # estimate, then assume we're lost and reset the EKF.
+        if absolute:
+                dx = self.state[0]-pose.x
+                dy = self.state[1]-pose.y
+                dt = fmod(self.state[2]-pose.theta,2*pi)
+                if dx*dx + dy*dy > 0.5 or abs(dt) > 0.5:
+                        self.state = column_vector(pose.x, pose.y, pose.theta)
+                        self.covariance = matrix(pose.cov).reshape(3, 3)
+                        return
         y = column_vector(pose.x, pose.y, pose.theta)
         W = matrix(pose.cov).reshape(3, 3)
         self.update(y, W)
@@ -118,48 +118,50 @@ class EKF(object):
             # Can't do a delta update the first time.
             return
         dx, dy, dt = self.state_tuple(delta)
-	#skip the update if we aren't moving
-	if abs(dx) < 0.00001 and abs(dy) < 0.00001 and abs(dt) < 0.00001:
-	    return
+        #skip the update if we aren't moving
+        if abs(dx) < 0.00001 and abs(dy) < 0.00001 and abs(dt) < 0.00001:
+            return
 
+        dist = sqrt(dx*dx + dy*dy)
         if abs(dt) > 0:
-            print("Nonzero rotation detected at",rospy.get_time())
-            if (dt > 0 and rospy.get_time() - self.lastposdt > 0.25) \
-                or (dt < 0 and rospy.get_time - self.lastnegdt > 0.25):
+            print("Nonzero rotation detected at",rospy.get_time(), \
+                    "Odom vel",dist*30)
+            if dist*30 < 0.1 and \
+                ((dt > 0 and rospy.get_time() - self.lastposdt > 0.25) \
+                or (dt < 0 and rospy.get_time() - self.lastnegdt > 0.25)):
                 # give the acceleration compensation
                 bonus = copysign(ACCEL_ANGLE_BONUS,dt)
                 print("Adding",bonus,"to robot dt")
                 delta[2] += bonus
-            if dt > 0:
-                self.lastposdt = rospy.get_time()
-            else:
-                self.lastnegdt = rospy.get_time()
+                if dt > 0:
+                    self.lastposdt = rospy.get_time()
+                else:
+                    self.lastnegdt = rospy.get_time()
         # State prediction; nice and simple.
         self.state = self.state + delta
         # Use 50% of the delta x/y values as covariance, and 200% theta.
 
-	dist = sqrt(dx*dx + dy*dy)
-	fwderr = 0.2 * dist
-	sideerr = 0.1 * dist
-	yawerr  = 0.5 * dt + 0.1 * dist #  * 4
-	cth = cos(odom_pose.theta)
-	sth = sin(odom_pose.theta)
-	dev = matrix([cth*fwderr - sth*sideerr, sth*fwderr + cth*sideerr, yawerr])
-	V = dev.transpose()*dev
-	rospy.loginfo("Odom cov: %s",V)
+        fwderr = 0.1 * dist
+        sideerr = 0.05 * dist
+        yawerr  = 0.5 * dt + 0.1 * dist * 4
+        cth = cos(odom_pose.theta)
+        sth = sin(odom_pose.theta)
+        dev = matrix([cth*fwderr - sth*sideerr, sth*fwderr + cth*sideerr, yawerr])
+        V = dev.transpose()*dev
+        rospy.loginfo("Odom cov: %s",V)
 
-	'''
-	V = matrix([
-		[cth*cth*fwderr + sth*sth*sideerr, sth*cth*(sideerr - fwderr)      , 0.0   ],
-		[sth*cth*(sideerr - fwderr)      , sth*sth*fwderr + cth*cth*sideerr, 0.0   ],
-		[0.0                             , 0.0                             , yawerr]])
-	'''
-	"""
+        '''
+        V = matrix([
+                [cth*cth*fwderr + sth*sth*sideerr, sth*cth*(sideerr - fwderr)      , 0.0   ],
+                [sth*cth*(sideerr - fwderr)      , sth*sth*fwderr + cth*cth*sideerr, 0.0   ],
+                [0.0                             , 0.0                             , yawerr]])
+        '''
+        """
         V = matrix([
             [abs(dx) * 0.5, 0.0, 0.0],
             [0.0, abs(dy) * 0.5, 0.0],
             [0.0, 0.0, abs(dt) * 2.0]])
-	"""
+        """
 
         # Covariance prediction; add our custom covariance assumptions.
         #vel = dist * 30.0
@@ -169,7 +171,7 @@ class EKF(object):
                 [0.0, 0.0, 1.0]])
                 
         self.covariance = F*self.covariance*F.transpose() + V
-	# now we can get a sensor update again:
-	self.uselaser = True
-	self.useqr = True
+        # now we can get a sensor update again:
+        self.uselaser = True
+        self.useqr = True
 

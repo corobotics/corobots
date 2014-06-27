@@ -16,10 +16,8 @@ from utils import odom_to_pose
 ODOM_FREQ = 10.0
 
 def odom_callback(odom):
-    ekf.predict(odom_to_pose(odom))
-    #print ekf.get_pose()
-    pose = ekf.get_pose()
-    rospy.loginfo("After odom pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
+    # by definition, if there is laser and/or QR data, it was there
+    # before this odometry came in, so process that first.
     if ekf.lastlaser is not None and ekf.uselaser:
         ekf.update_pos(ekf.lastlaser)
         ekf.lastlaser = None
@@ -32,6 +30,10 @@ def odom_callback(odom):
         ekf.useqr = False
         pose = ekf.get_pose()
         rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
+    ekf.predict(odom_to_pose(odom))
+    #print ekf.get_pose()
+    pose = ekf.get_pose()
+    rospy.loginfo("After odom pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
     pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):

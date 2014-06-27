@@ -48,12 +48,13 @@ class spin():
         self.nTurns-=1
         self.done = True
         go = Twist()
-        go.linear.x = 0 # fwd velocity between turns - make a parameter?
-        go.angular.z = 0
+        go.linear.x = 0.2 # fwd velocity between turns - make a parameter?
+        go.angular.z = self.angularV
         if(self.nTurns  >= 1):
-            rospy.Timer(rospy.Duration(secs = .5),self.pause_callback,True)
+            rospy.Timer(rospy.Duration(secs = 2),self.pause_callback,True)
         else:
             go.linear.x = 0
+            go.angular.z = 0
         rospy.loginfo("Theta: %g, Dist traveled: %g",self.observed,self.traveled)
         while(self.done):
             pub.publish(go)

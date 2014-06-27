@@ -8,35 +8,36 @@ class CorobotMonitorUI(Tk):
         """ Corobot general info monitor 
         """
         Tk.__init__(self)
-	
+        
         self.title("Corobot Monitor")
-	
-	self.Nav = [0,0]
-	self.obsCache = []
-	self.pos = [0,0,0]
+        
+        self.Nav = [0,0]
+        self.obsCache = []
+        self.pos = [0,0,0]
 
-	self.map = PhotoImage(file = '~corobot/corobot_ws/src/corobot_manager/src/corobot_manager/robotMap-1024.gif')
+        self.map = PhotoImage(file = '~corobot/corobot_ws/src/corobot_manager/src/corobot_manager/robotMap-1024.gif')
 
-	self.frame = Frame(self, width = 1000)
-	self.imgframe = Frame(self)
-	self.lazframe = Frame(self)
+        self.frame = Frame(self, width = 1000)
+        self.imgframe = Frame(self)
+        self.lazframe = Frame(self)
 
-	self.frame.grid(padx=8, pady=8, row = 0)
-	self.imgframe.grid(padx = 8, pady = 8, row = 1)
-	self.lazframe.grid(padx = 8, pady = 8, row = 0, column = 1, rowspan = 2)
+        self.frame.grid(padx=8, pady=8, row = 0)
+        self.imgframe.grid(padx = 8, pady = 8, row = 1)
+        self.lazframe.grid(padx = 8, pady = 8, row = 0, column = 1, rowspan = 2)
 
         self.label = Label(self.frame, text="Current Pose", font=("Helvetica", 24))
         self.label.grid(column = 0, row = 0, columnspan = 3)
-	
-	self.canvas = Canvas(self.imgframe, width = 1000, height = 350)
-	self.canvas.create_image(500,175, image = self.map)
-	self.canvas.grid(sticky = 'NE')
-	self.marker = self.canvas.create_oval(-5,5,5,-5,fill = 'red')
-	self.goal = self.canvas.create_oval(-5,5,5,-5, fill = 'green')
+        
+        self.canvas = Canvas(self.imgframe, width = 1000, height = 350)
+        self.canvas.create_image(500,175, image = self.map)
+        self.canvas.grid(sticky = 'NE')
+        self.marker = self.canvas.create_oval(-5,5,5,-5,fill = 'red')
+        self.goal = self.canvas.create_oval(-5,5,5,-5, fill = 'green')
 
-	self.lazcanvas = Canvas(self.lazframe, width = 400, height = 700, bg = 'white')
-	self.lazcanvas.grid(sticky = 'NE')
-	self.lazcanvas.create_oval(195, 605, 205, 595, fill = 'red')
+        self.lazcanvas = Canvas(self.lazframe, width = 400, height = 700, bg = 'white')
+        self.lazcanvas.grid(sticky = 'NE')
+        self.robotoval = self.lazcanvas.create_oval(195, 605, 205, 595, fill = 'red')
+        self.lasercolor = 'red'
 
         self.xinfo = Label(self.frame, text="X: 0.0", font=("Helvetica", 24))
         self.xinfo.grid(column = 0, row =2, sticky = 'W')
@@ -44,8 +45,8 @@ class CorobotMonitorUI(Tk):
         self.yinfo.grid(column = 1, row = 2)
         self.thinfo = Label(self.frame, text="Theta: 0.0", font=("Helvetica", 24))
         self.thinfo.grid(column = 2, row = 2, sticky = 'E')
-	self.covinfo = Label(self.frame, text="StDev: (0.0, 0.0, 0.0)", font=("Helvetica",18))
-	self.covinfo.grid(column = 0, row = 5, sticky = 'W')
+        self.covinfo = Label(self.frame, text="StDev: (0.0, 0.0, 0.0)", font=("Helvetica",18))
+        self.covinfo.grid(column = 0, row = 5, sticky = 'W')
 
         self.absGoalInfo = Label(self.frame, text="AbsGoal: -", font=("Helvetica", 24))
         self.absGoalInfo.grid(column = 0, row = 3, sticky = 'W')
@@ -85,41 +86,41 @@ class CorobotMonitorUI(Tk):
             r.nav_to(self.tBox.get())"""
 
     def setPose(self, x, y, theta, cov):
-	self.canvas.delete(self.marker)
-	self.pose = [x, y, theta]
-	self.marker = self.canvas.create_oval((x/.1328)-5, 350-(y/.1328) + 5, (x/.1328) + 5, 350-(y/.1328)-5, fill = 'red')
-	self.xinfo.configure(text="X: {0:6.3f}".format(x))
+        self.canvas.delete(self.marker)
+        self.pose = [x, y, theta]
+        self.marker = self.canvas.create_oval((x/.1328)-5, 350-(y/.1328) + 5, (x/.1328) + 5, 350-(y/.1328)-5, fill = 'red')
+        self.xinfo.configure(text="X: {0:6.3f}".format(x))
         self.yinfo.configure(text="Y: {0:6.3f}".format(y))
         self.thinfo.configure(text="Theta: {0:+4.2f}".format(theta))
-	self.covinfo.configure(text="StDev: ({0:6.3g},{1:6.3g},{2:6.3g})".format(math.sqrt(cov[0]),math.sqrt(cov[4]),math.sqrt(cov[8])))
+        self.covinfo.configure(text="StDev: ({0:6.3g},{1:6.3g},{2:6.3g})".format(math.sqrt(cov[0]),math.sqrt(cov[4]),math.sqrt(cov[8])))
 
     def setRawnavMsg(self, txt):
-	self.lazcanvas.delete("force")
-	txt = txt.split()
-	self.Nav = [float(txt[0][1:-1]),float(txt[1][:-1])]
-	self.lazcanvas.create_line(200, 600, math.sin(self.Nav[1]) * self.Nav[0] * -100 + 200,600 - math.cos(self.Nav[1])* self.Nav[0] * 100, arrow = LAST, tags = "force" )
+        self.lazcanvas.delete("force")
+        txt = txt.split()
+        self.Nav = [float(txt[0][1:-1]),float(txt[1][:-1])]
+        self.lazcanvas.create_line(200, 600, math.sin(self.Nav[1]) * self.Nav[0] * -100 + 200,600 - math.cos(self.Nav[1])* self.Nav[0] * 100, arrow = LAST, tags = "force" )
         text = "RawNav: <{0:4.2f}".format(float(txt[0][1:-1]))
-	text += ", {0:4.2f}>".format(float(txt[1][:-1]))
+        text += ", {0:4.2f}>".format(float(txt[1][:-1]))
         self.rawnavinfo.configure(text=text)
 
     def setObsMsg(self, txt):
-	text = txt.split()
-	if(text[0] != 'obs'):	
-	    if(text[1][:3] == 'add'):
-		text = text[0].split(',')
-	    pos = [float(text[0][1:-1]), float(text[1][:-2])]
-	    self.obsCache.append(pos)
-	    self.drawObs()
+        text = txt.split()
+        if(text[0] != 'obs'):        
+            if(text[1][:3] == 'add'):
+                text = text[0].split(',')
+            pos = [float(text[0][1:-1]), float(text[1][:-2])]
+            self.obsCache.append(pos)
+            self.drawObs()
         txt = "Obs: " + txt
         self.obsinfo.configure(text=txt)
 
     def setAbsGoalMsg(self, txt):
-	txt = txt.split()
-	pos = [float(txt[0][1:-1]), float(txt[1][:-1])]
-	txt = "AbsGoal: <{0:4.2f}".format(pos[0])
-	txt += ", {0:4.2f}>".format(pos[1])
-	self.canvas.delete(self.goal)
-	self.goal = self.canvas.create_oval((pos[0]/.1328)-5, 350 - (pos[1]/.1328) +5, (pos[0]/.1328) + 5, 350 - (pos[1]/.1328) - 5, fill ='green')
+        txt = txt.split()
+        pos = [float(txt[0][1:-1]), float(txt[1][:-1])]
+        txt = "AbsGoal: <{0:4.2f}".format(pos[0])
+        txt += ", {0:4.2f}>".format(pos[1])
+        self.canvas.delete(self.goal)
+        self.goal = self.canvas.create_oval((pos[0]/.1328)-5, 350 - (pos[1]/.1328) +5, (pos[0]/.1328) + 5, 350 - (pos[1]/.1328) - 5, fill ='green')
         self.absGoalInfo.configure(text=txt)
 
     def setNetForceMsg(self, txt):
@@ -152,29 +153,31 @@ class CorobotMonitorUI(Tk):
         self.laptopBatteryInfo.configure(text=txt)
 
     def setLaserMap(self, Omin, rmin, rmax, Oinc, dist):
-	self.lazcanvas.delete('kinectVision')
-	for i in range(0, len(dist)):
-	    if dist[i] < rmin or dist[i] > rmax or math.isnan(dist[i]):
-		continue
-	    theta = Omin + Oinc * i
-	    pos = [math.sin(theta) * dist[i]*-100 + 200, math.cos(theta) * dist[i]*100]
-	    self.lazcanvas.create_oval(pos[0] - 5,600 - pos[1]+5, pos[0] + 5,600 - pos[1] -5, tag = 'kinectVision')
-	self.drawObs()
+        self.lazcanvas.delete('kinectVision')
+        for i in range(0, len(dist)):
+            if dist[i] < rmin or dist[i] > rmax or math.isnan(dist[i]):
+                continue
+            theta = Omin + Oinc * i
+            pos = [math.sin(theta) * dist[i]*-100 + 200, math.cos(theta) * dist[i]*100]
+            self.lazcanvas.create_oval(pos[0] - 5,600 - pos[1]+5, pos[0] + 5,600 - pos[1] -5, tag = 'kinectVision')
+        self.drawObs()
+        self.lazcanvas.itemconfigure(self.robotoval,fill=self.lasercolor)
+        
     def drawObs(self):
-	self.lazcanvas.delete('obstacles')
-	tempHold = []
-	for obs in self.obsCache:
-	    posPol = [math.hypot(obs[0] - self.pose[0], obs[1] - self.pose[1]), math.atan2(obs[1] - self.pose[1], obs[0] - self.pose[0]) - self.pose[2]]
-	    while(posPol[1] < 0):
-		posPol[1] += 2* math.pi
-	    while(posPol[1] > 2 * math.pi):
-		posPol[1] -= 2 * math.pi
-	    if(posPol[1] <=  math.pi/2 or posPol[1] >= 3*math.pi/2):
-		tempHold.append(obs)
-		posRel = [posPol[0] * math.cos(posPol[1]), posPol[0] * -math.sin(posPol[1])]
-		self.lazcanvas.create_oval(posRel[1]*100 + 200 - 10,600 - posRel[0] * 100 + 10, posRel[1]*100 + 200  + 10, 600 - posRel[0] * 100 - 10, fill = 'red', tags = 'obstacles')
-	self.obsCache =tempHold
-		 	    
+        self.lazcanvas.delete('obstacles')
+        tempHold = []
+        for obs in self.obsCache:
+            posPol = [math.hypot(obs[0] - self.pose[0], obs[1] - self.pose[1]), math.atan2(obs[1] - self.pose[1], obs[0] - self.pose[0]) - self.pose[2]]
+            while(posPol[1] < 0):
+                posPol[1] += 2* math.pi
+            while(posPol[1] > 2 * math.pi):
+                posPol[1] -= 2 * math.pi
+            if(posPol[1] <=  math.pi/2 or posPol[1] >= 3*math.pi/2):
+                tempHold.append(obs)
+                posRel = [posPol[0] * math.cos(posPol[1]), posPol[0] * -math.sin(posPol[1])]
+                self.lazcanvas.create_oval(posRel[1]*100 + 200 - 10,600 - posRel[0] * 100 + 10, posRel[1]*100 + 200  + 10, 600 - posRel[0] * 100 - 10, fill = 'red', tags = 'obstacles')
+        self.obsCache =tempHold
+                             
 class CorobotUIMessage(Tk):
 
     def __init__(self, display_text, timeout, confirm, okay_text="Okay"):

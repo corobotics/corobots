@@ -33,7 +33,7 @@ startTheta = -0.513185441494
 endTheta = 0.49990695715
 thetaIncrement = 0.00158295687288 * laser_samples_inc
 
-probThresh = 0.5 # per good scan sample 
+probThresh = 0.44445 # per good scan sample 
 
 def get_distance(x1, y1, x2, y2):
 	return math.sqrt(((x2 - x1)*(x2 - x1)) + ((y2 - y1)*(y2 - y1)))
@@ -130,12 +130,14 @@ def get_sample_points(pose):
 	dx = 0.25
 	dy = 0.25
 	dt = 0.05
-	sample_offsets = [(0, 0, 0), (-2*dx, 0, 0), (-dx, 0, 0), (dx, 0, 0), (2*dx, 0, 0), \
+	'''sample_offsets = [(0, 0, 0), (-2*dx, 0, 0), (-dx, 0, 0), (dx, 0, 0), (2*dx, 0, 0), \
 		(0, -2*dy, 0), (0, -dy, 0), (0, dy, 0), (0, 2*dy, 0), \
 		(0,0,-4*dt),(0, 0, -3*dt), (0, 0, -2*dt), (0, 0, -dt), (0, 0, dt), (0, 0, 2*dt), (0, 0, 3*dt), (0,0,4*dt),\
 		(-dx, -dy, 0), (-dx, dy, 0), (dx, dy, 0), (dx, -dy, 0), \
 		(-dx, 0, -2*dt), (-dx, 0, 2*dt), (dx, 0, -2*dt), (dx, 0, 2*dt), \
-		(0, -dy, -2*dt), (0, -dy, 2*dt), (0, dy, -2*dt), (0, dy, 2*dt)]
+		(0, -dy, -2*dt), (0, -dy, 2*dt), (0, dy, -2*dt), (0, dy, 2*dt)]'''
+	sample_offsets = [(0, 0, 0), (-dx, 0, 0), (dx, 0, 0), (0, -dy, 0), (0, dy, 0), \
+		(0, 0, -3*dt), (0, 0, -2*dt), (0, 0, -dt), (0, 0, dt), (0, 0, 2*dt), (0, 0, 3*dt)]
 
 	samples = []
 	#pose = [i[0] for i in mat_pose.tolist()]
@@ -229,7 +231,7 @@ def get_sample_probability(obs, exp):
 	return (sample_probability, goodscans)
 
 def laser_callback(scan):
-	print("laser callback")
+	rospy.loginfo("laser callback, pose (%.4g, %.4g, %.4g)",pose.x,pose.y,pose.theta)
 	global posepub
 
 	# upon startup we won't have a place to bootstrap from, so ignore
