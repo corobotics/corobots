@@ -126,13 +126,13 @@ class EKF(object):
         if abs(dt) > 0:
             print("Nonzero rotation detected at",rospy.get_time(), \
                     "Odom vel",dist*30)
-            if dist*30 < 0.1 and \
-                ((dt > 0 and rospy.get_time() - self.lastposdt > 0.25) \
-                or (dt < 0 and rospy.get_time() - self.lastnegdt > 0.25)):
-                # give the acceleration compensation
-                bonus = copysign(ACCEL_ANGLE_BONUS,dt)
-                print("Adding",bonus,"to robot dt")
-                delta[2] += bonus
+            if dist*30 < 0.1:
+                if ((dt > 0 and rospy.get_time() - self.lastposdt > 0.25) \
+                 or (dt < 0 and rospy.get_time() - self.lastnegdt > 0.25)):
+                    # give the acceleration compensation
+                    bonus = copysign(ACCEL_ANGLE_BONUS,dt)
+                    print("Adding",bonus,"to robot dt")
+                    delta[2] += bonus
                 if dt > 0:
                     self.lastposdt = rospy.get_time()
                 else:
