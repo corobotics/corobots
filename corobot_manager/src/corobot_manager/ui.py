@@ -86,10 +86,11 @@ class CorobotMonitorUI(Tk):
             r.nav_to(self.tBox.get())"""
 
     def setPose(self, x, y, theta, cov):
-        self.canvas.delete(self.marker)
-        self.pose = [x, y, theta]
-        self.marker = self.canvas.create_oval((x/.1328)-5, 350-(y/.1328) + 5, (x/.1328) + 5, 350-(y/.1328)-5, fill = 'red')
-        self.xinfo.configure(text="X: {0:6.3f}".format(x))
+	self.canvas.delete(self.marker)
+	self.pose = [x, y, theta]
+	self.marker = self.canvas.create_oval((x/.1328)-5, 350-(y/.1328) + 5, (x/.1328) + 5, 350-(y/.1328)-5, fill = 'red')
+	self.canvas.create_oval((x/.1328)-1, 350-(y/.1328) + 1, (x/.1328) + 1, 350-(y/.1328)-1, fill = 'blue', outline = 'blue')
+	self.xinfo.configure(text="X: {0:6.3f}".format(x))
         self.yinfo.configure(text="Y: {0:6.3f}".format(y))
         self.thinfo.configure(text="Theta: {0:+4.2f}".format(theta))
         self.covinfo.configure(text="StDev: ({0:6.3g},{1:6.3g},{2:6.3g})".format(math.sqrt(cov[0]),math.sqrt(cov[4]),math.sqrt(cov[8])))
