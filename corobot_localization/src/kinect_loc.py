@@ -33,9 +33,11 @@ startTheta = -0.513185441494
 endTheta = 0.49990695715
 thetaIncrement = 0.00158295687288 * laser_samples_inc
 
-probThresh = 0.45 # per good scan sample 
+probThresh = 0.44 # per good scan sample 
 
 kinectOffset = -0.09 # distance of Kinect in front of robot center (negative for behind)
+
+lockedOn = False
 
 def get_distance(x1, y1, x2, y2):
     return math.sqrt(((x2 - x1)*(x2 - x1)) + ((y2 - y1)*(y2 - y1)))
@@ -129,24 +131,26 @@ def get_expected_scan(pose):
     return scan
 
 def get_sample_points(pose):
-    dx = 0.25
-    dy = 0.25
-    dt = 0.05
-    '''sample_offsets = [(0, 0, 0), (-2*dx, 0, 0), (-dx, 0, 0), (dx, 0, 0), (2*dx, 0, 0), \
+    dx = max(0.1,math.sqrt(pose.cov[0]))
+    dy = max(0.1,math.sqrt(pose.cov[4]))
+    dt = max(0.05,math.sqrt(pose.cov[8]))
+    if lockedOn:
+        sample_offsets = [(0, 0, 0), (-dx, 0, 0), (dx, 0, 0), (0, -dy, 0), (0, dy, 0), \
+          (0, 0, -3*dt), (0, 0, -2*dt), (0, 0, -dt), (0, 0, dt), (0, 0, 2*dt), (0, 0, 3*dt)]
+    else:
+        sample_offsets = [(0, 0, 0), (-2*dx, 0, 0), (-dx, 0, 0), (dx, 0, 0), (2*dx, 0, 0), \
         (0, -2*dy, 0), (0, -dy, 0), (0, dy, 0), (0, 2*dy, 0), \
         (0,0,-4*dt),(0, 0, -3*dt), (0, 0, -2*dt), (0, 0, -dt), (0, 0, dt), (0, 0, 2*dt), (0, 0, 3*dt), (0,0,4*dt),\
         (-dx, -dy, 0), (-dx, dy, 0), (dx, dy, 0), (dx, -dy, 0), \
         (-dx, 0, -2*dt), (-dx, 0, 2*dt), (dx, 0, -2*dt), (dx, 0, 2*dt), \
-        (0, -dy, -2*dt), (0, -dy, 2*dt), (0, dy, -2*dt), (0, dy, 2*dt)]'''
-    sample_offsets = [(0, 0, 0), (-dx, 0, 0), (dx, 0, 0), (0, -dy, 0), (0, dy, 0), \
-        (0, 0, -3*dt), (0, 0, -2*dt), (0, 0, -dt), (0, 0, dt), (0, 0, 2*dt), (0, 0, 3*dt)]
+        (0, -dy, -2*dt), (0, -dy, 2*dt), (0, dy, -2*dt), (0, dy, 2*dt)]
 
     samples = []
     #pose = [i[0] for i in mat_pose.tolist()]
     #samples.append(pose)
 
     for off in sample_offsets:
-        tmp = copy.deepcopy(pose)
+        tmp = [pose.x, pose.y, pose.theta]
         for i in range(3):
             tmp[i] += off[i]
         samples.append(tmp)
@@ -235,13 +239,15 @@ def get_sample_probability(obs, exp):
 def laser_callback(scan):
     rospy.loginfo("laser callback, pose (%.4g, %.4g, %.4g)",pose.x,pose.y,pose.theta)
     global posepub
+    global lockedOn
 
     # upon startup we won't have a place to bootstrap from, so ignore
     if pose.x < 0.1 and pose.y < 0.1:
         return
     
     currentPose = pose
-    samplePoints = get_sample_points([pose.x, pose.y, pose.theta])
+    samplePoints = get_sample_points(pose)
+
     #samplePoints = [(pose.x, pose.y, pose.theta)]
     sampleProbability = []
     #rospy.loginfo("%s", samplePoints)
@@ -272,17 +278,19 @@ def laser_callback(scan):
     # if we don't like any of the samples, don't say anything.
     # this is probably wrong, but may help when lost or when
     # there are too many obstacles about.
-    if count < (probThresh**goodscans) or goodscans <= 10:
+    if (count/len(samplePoints)) < (probThresh**goodscans) or goodscans <= 10:
         rospy.loginfo("Skipping laser estimate, thresh = %6.3g",probThresh**goodscans)
-                # we'll spit out a bogus pose to let the GUI know we're still alive
-                posemsg = Pose()
-                posemsg.x = -1
-                posemsg.y = -1
-                posemsg.theta = 0
-                posemsg.cov = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-                posepub.publish(posemsg)
+        lockedOn = False
+        # we'll spit out a bogus pose to let the GUI know we're still alive
+        posemsg = Pose()
+        posemsg.x = -1
+        posemsg.y = -1
+        posemsg.theta = 0
+        posemsg.cov = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        posepub.publish(posemsg)
         return
 
+    lockedOn = True
     sum_cx = 0.0
     sum_cy = 0.0
     sum_ctheta = 0.0
@@ -313,22 +321,35 @@ def laser_callback(scan):
     #cCount = sum_wt/(sum_wt*sum_wt - sum_wt2)
     cCount = 1#sum_wt
 
-    coveriance_pose = [sum_cx/cCount, sum_xy/cCount, sum_xt/cCount, \
+    # if we are near a discontinuity in the underlying distribution,
+    # the covariance will be bogus (not really Gaussian).  So for now
+    # we just don't report, but could consider sending mean pose
+    # with a default covariance matrix.
+    if sum_cx/cCount < 1e-6 or sum_cy/cCount < 1e-6 or sum_ctheta/cCount < 1e-6:
+        rospy.loginfo("Modifying laser estimate, diag(cov) = %.3g, %.3g, %.3g",\
+        sum_cx/cCount, sum_cy/cCount, sum_ctheta/cCount) 
+        # Use a sloppy independent covariance here, I guess?
+        covariance = [max(sum_cx/cCount, 1e-6), 0, 0, \
+                      0, max(sum_cy/cCount, 1e-6), 0, \
+                      0, 0, max(sum_ctheta/cCount, 1e-6)]
+    else:
+        covariance = [sum_cx/cCount, sum_xy/cCount, sum_xt/cCount, \
                sum_xy/cCount, sum_cy/cCount, sum_yt/cCount, \
                sum_xt/cCount, sum_yt/cCount, sum_ctheta/cCount]
     #rospy.loginfo("Covariance: %s", coveriance_pose)
     posemsg = Pose()
-    posemsg.x = mean_pose[0]
-    posemsg.y = mean_pose[1]
+    # convert from Kinect pose back to robot center pose
+    posemsg.x = mean_pose[0] - kinectOffset*math.cos(mean_pose[2])
+    posemsg.y = mean_pose[1] - kinectOffset*math.sin(mean_pose[2])
     posemsg.theta = mean_pose[2]
-    posemsg.cov = coveriance_pose
+    posemsg.cov = covariance
     posepub.publish(posemsg)
 
 def pose_callback(inPose):
     global pose
     pose = inPose
-    pose.x += kinectOffset*cos(pose.theta)
-    pose.y += kinectOffset*sin(pose.theta)
+    pose.x += kinectOffset*math.cos(pose.theta)
+    pose.y += kinectOffset*math.sin(pose.theta)
 
 def main():
     global posepub

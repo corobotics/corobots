@@ -78,9 +78,8 @@ class EKF(object):
         # note that the ordered if statements mean that if we are super-lost, we
         # will randomly add some pi but not infinitely loop.
         # this if statement says that if we're lost in theta, don't worry about it.
-        if self.covariance[2,2] < 1000:
+        if self.covariance[2,2] < 10:
             while pose.theta - self.state[2] > pi:
-                # why do this? instead of fmod(pose.theta, 2*math.pi)?
                 pose.theta -= tau
             while self.state[2] - pose.theta > pi:
                 pose.theta += tau
@@ -118,6 +117,10 @@ class EKF(object):
             # Can't do a delta update the first time.
             return
         dx, dy, dt = self.state_tuple(delta)
+        while dt > pi:
+            dt -= tau
+        while dt < -pi:
+            dt += tau
         #skip the update if we aren't moving
         if abs(dx) < 0.00001 and abs(dy) < 0.00001 and abs(dt) < 0.00001:
             return
@@ -141,8 +144,8 @@ class EKF(object):
         self.state = self.state + delta
         # Use 50% of the delta x/y values as covariance, and 200% theta.
 
-        fwderr = 0.1 * dist
-        sideerr = 0.05 * dist
+        fwderr = 0.2 * dist
+        sideerr = 0.1 * dist
         yawerr  = 0.5 * dt + 0.1 * dist * 4
         cth = cos(odom_pose.theta)
         sth = sin(odom_pose.theta)

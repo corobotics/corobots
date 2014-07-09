@@ -22,13 +22,13 @@ using namespace std;
 #define D_GOAL 0.25
 
 /** The distance at which to start paying attention to obstacles. */
-#define D_OBS 0.7
+#define D_OBS 1.2
 
 /** Goal gain (constant factor). */
 #define K_GOAL 0.35
 
 /** Obstacle gain (constant factor). */
-#define K_OBS 0.6
+#define K_OBS 0.5
 
 /** Minimum rotational velocity. */
 #define MIN_OMEGA 0.5

@@ -220,11 +220,11 @@ bool BarcodeHandler::checkIfNewQR(corobot_common::Pose qrPose){
             return false;
         }
     }*/
-
+/*
 	if(seenQRPose.x != -1.0)
 		if(abs(qrPose.x - seenQRPose.x) <= 1.5 && abs(qrPose.y - seenQRPose.y) <= 1.5 && abs(qrPose.theta - seenQRPose.theta) <= 0.7) //if the point approx matches the points in the list
             return false;
-        
+  */      
 	seenQRPose.x = qrPose.x; seenQRPose.y = qrPose.y; seenQRPose.theta = qrPose.theta;
 
 	stringstream ss; corobot_common::Goal topicMsg;
