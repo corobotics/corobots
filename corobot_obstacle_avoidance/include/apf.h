@@ -101,7 +101,10 @@ protected:
     /** Time of most recent scan, used for various timeouts. */
     double lastScanTime;
 
+    /** The angles that the Kinect is scanning at */
+    double angleMin, angleMax;
     std::vector<CachedPoint> activeObstacleList;
+
     
     /**
      * Converts a laser scan to a list of polar coordinates.

@@ -27,10 +27,12 @@ class CorobotMonitorUI(Tk):
 
         self.label = Label(self.frame, text="Current Pose", font=("Helvetica", 24))
         self.label.grid(column = 0, row = 0, columnspan = 3)
+<<<<<<< Updated upstream
         
-        self.canvas = Canvas(self.imgframe, width = 1000, height = 350)
-        self.canvas.create_image(500,175, image = self.map)
-        self.canvas.grid(sticky = 'NE')
+	self.canvas = Canvas(self.imgframe, width = self.map.width(), height = self.map.height())
+	self.canvas.create_image(self.map.width(),self.map.height()/2, image = self.map)
+	self.canvas.grid(sticky = 'NE')
+
         self.marker = self.canvas.create_oval(-5,5,5,-5,fill = 'red')
         self.goal = self.canvas.create_oval(-5,5,5,-5, fill = 'green')
 
@@ -38,7 +40,7 @@ class CorobotMonitorUI(Tk):
         self.lazcanvas.grid(sticky = 'NE')
         self.robotoval = self.lazcanvas.create_oval(195, 605, 205, 595, fill = 'red')
         self.lasercolor = 'red'
-
+        
         self.xinfo = Label(self.frame, text="X: 0.0", font=("Helvetica", 24))
         self.xinfo.grid(column = 0, row =2, sticky = 'W')
         self.yinfo = Label(self.frame, text="Y: 0.0", font=("Helvetica", 24))
@@ -88,8 +90,8 @@ class CorobotMonitorUI(Tk):
     def setPose(self, x, y, theta, cov):
 	self.canvas.delete(self.marker)
 	self.pose = [x, y, theta]
-	self.marker = self.canvas.create_oval((x/.1328)-5, 350-(y/.1328) + 5, (x/.1328) + 5, 350-(y/.1328)-5, fill = 'red')
-	self.canvas.create_oval((x/.1328)-1, 350-(y/.1328) + 1, (x/.1328) + 1, 350-(y/.1328)-1, fill = 'blue', outline = 'blue')
+	self.marker = self.canvas.create_oval((x/.1312)-5, self.map.height()-(y/.1312) + 5, (x/.1312) + 5, self.map.height()-(y/.1312)-5, fill = 'red')
+	self.canvas.create_oval((x/.1312)-1, self.map.height()-(y/.1312) + 1, (x/.1312) + 1, self.map.height()-(y/.1312)-1, fill = 'blue', outline = 'blue')
 	self.xinfo.configure(text="X: {0:6.3f}".format(x))
         self.yinfo.configure(text="Y: {0:6.3f}".format(y))
         self.thinfo.configure(text="Theta: {0:+4.2f}".format(theta))
@@ -116,12 +118,12 @@ class CorobotMonitorUI(Tk):
         self.obsinfo.configure(text=txt)
 
     def setAbsGoalMsg(self, txt):
-        txt = txt.split()
-        pos = [float(txt[0][1:-1]), float(txt[1][:-1])]
-        txt = "AbsGoal: <{0:4.2f}".format(pos[0])
-        txt += ", {0:4.2f}>".format(pos[1])
-        self.canvas.delete(self.goal)
-        self.goal = self.canvas.create_oval((pos[0]/.1328)-5, 350 - (pos[1]/.1328) +5, (pos[0]/.1328) + 5, 350 - (pos[1]/.1328) - 5, fill ='green')
+	txt = txt.split()
+	pos = [float(txt[0][1:-1]), float(txt[1][:-1])]
+	txt = "AbsGoal: <{0:4.2f}".format(pos[0])
+	txt += ", {0:4.2f}>".format(pos[1])
+	self.canvas.delete(self.goal)
+	self.goal = self.canvas.create_oval((pos[0]/.1312)-5, self.map.height() - (pos[1]/.1312) +5, (pos[0]/.1312) + 5, self.map.height() - (pos[1]/.1312) - 5, fill ='green')
         self.absGoalInfo.configure(text=txt)
 
     def setNetForceMsg(self, txt):

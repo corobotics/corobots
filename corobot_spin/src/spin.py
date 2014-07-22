@@ -59,7 +59,6 @@ class spin():
         while(self.done):
             pub.publish(go)
         
-
     def start(self):
         self.done = False
         rospy.init_node("rotate")

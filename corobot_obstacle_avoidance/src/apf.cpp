@@ -141,6 +141,8 @@ Polar APF::nav(LaserScan scan) {
     }
 
     lastScanTime = scan.header.stamp.toSec();
+    angleMin = scan.angle_min;
+    angleMax = scan.angle_max;
 
     if(inRecovery){
         return doRecoveryNav(scan);
@@ -383,7 +385,7 @@ void APF::updateObstacleList(list<Polar>& objects){
         ROS_DEBUG("APF, Obj(%d) Distance:\t%.2f Angle:\t%.3f ", ++objIndex, obsD, obsRelA);
 
         if ((obsD > D_OBS) || (lastScanTime - it->lastT > OBS_CACHE_TIMEOUT) ||
-           ((obsRelA > M_PI/2) && (obsRelA < 3*M_PI/2))) {
+           ((obsRelA > M_PI/2) && (obsRelA < 3*M_PI/2)) || (obsRelA >= angleMin && obsRelA <= angleMax)) {
             ss.str(""); ss << "(" << obs.x << ", " << obs.y << "), rem : " << objIndex;
             activeObstacleList.erase(it);
             
