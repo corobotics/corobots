@@ -64,6 +64,11 @@ ros::Publisher waypointsReachedPub;
 ros::Publisher waypointsFailedPub;
 
 /**
+ * The publisher for the goal when the robot is ready to try again
+ */
+ros::Publisher goalsNav;
+
+/**
  * The obstacle avoider to use.
  */
 ObstacleAvoider* oa;
@@ -102,8 +107,17 @@ void poseCallback(Pose pose) {
 //callback when the robot sees a barcode
 void stopRecovery(corobot_common::Goal topicMsg){
 	//settings to set when the robot has recovered
-	(dynamic_cast<APF*>(oa))->inRecovery = false;
-	(dynamic_cast<APF*>(oa))->prevWayPointQuelen = 0; // this should also set timeSinceLastWayPoint
+        if((dynamic_cast<APF*>(oa))->inRecovery){
+	    (dynamic_cast<APF*>(oa))->inRecovery = false;
+	    (dynamic_cast<APF*>(oa))->prevWayPointQuelen = 0;
+	    Point goal = ((dynamic_cast<APF*>(oa)) ->goal);
+            queue<geometry_msgs::Point> empty;
+            swap(empty, oa -> waypointQueue);
+            ROS_INFO("%.2f, %.2f", goal.x, goal.y);
+            ros::Duration(0.5).sleep();
+	    goalsNav.publish(((dynamic_cast<APF*>(oa)) -> goal));	
+	    // this should also set timeSinceLastWayPoint
+        }
 }
 
 /**
@@ -113,6 +127,9 @@ void waypointCallback(Point waypoint) {
     oa->addWaypoint(waypoint);
     ROS_INFO("Waypoint added: (%.2f, %.2f)", waypoint.x, waypoint.y);
 }
+void goalCallback(Point waypoint) {
+    (dynamic_cast<APF*>(oa))-> goal = waypoint;
+}
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "obstacle_avoidance");
@@ -120,11 +137,14 @@ int main(int argc, char** argv) {
     cmdVelPub = n.advertise<Twist>("cmd_vel", 1);
     waypointsReachedPub = n.advertise<Point>("waypoints_reached", 1000);
     waypointsFailedPub = n.advertise<Point>("waypoints_failed", 1000);
+    goalsNav = n.advertise<Point>("goals_nav", 1);
     oa = new APF();
     ros::Subscriber scanSub = n.subscribe("scan", 1, scanCallback);
     ros::Subscriber poseSub = n.subscribe("pose", 1, poseCallback);
     ros::Subscriber waypointSub = n.subscribe("waypoints", 1000, waypointCallback);
 	ros::Subscriber qrCountSubscriber = n.subscribe("ch_qrcodecount", 1, stopRecovery);
+    ros::Subscriber goal = n.subscribe("goals", 1, goalCallback);
+    ros::Subscriber goalNav = n.subscribe("goals_nav", 1, goalCallback);
     ros::spin();
     delete oa;
     return 0;

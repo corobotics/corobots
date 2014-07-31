@@ -419,6 +419,9 @@ void APF::recoveryCheck(const double &recov_time_now){
        if( recov_time_now - timeSinceLastWayPoint > 60)
             recoverRobot();
     }
+    else if( goal.x != 0 && goal.y != 0 && (pose.x > -.1 && pose.x < .1 ) && (pose.y > -.1 && pose.y < .1)){
+        recoverRobot();
+    }
     else
     {
          timeSinceLastWayPoint = recov_time_now;
@@ -458,6 +461,7 @@ Polar APF::doRecoveryNav(LaserScan &scan){
         if (objWrtRobot.d <= 1 && abs(objWrtRobot.a) <= 0.6) { // if there's any object within the defined window, then turn in place
             cmd.d = 0; cmd.a = 0.4;
             cmd.d = bound(cmd.d, cmdPrev.d, 0.05); // for decelerating faster
+            cmdPrev = cmd;
             return cmd;
             //corobot::SimplePose *pointWrtGlobal = convertRobotToGlobal(objWrtRobot);
             //ROS_DEBUG("Polar Object that might be added:\t(%.2f, %.2f)", objWrtRobot.d, objWrtRobot.a);
@@ -465,6 +469,7 @@ Polar APF::doRecoveryNav(LaserScan &scan){
         }
     }
     cmd.d = bound(cmd.d, cmdPrev.d, 0.010);
+    cmdPrev = cmd;
     return cmd;
 }
 

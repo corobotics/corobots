@@ -60,7 +60,7 @@ class APF : public ObstacleAvoider {
  public:
     int prevWayPointQuelen;
     bool inRecovery;
-    
+    Point goal; 
     APF()
         {		
             ros::NodeHandle n;
@@ -70,7 +70,8 @@ class APF : public ObstacleAvoider {
             netForcePublisher = n.advertise<corobot_common::Goal>("ch_netforce", 1);
             velCmdPublisher = n.advertise<corobot_common::Goal>("ch_velcmd", 1);
             recoveryPublisher = n.advertise<corobot_common::Goal>("ch_recovery", 1);
-            
+            goal.x = 0;
+            goal.y = 0; 
             cmdPrev.a = 0;
             cmdPrev.d = 0;
             timeSinceLastWayPoint = 0;
@@ -103,6 +104,7 @@ protected:
 
     /** The angles that the Kinect is scanning at */
     double angleMin, angleMax;
+
     std::vector<CachedPoint> activeObstacleList;
 
     

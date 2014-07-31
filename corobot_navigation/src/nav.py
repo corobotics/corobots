@@ -88,6 +88,7 @@ class CorobotNavigator():
         path = self.navigate(goal)
         if not path:
             rospy.logerr("A* navigation failed!")
+            self.point_pub.publish(goal)
             return
         rospy.loginfo("A* result: %s" % (", ".join(l.name for l in path)))
         for node in path[:-1]:
@@ -147,6 +148,7 @@ class CorobotNavigator():
     def navigate(self, dest):
         """Find a path from current location to the given destination."""
         # Make our node objects for A*.
+        rospy.loginfo("POSE: %f, %f" %(self.pose.x, self.pose.y))
         start = Landmark(name="START", x=self.pose.x, y=self.pose.y)
         goal = Landmark(name="GOAL", x=dest.x, y=dest.y)
         # Find visible neighbors of start and goal to add as edges to the graph.
@@ -161,7 +163,7 @@ class CorobotNavigator():
         rospy.loginfo("Goal zone: %s" % (", ".join(l.name for l in goal_zone)))
         if not start_zone or not goal_zone:
             rospy.logerr("Cannot connect start and goal! A* failed.")
-            return []
+            return [];
         # A* functions.
         is_goal = lambda node: node.name == "GOAL"
         heuristic = lambda node: point_distance(node, goal)

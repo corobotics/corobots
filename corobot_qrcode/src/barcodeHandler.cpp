@@ -197,19 +197,19 @@ void BarcodeHandler::image_callback(Image &image) {
             }
         }
         msg.cov[8] = thetav;
-        if ((barcodeOrientation.compare("N") == 0) ||
-            (barcodeOrientation.compare("W") == 0))
+//        if ((barcodeOrientation.compare("N") == 0) ||
+//            (barcodeOrientation.compare("W") == 0))
 
 
 
 
+        publisher.publish(msg);
         checkIfNewQR(msg); // do the publisher.publish(msg); inside chechIfNewQR once it Qrcode counting works perfect
 	ROS_INFO_STREAM("FFFFFFFFFFFFFFFFFFFFFFFF");
 	ROS_INFO_STREAM(msg);
 	ros::Time timeNow = ros::Time::now();
 	ROS_INFO_STREAM(timeNow);
 	ROS_INFO_STREAM("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
-        publisher.publish(msg);
     }
 }
 
@@ -226,7 +226,6 @@ bool BarcodeHandler::checkIfNewQR(corobot_common::Pose qrPose){
             return false;
   */      
 	seenQRPose.x = qrPose.x; seenQRPose.y = qrPose.y; seenQRPose.theta = qrPose.theta;
-
 	stringstream ss; corobot_common::Goal topicMsg;
 	if(isLeft(device_name))
 		ss << "L" << ++qrCount;
