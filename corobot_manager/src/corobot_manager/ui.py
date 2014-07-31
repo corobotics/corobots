@@ -27,10 +27,9 @@ class CorobotMonitorUI(Tk):
 
         self.label = Label(self.frame, text="Current Pose", font=("Helvetica", 24))
         self.label.grid(column = 0, row = 0, columnspan = 3)
-<<<<<<< Updated upstream
         
 	self.canvas = Canvas(self.imgframe, width = self.map.width(), height = self.map.height())
-	self.canvas.create_image(self.map.width(),self.map.height()/2, image = self.map)
+	self.canvas.create_image(self.map.width()/2,self.map.height()/2, image = self.map)
 	self.canvas.grid(sticky = 'NE')
 
         self.marker = self.canvas.create_oval(-5,5,5,-5,fill = 'red')
