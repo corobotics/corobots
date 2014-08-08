@@ -50,7 +50,7 @@ class CorobotMonitor():
         #self.win.after(100,rospy.spin_once())
 
     def laserpose_callback(self,pose_message):
-        if pose_message.x < 0 and pose_message.y < 0:
+        if pose_message.x < -999 and pose_message.y < -999:
             self.win.lasercolor = 'red'
         else:
             self.win.lasercolor = 'green'

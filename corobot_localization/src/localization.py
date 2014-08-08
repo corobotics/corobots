@@ -30,15 +30,17 @@ def odom_callback(odom):
         ekf.useqr = False
         pose = ekf.get_pose()
         rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov) 
-    ekf.predict(odom_to_pose(odom))
+    opose = odom_to_pose(odom)
+    rospy.loginfo("Odom is (%6.3f, %6.3f, %6.3f)",opose.x, opose.y,opose.theta) 
+    ekf.predict(opose)
     #print ekf.get_pose()
     pose = ekf.get_pose()
     rospy.loginfo("After odom pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
     pose_pub.publish(ekf.get_pose())
 
 def laser_callback(pose):
-    # negative values are impossible, used as a sentinel to the GUI, ignore here
-    if pose.x < 0:
+    # large negative values are impossible, used as a sentinel to the GUI, ignore here
+    if pose.x < -999:
         return
     if ekf.uselaser:
         rospy.loginfo("Laser says (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
@@ -55,12 +57,17 @@ def qrcode_callback(pose):
         #rospy.loginfo("After QR pose is (%6.3f, %6.3f, %6.3f) cov %s",pose.x, pose.y,pose.theta,pose.cov)
         #ekf.useqr = False
 
+def odom_comb_callback(odom):
+    ocpose = odom_to_pose(odom)
+    rospy.loginfo("Odom combined is (%6.3f, %6.3f, %6.3f)",ocpose.x, ocpose.y,ocpose.theta) 
+
 def main():
     global ekf, pose_pub;
     rospy.init_node("localization")
     ekf = EKF()
     pose_pub = rospy.Publisher("pose", Pose)
-    rospy.Subscriber("odom", Odometry, odom_callback)
+    rospy.Subscriber("odom_combined", PoseWithCovarianceStamped, odom_callback)
+    rospy.Subscriber("odom", Odometry, odom_comb_callback)
     # odom_combined comes from robot_pose_ekf, different message type from
     # regular odom, but seems to have the same basic contents, so we can use
     # the same callback (yay dynamic typing!)

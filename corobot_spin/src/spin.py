@@ -48,8 +48,8 @@ class spin():
         self.nTurns-=1
         self.done = True
         go = Twist()
-        go.linear.x = 0.2 # fwd velocity between turns - make a parameter?
-        go.angular.z = self.angularV
+        go.linear.x = 0 # fwd velocity between turns - make a parameter?
+        go.angular.z = 0 # self.angularV
         if(self.nTurns  >= 1):
             rospy.Timer(rospy.Duration(secs = 2),self.pause_callback,True)
         else:

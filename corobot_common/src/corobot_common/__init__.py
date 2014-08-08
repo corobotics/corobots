@@ -79,7 +79,7 @@ def bresenham(x1, y1, x2, y2, f):
     dx = x2 - x1
     dy = y2 - y1
     inc_x = int(math.copysign(1, dx))
-    inc_y = int(math.copysign(2, dy))
+    inc_y = int(math.copysign(1, dy))
     dx *= inc_x
     dy *= inc_y
     x = x1

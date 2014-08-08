@@ -253,9 +253,12 @@ def laser_callback(scan):
     #rospy.loginfo("%s", samplePoints)
 
     sample = pose
+    maxprob = 0
     for sample in samplePoints:
         newLaser = get_expected_scan(sample)
         (currentProbability, goodscans) = get_sample_probability(scan.ranges, newLaser)
+        if currentProbability > maxprob:
+            maxprob = currentProbability
         sampleProbability.append(currentProbability)
         #rospy.loginfo("Prob: %g",currentProbability)
     
@@ -278,13 +281,13 @@ def laser_callback(scan):
     # if we don't like any of the samples, don't say anything.
     # this is probably wrong, but may help when lost or when
     # there are too many obstacles about.
-    if (count/len(samplePoints)) < (probThresh**goodscans) or goodscans <= 10:
+    if maxprob < (probThresh**goodscans) or goodscans <= 10:
         rospy.loginfo("Skipping laser estimate, thresh = %6.3g",probThresh**goodscans)
         lockedOn = False
         # we'll spit out a bogus pose to let the GUI know we're still alive
         posemsg = Pose()
-        posemsg.x = -1
-        posemsg.y = -1
+        posemsg.x = -1000
+        posemsg.y = -1000
         posemsg.theta = 0
         posemsg.cov = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         posepub.publish(posemsg)
@@ -339,9 +342,9 @@ def laser_callback(scan):
     #rospy.loginfo("Covariance: %s", coveriance_pose)
     posemsg = Pose()
     # convert from Kinect pose back to robot center pose
-    posemsg.x = mean_pose[0] - kinectOffset*math.cos(mean_pose[2])
-    posemsg.y = mean_pose[1] - kinectOffset*math.sin(mean_pose[2])
-    posemsg.theta = mean_pose[2]
+    posemsg.x = (mean_pose[0] - kinectOffset*math.cos(mean_pose[2])) - pose.x
+    posemsg.y = (mean_pose[1] - kinectOffset*math.sin(mean_pose[2])) - pose.y
+    posemsg.theta = mean_pose[2] - pose.theta
     posemsg.cov = covariance
     posepub.publish(posemsg)
 

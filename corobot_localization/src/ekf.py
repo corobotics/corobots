@@ -74,26 +74,32 @@ class EKF(object):
     def update_pos(self, pose, absolute=False):
         """Convenience function to do a position update."""
         # assuming that the ekf is never lost by more than pi (except on startup),
-        # we can intelligently mod the incoming pose angle to be close to the current estimate
-        # note that the ordered if statements mean that if we are super-lost, we
-        # will randomly add some pi but not infinitely loop.
-        # this if statement says that if we're lost in theta, don't worry about it.
-        if self.covariance[2,2] < 10:
-            while pose.theta - self.state[2] > pi:
-                pose.theta -= tau
-            while self.state[2] - pose.theta > pi:
-                pose.theta += tau
         # if we have absolute (i.e. QR-code) data, and it's far from our current
         # estimate, then assume we're lost and reset the EKF.
         if absolute:
-                dx = self.state[0]-pose.x
-                dy = self.state[1]-pose.y
-                dt = fmod(self.state[2]-pose.theta,2*pi)
-                if dx*dx + dy*dy > 0.5 or abs(dt) > 0.5:
-                        self.state = column_vector(pose.x, pose.y, pose.theta)
-                        self.covariance = matrix(pose.cov).reshape(3, 3)
-                        return
+            # we can intelligently mod the incoming pose angle to be close 
+            # to the current estimate - note that the ordered if statements 
+            # mean that if we are super-lost, we will randomly add some pi 
+            # but not infinitely loop.
+            # this if statement says that if we're lost in theta, don't worry about it.
+            if self.covariance[2,2] < 10:
+                while pose.theta - self.state[2,0] > pi:
+                    pose.theta -= tau
+                while self.state[2,0] - pose.theta > pi:
+                    pose.theta += tau
+            dx = self.state[0,0]-pose.x
+            dy = self.state[1,0]-pose.y
+            dt = fmod(self.state[2,0]-pose.theta,2*pi)
+            if dx*dx + dy*dy > 0.1 or abs(dt) > 0.3:
+                self.state = column_vector(pose.x, pose.y, pose.theta)
+                self.covariance = matrix(pose.cov).reshape(3, 3)
+                return
+        else:
+            pose.x += self.state[0,0]
+            pose.y += self.state[1,0]
+            pose.theta += self.state[2,0]
         y = column_vector(pose.x, pose.y, pose.theta)
+        rospy.loginfo("Updating with position %s",y)
         W = matrix(pose.cov).reshape(3, 3)
         self.update(y, W)
 
@@ -129,7 +135,7 @@ class EKF(object):
         if abs(dt) > 0:
             print("Nonzero rotation detected at",rospy.get_time(), \
                     "Odom vel",dist*30)
-            if dist*30 < 0.1:
+            if dist*30 < 0.4:
                 if ((dt > 0 and rospy.get_time() - self.lastposdt > 0.25) \
                  or (dt < 0 and rospy.get_time() - self.lastnegdt > 0.25)):
                     # give the acceleration compensation
