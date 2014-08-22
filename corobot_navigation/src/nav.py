@@ -11,7 +11,7 @@ from geometry_msgs.msg import Point
 
 from corobot_common import a_star, bresenham, distance, point_distance, point_equals
 from corobot_common.srv import GetPixelOccupancy, GetNeighbors, GetLandmark, GetLandmarks, GetCoMap
-from corobot_common.msg import Pose, Landmark
+from corobot_common.msg import Pose, Landmark, Goal
 
 class CorobotNavigator():
 
@@ -24,6 +24,7 @@ class CorobotNavigator():
     def __init__(self, occupancy_map, landmark_graph):
         # Robot's current position.
         self.pose = None
+        self.recov = False
         self.occupancy_map = occupancy_map
         self.landmark_graph = landmark_graph
         # Queue of (Point, isGoal?) pairs used to track goals from user.
@@ -41,9 +42,19 @@ class CorobotNavigator():
         rospy.Subscriber('pose', Pose, self.pose_callback)
         rospy.Subscriber('waypoints_failed', Point, self.waypoints_failed_callback)
         rospy.Subscriber('waypoints_reached', Point, self.waypoints_reached_callback)
+        rospy.Subscriber('ch_recovery', Goal, self.recovery_change_callback)
 
     def start(self):
         rospy.spin()
+
+    def recovery_change_callback(self, goal):
+        """Checks for a shift in recovery mode"""
+        prevRecov = self.recov
+        if(goal.name == 'Recovery Started'):
+            self.recov = True
+            self.wp_queue.clear()
+	else:
+            self.recov = False
 
     def pose_callback(self, pose):
         """Pose subscription callback."""
@@ -61,6 +72,7 @@ class CorobotNavigator():
             if is_goal:
                 self.goals_reached_pub.publish(head)
         else:
+            rospy.logerr("Wanted (%f, %f) Got (%f, %f)", head.x, head.y, waypoint.x, waypoint.y)
             rospy.logerr("Waypoint reached but doesn't match head of queue.")
 
     def waypoints_failed_callback(self, waypoint):

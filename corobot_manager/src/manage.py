@@ -16,7 +16,7 @@ from diagnostic_msgs.msg import *
 from corobot_common import point_equals
 #from corobot_common.srv import GetLandmark, WebcamService
 from corobot_common.srv import GetLandmark
-from corobot_common.msg import Pose, Landmark, UIMessage, UIConfirm
+from corobot_common.msg import Pose, Landmark, UIMessage, UIConfirm, Goal
 from corobot_manager.io import CorobotServer
 
 # Akshay - Make a global status flag
@@ -51,14 +51,19 @@ class CorobotManager():
                 self.STATUS_FLAG = "IDLE"
             rospy.loginfo(str(self.STATUS_FLAG + SERVER_DELIMITER + str(self.pose.x) + SERVER_DELIMITER + str(self.pose.y)))
         except socket.error, msg:
-            print ("Server socket error! Error no: %d. Error message : %s" % (msg[0], msg[1]))
+            rospy.logerr ("Server socket error! Error no: %d. Error message : %s" % (msg[0], msg[1]))
         #print 'Timer called at ' + str(event.current_real)
         #break
         #print ("Closing server socket connection.")
         #serverSocket.close()
         #print ("Server socket closed.")
 
-        
+    def restart_connection(self):
+        data = self.serverSocket.recv(1024)
+        if(data == ''):
+            self.serverSocket.connect((HOST,PORT))
+            self.serverSocekt.send(socket.gethostname() + SERVER_DELIMTER + self.STATUS_FLAG)    
+
     def start(self):
         self.init_ros_node()
         try:
@@ -107,6 +112,14 @@ class CorobotManager():
     def confirm_ui_callback(self, confirm):
         self.client_write(confirm.id, "CONFIRM %s" % confirm.confirmed)
 
+    def recovery_callback(self, message):
+        prevRecov = self.recov
+        if(message.name == 'Recovery Started'):
+           self.recov = True
+           self.goal_queue.clear()
+        else:
+           self.recov = False
+
     def diagnostics_callback(self, dArray):
         pass
     '''status[2] is the DiagnosticStatus related to Battery, 
@@ -122,6 +135,7 @@ class CorobotManager():
         rospy.Subscriber("goals_failed", Point, self.goals_failed_callback)
         rospy.Subscriber("confirm_msg", UIConfirm, self.confirm_ui_callback)
         rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
+        rospy.Subscriber("ch_recovery", Goal, self.recovery_callback)
         rospy.wait_for_service("get_landmark")
         self.get_landmark = rospy.ServiceProxy("get_landmark", GetLandmark)
 	"""
@@ -130,6 +144,7 @@ class CorobotManager():
 	self.webcam_service = rospy.ServiceProxy("WebcamService", WebcamService)
 	#!Tristan
 	"""
+	self.recov = False
         self.goals_pub = rospy.Publisher("goals", Point)
         self.goals_nav_pub = rospy.Publisher("goals_nav", Point)
         self.show_msgs_pub = rospy.Publisher("show_msg", UIMessage)
