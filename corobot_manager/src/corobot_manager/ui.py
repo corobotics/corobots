@@ -1,6 +1,7 @@
 from Tkinter import *
 #from corobot import Robot
 import math
+import rospy
 
 class CorobotMonitorUI(Tk):
 
@@ -107,12 +108,19 @@ class CorobotMonitorUI(Tk):
 
     def setObsMsg(self, txt):
         text = txt.split()
+        rospy.loginfo(text)
         if(text[0] != 'obs'):        
-            if(text[1][:3] == 'add'):
-                text = text[0].split(',')
-            pos = [float(text[0][1:-1]), float(text[1][:-2])]
-            self.obsCache.append(pos)
-            self.drawObs()
+            if(text[2] == 'add'):
+            	pos = [float(text[0][1:-1]), float(text[1][:-2])]
+                while(int(text[-1]) >= len(self.obsCache) + 1):
+                    self.obsCache = self.obsCache + [" "];
+            	self.obsCache.append(pos)
+	    elif(text[2] == 'rem'):
+                self.obsCache.pop(int(text[-1]) - 1)
+	else:
+            self.obsCache[:] = []
+	rospy.loginfo(len(self.obsCache))
+        self.drawObs()
         txt = "Obs: " + txt
         self.obsinfo.configure(text=txt)
 
@@ -167,18 +175,16 @@ class CorobotMonitorUI(Tk):
         
     def drawObs(self):
         self.lazcanvas.delete('obstacles')
-        tempHold = []
         for obs in self.obsCache:
+            if(obs == ' '):
+                continue
             posPol = [math.hypot(obs[0] - self.pose[0], obs[1] - self.pose[1]), math.atan2(obs[1] - self.pose[1], obs[0] - self.pose[0]) - self.pose[2]]
             while(posPol[1] < 0):
                 posPol[1] += 2* math.pi
             while(posPol[1] > 2 * math.pi):
                 posPol[1] -= 2 * math.pi
-            if(posPol[1] <=  math.pi/2 or posPol[1] >= 3*math.pi/2):
-                tempHold.append(obs)
-                posRel = [posPol[0] * math.cos(posPol[1]), posPol[0] * -math.sin(posPol[1])]
-                self.lazcanvas.create_oval(posRel[1]*100 + 200 - 10,600 - posRel[0] * 100 + 10, posRel[1]*100 + 200  + 10, 600 - posRel[0] * 100 - 10, fill = 'red', tags = 'obstacles')
-        self.obsCache =tempHold
+            posRel = [posPol[0] * math.cos(posPol[1]), posPol[0] * -math.sin(posPol[1])]
+            self.lazcanvas.create_oval(posRel[1]*100 + 200 - 10,600 - posRel[0] * 100 + 10, posRel[1]*100 + 200  + 10, 600 - posRel[0] * 100 - 10, fill = 'red', tags = 'obstacles')
                              
 class CorobotUIMessage(Tk):
 
