@@ -43,26 +43,21 @@ class CorobotManager():
         global SERVER_DELIMITER
         #while True:
         try:
-            self.serverSocket.send (self.STATUS_FLAG + SERVER_DELIMITER + str(self.pose.x) + SERVER_DELIMITER + str(self.pose.y))
+            self.serverSocket.sendall (self.STATUS_FLAG + SERVER_DELIMITER + str(self.pose.x) + SERVER_DELIMITER + str(self.pose.y) + "\r\n")
             #print self.goal_queue
             if(len(self.goal_queue) > 0):
                 self.STATUS_FLAG = "BUSY"
             else:
                 self.STATUS_FLAG = "IDLE"
-            rospy.loginfo(str(self.STATUS_FLAG + SERVER_DELIMITER + str(self.pose.x) + SERVER_DELIMITER + str(self.pose.y)))
+            rospy.loginfo(str(self.STATUS_FLAG + SERVER_DELIMITER + str(self.pose.x) + SERVER_DELIMITER + str(self.pose.y)+str(len(self.goal_queue))))
         except socket.error, msg:
+            rospy.loginfo("Something went wrong")
             rospy.logerr ("Server socket error! Error no: %d. Error message : %s" % (msg[0], msg[1]))
         #print 'Timer called at ' + str(event.current_real)
         #break
         #print ("Closing server socket connection.")
         #serverSocket.close()
         #print ("Server socket closed.")
-
-    def restart_connection(self):
-        data = self.serverSocket.recv(1024)
-        if(data == ''):
-            self.serverSocket.connect((HOST,PORT))
-            self.serverSocekt.send(socket.gethostname() + SERVER_DELIMTER + self.STATUS_FLAG)    
 
     def start(self):
         self.init_ros_node()
@@ -96,11 +91,16 @@ class CorobotManager():
     def pose_callback(self, pose):
         """Callback for the pose ROS topic."""
         self.pose = pose
+    def goals_callback(self, goal):
+        if self.goal_queue and not point_equals(goal, self.goal_queue[-1][1]):
+            self.goal_queue = deque()
+            self.goal_queue.append((msg_id, goal))
 
     def goals_reached_callback(self, goal):
         """Callback for the goals_reached ROS topic."""
         if self.goal_queue and point_equals(goal, self.goal_queue[0][1]):
             msg_id, _ = self.goal_queue.popleft()
+            rospy.loginfo(msg_id + " ARRIVED")
             self.client_write(msg_id, "ARRIVED")
 
     def goals_failed_callback(self, goal):
@@ -112,21 +112,13 @@ class CorobotManager():
     def confirm_ui_callback(self, confirm):
         self.client_write(confirm.id, "CONFIRM %s" % confirm.confirmed)
 
-    def recovery_callback(self, message):
-        prevRecov = self.recov
-        if(message.name == 'Recovery Started'):
-           self.recov = True
-           self.goal_queue.clear()
-        else:
-           self.recov = False
-
     def diagnostics_callback(self, dArray):
         pass
     '''status[2] is the DiagnosticStatus related to Battery, 
         values[3] is the KeyValue related to Charge, values[4] is KeyValue related to Capacity'''
         #batteryLevel = float(dArray.status[2].values[3].value) / float(dArray.status[2].values[4].value) 
         #print("battery %: ", batteryLevel)
-
+    
     def init_ros_node(self):
         """Initialize all ROS node/sub/pub/srv stuff."""
         rospy.init_node("corobot_manager")
@@ -135,7 +127,7 @@ class CorobotManager():
         rospy.Subscriber("goals_failed", Point, self.goals_failed_callback)
         rospy.Subscriber("confirm_msg", UIConfirm, self.confirm_ui_callback)
         rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
-        rospy.Subscriber("ch_recovery", Goal, self.recovery_callback)
+        rospy.Subscriber("goals_nav", Point, self.goals_callback)
         rospy.wait_for_service("get_landmark")
         self.get_landmark = rospy.ServiceProxy("get_landmark", GetLandmark)
 	"""
