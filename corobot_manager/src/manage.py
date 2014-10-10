@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import asyncore
+import subprocess
 from collections import deque
 from contextlib import closing
 import socket
@@ -19,13 +20,14 @@ from corobot_common.srv import GetLandmark
 from corobot_common.msg import Pose, Landmark, UIMessage, UIConfirm, Goal
 from corobot_manager.io import CorobotServer
 
+from monitor import batteryThread
+
 # Akshay - Make a global status flag
 SERVER_DELIMITER = ':'
 HOST = "129.21.30.80"
 PORT = 51000
 
 class CorobotManager():
-
     def __init__(self):
         global HOST, PORT
         # Robot"s current position.  Defaults to a test position.
@@ -39,7 +41,9 @@ class CorobotManager():
 
     # Akshay - Function to communicate continuously with the Web Server
     def communicate (self, event):
-        
+        p = subprocess.Popen(["acpi", "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        batteryLevel = int(out.split('\n')[0].split(', ')[1][:-1])
         global SERVER_DELIMITER
         #while True:
         try:
@@ -47,6 +51,8 @@ class CorobotManager():
             #print self.goal_queue
             if(len(self.goal_queue) > 0):
                 self.STATUS_FLAG = "BUSY"
+            elif batteryLevel < batteryThread.BAT_LOW_THRESHOLD:
+                self.STATUS_FLAG = "BATLOW"   
             else:
                 self.STATUS_FLAG = "IDLE"
             rospy.loginfo(str(self.STATUS_FLAG + SERVER_DELIMITER + str(self.pose.x) + SERVER_DELIMITER + str(self.pose.y)+str(len(self.goal_queue))))

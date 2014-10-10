@@ -96,7 +96,9 @@ class CorobotNavigator():
         """Goals subscription callback."""
         # Will return a path of Landmarks from the Landmark
         # closest to the robot to the Landmark closest to the goal.
+        self.wp_queue.clear()
         rospy.loginfo("New goal: (%.2f, %.2f)" % (goal.x, goal.y))
+        
         path = self.navigate(goal)
         if not path:
             rospy.logerr("A* navigation failed!")
@@ -109,6 +111,8 @@ class CorobotNavigator():
         # And then finally publish the final waypoint
         self.point_pub.publish(goal)
         self.wp_queue.append((goal, True))
+        #rospy.logwarn("New goal: (%.2f, %.2f)" % (goal.x, goal.y))
+        #rospy.logwarn("length of the WP queue is %d" % (len(self.wp_queue)))
 
     def bresenham_callback(self, x, y):
         i = x + y * self.occupancy_map.info.width
