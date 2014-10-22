@@ -13,29 +13,48 @@ from corobot_common.msg import Pose
 from corobot_common.msg import Goal
 from corobot_manager.ui import CorobotMonitorUI
 from std_msgs.msg import String
+from corobot_common.srv import GetLandmark
+from geometry_msgs.msg import Point
 
 class batteryThread(threading.Thread):
+    BAT_LOW_THRESHOLD = 22
+    homeCoordinates = None
+    
     def __init__(self, delay, win):
         threading.Thread.__init__(self)
         self.delay = delay
         self.win = win
+        rospy.wait_for_service("get_landmark")
+        batteryThread.homeCoordinates = rospy.ServiceProxy('get_landmark', GetLandmark)('RNDLAB').wp
+        self.currNewGoal = batteryThread.homeCoordinates
+        rospy.Subscriber("goals_nav", Point, self.newGoalCallBack)
 
     def run(self):
         self.laptop_battery(self.delay, self.win)
 
     def laptop_battery(self, delay, win):
         pub = rospy.Publisher('laptopBatman', String)
+        newGoalPub = rospy.Publisher('goals_nav', Point)
+        
         while not rospy.is_shutdown():
             p = subprocess.Popen(["acpi", "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
-            #print out
             batteryPercentage = out.split('\n')[0].split(', ')[1]
-            #self.win.setLaptopBatteryMsg(out.split('\n')[0].split(', ')[1])
+            
+            #rospy.logwarn("CurrGoal: %f, %f and homecoords: %f, %f", self.currNewGoal.x, self.currNewGoal.y, batteryThread.homeCoordinates.x, batteryThread.homeCoordinates.y)
+            #if the battery's low and the newGoal's not equal Home, then ask it to go home
+            if (int(batteryPercentage[:-1]) <= batteryThread.BAT_LOW_THRESHOLD and (self.currNewGoal.x != batteryThread.homeCoordinates.x or self.currNewGoal.y != batteryThread.homeCoordinates.y)):
+                newGoalPub.publish( x=batteryThread.homeCoordinates.x, y=batteryThread.homeCoordinates.y)
+                rospy.logwarn("Battery Level : %s , below threshold. Rotuing back to Lab!", batteryPercentage)
+                
             self.win.setLaptopBatteryMsg(batteryPercentage)
-            #rospy.loginfo(batteryPercentage)
             pub.publish(String(batteryPercentage))
             time.sleep(delay)
 
+    def newGoalCallBack(self, newGoal):
+        self.currNewGoal = newGoal
+        #rospy.logwarn("NewGoal registered : %d, %d", self.currNewGoal.x, self.currNewGoal.y)
+        
 
 class CorobotMonitor():
     """ROS Node for data monitoring and interaction"""
@@ -117,6 +136,7 @@ class CorobotMonitor():
         rospy.Subscriber("ch_recovery", Goal, self.recovery_callback)
         rospy.Subscriber("diagnostics", DiagnosticArray, self.diagnostics_callback)
         rospy.Subscriber("scan", LaserScan, self.laserDisp_callback, queue_size = 1)
+        
         t = batteryThread(0.5, self.win)
         t.daemon = True
         t.start()

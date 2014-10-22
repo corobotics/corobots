@@ -129,6 +129,10 @@ void waypointCallback(Point waypoint) {
 }
 void goalCallback(Point waypoint) {
     (dynamic_cast<APF*>(oa))-> goal = waypoint;
+    //clearng the queue by swapping out the old queue with an empty one
+    std::queue<geometry_msgs::Point> emptyQ;
+    std::swap( waypointQueue, emptyQ );
+    //ROS_WARN("******* WayPoint cleared. Curr length: %d *******", waypointQueue.size());
 }
 
 int main(int argc, char** argv) {
