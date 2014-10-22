@@ -42,19 +42,9 @@ class CorobotNavigator():
         rospy.Subscriber('pose', Pose, self.pose_callback)
         rospy.Subscriber('waypoints_failed', Point, self.waypoints_failed_callback)
         rospy.Subscriber('waypoints_reached', Point, self.waypoints_reached_callback)
-        rospy.Subscriber('ch_recovery', Goal, self.recovery_change_callback)
 
     def start(self):
         rospy.spin()
-
-    def recovery_change_callback(self, goal):
-        """Checks for a shift in recovery mode"""
-        prevRecov = self.recov
-        if(goal.name == 'Recovery Started'):
-            self.recov = True
-            self.wp_queue.clear()
-	else:
-            self.recov = False
 
     def pose_callback(self, pose):
         """Pose subscription callback."""
@@ -98,7 +88,6 @@ class CorobotNavigator():
         # closest to the robot to the Landmark closest to the goal.
         self.wp_queue.clear()
         rospy.loginfo("New goal: (%.2f, %.2f)" % (goal.x, goal.y))
-        
         path = self.navigate(goal)
         if not path:
             rospy.logerr("A* navigation failed!")

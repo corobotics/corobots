@@ -18,5 +18,9 @@
      <param name="device" value="/dev/videoright" />
      <param name="csvfile" value="$(find corobot_qrcode)/barcodePoints.csv" />
     </node>
+    <node pkg="corobot_data_management" type="PositionSub.py" name="dataman"/>
+    <node pkg="corobot_data_management" type="MessageManager.py" name="datasync"/>
+    <node pkg="corobot_data_management" type="CommandListener.py" name="datacomlistener"/>
+    <!--<node pkg="face_recognition" type="WebcamFaceRec" args="1" name="WebcamFaceRec"/>-->
     <!--<node pkg="face_recognition" type="WebcamFaceRec" args="1" name="WebcamFaceRec"/>-->
 </launch>
