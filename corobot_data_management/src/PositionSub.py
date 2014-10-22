@@ -12,7 +12,7 @@ class PositionSub:
 
     # Self variables
     count = 0
-    frequency = 500
+    frequency = 100
 
     def __init__(self):
         self.pose = None
