@@ -5,13 +5,19 @@ import rospy
 
 class CorobotMonitorUI(Tk):
 
-    def __init__(self):
+    def __init__(self, fullscreen):
         """ Corobot general info monitor 
         """
         Tk.__init__(self)
         
         self.title("Corobot Monitor")
         
+        #Uncomment the two lines below to make the program unkillable and fullscreen. Restart is needed to kill it
+        #self.overrideredirect(False) 
+        #self.geometry("{0}x{1}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
+        if(fullscreen):
+            self.attributes('-fullscreen', True)
+
         self.Nav = [0,0]
         self.obsCache = []
         self.pos = [0,0,0]

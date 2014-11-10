@@ -15,7 +15,7 @@
     <node pkg="corobot_object_detection_2" type="test.py" name="objectDensity" output = "screen"/>
     <node pkg="corobot_manager" type="corobot_ui.py" name="popup"/>
     <node pkg="corobot_manager" type="monitor.py" name="monitor">
-        <param name="fullscreen" value="true"/>
+        <param name="fullscreen" value="false"/>
     </node>
     <node pkg="corobot_qrcode" type="detect" name="right">
      <param name="device" value="/dev/videoright" />

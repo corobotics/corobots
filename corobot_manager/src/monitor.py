@@ -35,7 +35,6 @@ class batteryThread(threading.Thread):
     def laptop_battery(self, delay, win):
         pub = rospy.Publisher('laptopBatman', String)
         newGoalPub = rospy.Publisher('goals_nav', Point)
-        
         while not rospy.is_shutdown():
             p = subprocess.Popen(["acpi", "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
@@ -60,7 +59,7 @@ class CorobotMonitor():
     """ROS Node for data monitoring and interaction"""
 
     def __init__(self):
-        self.win = CorobotMonitorUI()
+        self.win = CorobotMonitorUI(rospy.get_param("/monitor/fullscreen"))
         self.init_ros_node()
         self.win.mainloop()
 
