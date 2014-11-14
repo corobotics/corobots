@@ -59,6 +59,10 @@ class CorobotManager():
         except socket.error, msg:
             rospy.loginfo("Something went wrong")
             rospy.logerr ("Server socket error! Error no: %d. Error message : %s" % (msg[0], msg[1]))
+        except KeyboardInterupt:
+            rospy.loginfo("Robot is shutting down")
+            serverSocket.close()
+            raise
         #print 'Timer called at ' + str(event.current_real)
         #break
         #print ("Closing server socket connection.")
@@ -151,7 +155,12 @@ class CorobotManager():
 
     def listen_for_clients(self):
         self.server = CorobotServer(15001, self)
-        asyncore.loop(0.1)
+        try:
+            asyncore.loop(0.1)
+        except KeyboardInterupt:
+            self.server.close()
+            rospy.loginfo("Program has been interupted")
+            raise
 
     def handle_command(self, command):
         rospy.loginfo("Command recieved from client: %s", command)

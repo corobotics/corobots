@@ -1,5 +1,6 @@
 import socket
 import traceback
+import rospy
 from asynchat import async_chat, simple_producer
 from asyncore import dispatcher
 
@@ -67,6 +68,7 @@ class CorobotHandler(LineHandler):
         self.manager = manager
 
     def handle_close(self):
+	rospy.loginfo("DISCONNECTED")
         self.server.handler = None
         self.manager.STATUS_FLAG = "IDLE"
         self.close()
