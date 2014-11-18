@@ -1,4 +1,4 @@
-<launch>
+﻿<launch>
     <node pkg="corobot_qrcode" type="detect" name="left">
     <param name="device" value="/dev/videoleft" />
     <param name="csvfile" value="$(find corobot_qrcode)/barcodePoints.csv" />
@@ -13,6 +13,7 @@
     <node pkg="corobot_localization" type="kinect_loc.py" name="kinnav"/>
     <node pkg="corobot_navigation" type="nav.py" name="nav"/>
     <node pkg="corobot_object_detection_2" type="test.py" name="objectDensity" output = "screen"/>
+<node pkg="new_obstacle_avoidance" type="surface" name="obstacle" output = "screen"/>
     <node pkg="corobot_manager" type="corobot_ui.py" name="popup"/>
     <node pkg="corobot_manager" type="monitor.py" name="monitor">
         <param name="fullscreen" value="true"/>

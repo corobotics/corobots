@@ -388,7 +388,7 @@ void APF::updateObstacleList(list<Polar>& objects){
         if ((obsD > D_OBS) || (lastScanTime - it->lastT > OBS_CACHE_TIMEOUT) ||
            ((obsRelA > M_PI/2) && (obsRelA < 3*M_PI/2)) || (obsRelA >= angleMin && obsRelA <= angleMax)) {
             ss.str(""); ss << "(" << obs.x << ", " << obs.y << "), rem : " << objIndex;
-            activeObstacleList.erase(it);
+            it = activeObstacleList.erase(it);
             
             ROS_DEBUG("APF: Object(%d) removed", objIndex);
             topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
@@ -438,6 +438,9 @@ void APF::recoveryCheck(const double &recov_time_now){
  */
 void APF::recoverRobot(){
     activeObstacleList.clear(); //clear obstacles for when recovery started because the robot might be surrounded by obstacles
+    ss.str(""); ss << "obs cleared: " << activeObstacleList.size();
+    topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
+    ROS_DEBUG("clearing ObstacleList: %u", activeObstacleList.size());
 
     ROS_DEBUG("Recovery protocol triggered");
     stringstream ss; corobot_common::Goal topicMsg;
