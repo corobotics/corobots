@@ -438,12 +438,12 @@ void APF::recoveryCheck(const double &recov_time_now){
  */
 void APF::recoverRobot(){
     activeObstacleList.clear(); //clear obstacles for when recovery started because the robot might be surrounded by obstacles
+    stringstream ss; corobot_common::Goal topicMsg;
     ss.str(""); ss << "obs cleared: " << activeObstacleList.size();
     topicMsg.name = ss.str(); obsPublisher.publish(topicMsg);
     ROS_DEBUG("clearing ObstacleList: %u", activeObstacleList.size());
 
     ROS_DEBUG("Recovery protocol triggered");
-    stringstream ss; corobot_common::Goal topicMsg;
     ss << "Recovery Started";
     topicMsg.name = ss.str(); recoveryPublisher.publish(topicMsg);
     recoveryPublisher.publish(topicMsg);

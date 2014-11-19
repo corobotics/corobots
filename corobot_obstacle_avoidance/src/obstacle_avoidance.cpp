@@ -110,7 +110,7 @@ void stopRecovery(corobot_common::Goal topicMsg){
         if((dynamic_cast<APF*>(oa))->inRecovery){
 	    (dynamic_cast<APF*>(oa))->inRecovery = false;
 	    (dynamic_cast<APF*>(oa))->prevWayPointQuelen = 0;
-            ROS_INFO("%.2f, %.2f", goal.x, goal.y);
+            //ROS_INFO("%.2f, %.2f", dynamic_cast<APF*>(oa)) -> goal.x, goal.y);
             ros::Duration(0.5).sleep();
 	    goalsNav.publish(((dynamic_cast<APF*>(oa)) -> goal));	
 	    // this should also set timeSinceLastWayPoint
@@ -125,12 +125,12 @@ void waypointCallback(Point waypoint) {
     ROS_INFO("Waypoint added: (%.2f, %.2f)", waypoint.x, waypoint.y);
 }
 void goalCallback(Point waypoint) {
-    queue<gemomtery_msgs::Point> empty;
+    queue<geometry_msgs::Point> empty;
     swap(empty, oa -> waypointQueue);
     (dynamic_cast<APF*>(oa))-> goal = waypoint;
     //clearng the queue by swapping out the old queue with an empty one
     std::queue<geometry_msgs::Point> emptyQ;
-    std::swap( waypointQueue, emptyQ );
+    std::swap( oa -> waypointQueue, emptyQ );
     //ROS_WARN("******* WayPoint cleared. Curr length: %d *******", waypointQueue.size());
 }
 
