@@ -28,16 +28,16 @@ See [corobot-extras](https://github.com/corobotics/corobot-extras) for detailed 
         git clone https://github.com/corobotics/corobots.git src
         rosws set src/corobot_bringup
           [and similar for each package]
+	echo "export ROS_PACKAGE_PATH=/home/corobot/corobot_ws/src:$ROS_PACKAGE_PATH" >> ~/.bashrc
 
 - Install Upstart scripts. [currently not working, TBD]
 
         cd src/corobot_bringup/system
         sudo ./install.bash
-        echo "export ROS_PACKAGE_PATH=/home/corobot/corobot_ws/src:$ROS_PACKAGE_PATH" >> ~/.bashrc
-
+        
 - Install `zbar` for webcam QR code reading.
 
-        sudo apt-get install -y python-gtk2-dev v4l-utils gettext git xmlto
+        sudo apt-get install -y python-gtk2-dev v4l-utils gettext git xmlto acpi
         cd /usr/local/src
         sudo git clone https://github.com/corobotics/ZBar.git zbar
         cd zbar
