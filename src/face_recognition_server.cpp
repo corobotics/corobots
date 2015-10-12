@@ -39,7 +39,7 @@ public:
     // feedback_.sequence.push_back(1);
 
     // publish info to the console for the user
-    ROS_INFO("%s: Executing..", _action_name.c_str());
+    ROS_INFO("%s: Executing. order_id: %i, order_argument: %s ", _action_name.c_str(), goal->order_id, (goal->order_argument).c_str());
 
     // start executing the action
     /*for(int i=1; i<=goal->order; i++)
