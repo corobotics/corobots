@@ -131,6 +131,7 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(face_recognition_server src/face_recognition_server.cpp)
+add_executable(face_recognition_client src/face_recognition_client.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -142,8 +143,18 @@ target_link_libraries(
   ${catkin_LIBRARIES}
 )
 
+target_link_libraries( 
+  face_recognition_client
+  ${catkin_LIBRARIES}
+)
+
 add_dependencies(
   face_recognition_server
+  ${corobot_face_recognition_EXPORTED_TARGETS}
+)
+
+add_dependencies(
+  face_recognition_client
   ${corobot_face_recognition_EXPORTED_TARGETS}
 )
 
