@@ -116,7 +116,10 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  #DIRECTORY include/${PROJECT_NAME}/
   ${catkin_INCLUDE_DIRS}
+  #DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  #PATTERN ".svn" EXCLUDE
 )
 
 ## Declare a C++ library
@@ -131,32 +134,38 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(face_recognition_server src/face_recognition_server.cpp)
+target_link_libraries(
+  face_recognition_server
+  ${catkin_LIBRARIES}
+)
+add_dependencies(
+  face_recognition_server
+  ${corobot_face_recognition_EXPORTED_TARGETS}
+)
+
 add_executable(face_recognition_client src/face_recognition_client.cpp)
+target_link_libraries( 
+  face_recognition_client
+  ${catkin_LIBRARIES}
+)
+add_dependencies(
+  face_recognition_client
+  ${corobot_face_recognition_EXPORTED_TARGETS}
+)
+
+add_library(face_detector src/face_detector.cpp)
+target_link_libraries(face_detector ${roscpp_LIBRARIES})
+
+add_library(face_rec src/face_rec.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(corobot_face_recognition_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(
-  face_recognition_server
-  ${catkin_LIBRARIES}
-)
 
-target_link_libraries( 
-  face_recognition_client
-  ${catkin_LIBRARIES}
-)
 
-add_dependencies(
-  face_recognition_server
-  ${corobot_face_recognition_EXPORTED_TARGETS}
-)
 
-add_dependencies(
-  face_recognition_client
-  ${corobot_face_recognition_EXPORTED_TARGETS}
-)
 
 #############
 ## Install ##
