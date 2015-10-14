@@ -428,7 +428,7 @@ void APF::recoveryCheck(const double &recov_time_now){
          timeSinceLastWayPoint = recov_time_now;
          prevWayPointQuelen = waypointQueue.size();
          stringstream ss; corobot_common::Goal topicMsg;
-         ss << "Not in Recovery";
+         ss << "Not in Recovery ";
          topicMsg.name = ss.str(); recoveryPublisher.publish(topicMsg); 
     }
 }
@@ -444,7 +444,7 @@ void APF::recoverRobot(){
     ROS_DEBUG("clearing ObstacleList: %u", activeObstacleList.size());
 
     ROS_DEBUG("Recovery protocol triggered");
-    ss << "Recovery Started";
+    ss.str(""); ss << "Recovery Started";
     topicMsg.name = ss.str(); recoveryPublisher.publish(topicMsg);
     recoveryPublisher.publish(topicMsg);
 

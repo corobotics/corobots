@@ -3,6 +3,11 @@ from Tkinter import *
 import math
 import rospy
 
+VELOCITY = u"v\u20D7"
+THETA = u"\u03B8"
+SIGMA = u"\u03C3"
+NET_FORCE = u"\u03A3" + u"F\u20D1"
+
 class CorobotMonitorUI(Tk):
 
     def __init__(self, fullscreen):
@@ -22,7 +27,7 @@ class CorobotMonitorUI(Tk):
         self.obsCache = []
         self.pos = [0,0,0]
 
-        self.map = PhotoImage(file = '~corobot/corobot_ws/src/corobot_manager/src/corobot_manager/robotMap-1024.gif')
+        self.map = PhotoImage(file = '~corobot/corobot_ws/src/corobot_manager/src/corobot_manager/robotMapCropped-761.gif')
 
         self.frame = Frame(self, width = 1000)
         self.imgframe = Frame(self)
@@ -32,7 +37,7 @@ class CorobotMonitorUI(Tk):
         self.imgframe.grid(padx = 8, pady = 8, row = 1)
         self.lazframe.grid(padx = 8, pady = 8, row = 0, column = 1, rowspan = 2)
 
-        self.label = Label(self.frame, text="Current Pose", font=("Helvetica", 24))
+        self.label = Label(self.frame, text="Current Pose", font=("Helvetica", 18))
         self.label.grid(column = 0, row = 0, columnspan = 3)
         
 	self.canvas = Canvas(self.imgframe, width = self.map.width(), height = self.map.height())
@@ -46,41 +51,41 @@ class CorobotMonitorUI(Tk):
         self.lazcanvas.grid(sticky = 'NE')
         self.robotoval = self.lazcanvas.create_oval(195, 605, 205, 595, fill = 'red')
         self.lasercolor = 'red'
-        
-        self.xinfo = Label(self.frame, text="X: 0.0", font=("Helvetica", 24))
+
+        self.xinfo = Label(self.frame, text="X: 0.0", font=("Helvetica", 18))
         self.xinfo.grid(column = 0, row =2, sticky = 'W')
-        self.yinfo = Label(self.frame, text="Y: 0.0", font=("Helvetica", 24))
+        self.yinfo = Label(self.frame, text="Y: 0.0", font=("Helvetica", 18))
         self.yinfo.grid(column = 1, row = 2)
-        self.thinfo = Label(self.frame, text="Theta: 0.0", font=("Helvetica", 24))
+        self.thinfo = Label(self.frame, text=THETA+": 0.0", font=("Helvetica", 18))
         self.thinfo.grid(column = 2, row = 2, sticky = 'E')
-        self.covinfo = Label(self.frame, text="StDev: (0.0, 0.0, 0.0)", font=("Helvetica",18))
+        self.covinfo = Label(self.frame, text=SIGMA+": (0.0, 0.0, 0.0)", font=("Helvetica", 18))
         self.covinfo.grid(column = 0, row = 5, sticky = 'W')
 
-        self.absGoalInfo = Label(self.frame, text="AbsGoal: -", font=("Helvetica", 24))
+        self.absGoalInfo = Label(self.frame, text="AbsGoal: -", font=("Helvetica", 18))
         self.absGoalInfo.grid(column = 0, row = 3, sticky = 'W')
 
-        self.rawnavinfo = Label(self.frame, text="RawNav: -", font=("Helvetica", 24))
+        self.rawnavinfo = Label(self.frame, text="RawNav: -", font=("Helvetica", 18))
         self.rawnavinfo.grid(column = 1, row = 3)
 
-        self.velCmdInfo = Label(self.frame, text="ActVel: -", font=("Helvetica", 24))
+        self.velCmdInfo = Label(self.frame, text=VELOCITY+": -", font=("Helvetica", 18))
         self.velCmdInfo.grid(column = 2, row = 3, sticky = 'E')
 
-        self.obsinfo = Label(self.frame, text="ObsLoc: -", font=("Helvetica", 24))
+        self.obsinfo = Label(self.frame, text="ObsLoc: -", font=("Helvetica", 18))
         self.obsinfo.grid(column = 0, row = 4, columnspan = 3)
 
-        self.netForceInfo = Label(self.frame, text="NetForce: -", font=("Helvetica", 24))
+        self.netForceInfo = Label(self.frame, text=NET_FORCE+": -", font=("Helvetica", 18))
         self.netForceInfo.grid(column = 0, row =6, columnspan = 3)
 
-        self.qrCountInfo = Label(self.frame, text="QRLeft: 0 ; QRRight: 0", font=("Helvetica", 24))
+        self.qrCountInfo = Label(self.frame, text="QRLeft: 0 ; QRRight: 0", font=("Helvetica", 18))
         self.qrCountInfo.grid(column = 2, row = 5, sticky = 'E')
 
-        self.batteryInfo = Label(self.frame, text="Battery: -", font=("Helvetica", 24))
+        self.batteryInfo = Label(self.frame, text="Robot: -", font=("Helvetica", 18))
         self.batteryInfo.grid(column = 0, row = 7, sticky = 'W')
 
-        self.laptopBatteryInfo = Label(self.frame, text="Laptop Battery: -", font=("Helvetica", 24))
+        self.laptopBatteryInfo = Label(self.frame, text="Laptop: -", font=("Helvetica", 18))
         self.laptopBatteryInfo.grid(column = 2, row = 7, sticky = 'E')
 
-        self.recoveryInfo = Label(self.frame, text="Recovery: -", font=("Helvetica", 24))
+        self.recoveryInfo = Label(self.frame, text="  Recovery: -   ", font=("Helvetica", 18))
         self.recoveryInfo.grid(column = 1, row = 7)
 
         self.tBox = Entry(self.frame, width=10)
@@ -94,14 +99,14 @@ class CorobotMonitorUI(Tk):
             r.nav_to(self.tBox.get())"""
 
     def setPose(self, x, y, theta, cov):
-	self.canvas.delete(self.marker)
-	self.pose = [x, y, theta]
-	self.marker = self.canvas.create_oval((x/.1312)-5, self.map.height()-(y/.1312) + 5, (x/.1312) + 5, self.map.height()-(y/.1312)-5, fill = 'red')
-	self.canvas.create_oval((x/.1312)-1, self.map.height()-(y/.1312) + 1, (x/.1312) + 1, self.map.height()-(y/.1312)-1, fill = 'blue', outline = 'blue')
-	self.xinfo.configure(text="X: {0:6.3f}".format(x))
+        self.canvas.delete(self.marker)
+        self.pose = [x, y, theta]
+        self.marker = self.canvas.create_oval((x/.1312)-73, self.map.height()-(y/.1312) + 5, (x/.1312) - 63, self.map.height()-(y/.1312)-5, fill = 'red')
+        self.canvas.create_oval((x/.1312)-69, self.map.height()-(y/.1312) + 1, (x/.1312) - 67, self.map.height()-(y/.1312)-1, fill = 'blue', outline = 'blue')
+        self.xinfo.configure(text="X: {0:6.3f}".format(x))
         self.yinfo.configure(text="Y: {0:6.3f}".format(y))
-        self.thinfo.configure(text="Theta: {0:+4.2f}".format(theta))
-        self.covinfo.configure(text="StDev: ({0:6.3g},{1:6.3g},{2:6.3g})".format(math.sqrt(cov[0]),math.sqrt(cov[4]),math.sqrt(cov[8])))
+        self.thinfo.configure(text=THETA+": {0:+4.2f}".format(theta))
+        self.covinfo.configure(text=SIGMA+": ({:.1e}, {:.1e}, {:.1e})".format(math.sqrt(cov[0]),math.sqrt(cov[4]),math.sqrt(cov[8])))
 
     def setRawnavMsg(self, txt):
         self.lazcanvas.delete("force")
@@ -140,12 +145,21 @@ class CorobotMonitorUI(Tk):
         self.absGoalInfo.configure(text=txt)
 
     def setNetForceMsg(self, txt):
-        txt = "NetForce: " + txt
-        self.netForceInfo.configure(text=txt)
+        txt = txt[1:len(txt)-1].split(", ")
+        self.netForceInfo.configure(text=NET_FORCE+": <"+self.padZeros(txt[0],5)+", "+self.padZeros(txt[1],5)+">")
 
     def setVelCmdMsg(self, txt):
-        txt = "ActVel: " + txt
-        self.velCmdInfo.configure(text=txt)
+        txt = txt[1:len(txt)-1].split(", ")
+        self.velCmdInfo.configure(text=VELOCITY+": <"+self.padZeros(txt[0],4)+", "+self.padZeros(txt[1],4)+">")
+
+    @staticmethod
+    def padZeros(txt, length):
+        if len(txt) == 0:
+            return "0."+(length-2)*"0"
+        if len(txt) > length:
+            return txt[0:length]
+        else:
+            return txt + (length - len(txt))*'0'
 
     def setQrCountMsg(self, txt):
         """qrInfoText = self.qrCountInfo.cget("text")
@@ -161,11 +175,11 @@ class CorobotMonitorUI(Tk):
         self.recoveryInfo.configure(text=txt)
 
     def setBatteryMsg(self, txt):
-        txt = "Battery: " + txt + "%"
+        txt = "Robot: " + txt + "%"
         self.batteryInfo.configure(text=txt)
 
     def setLaptopBatteryMsg(self, txt):
-        txt = "Laptop Battery: " + txt
+        txt = "Laptop: " + txt
         self.laptopBatteryInfo.configure(text=txt)
 
     def setLaserMap(self, Omin, rmin, rmax, Oinc, dist):
@@ -214,7 +228,7 @@ class CorobotUIMessage(Tk):
         frame.pack(padx=8, pady=8)
 
         # Text wraps at half of screen width.
-        label = Label(frame, text=display_text, font=("Helvetica", 24), wraplength=(self.winfo_screenwidth()/2))
+        label = Label(frame, text=display_text, font=("Helvetica", 18), wraplength=(self.winfo_screenwidth()/2))
         label.pack(side='top')
 
         if self.confirm:
