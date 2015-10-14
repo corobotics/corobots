@@ -9,7 +9,7 @@ import rospy
 #from raj_test import *
 
 tau = pi * 2.0
-ACCEL_ANGLE_BONUS = 0.052 # should come from a file of calibration data
+ACCEL_ANGLE_BONUS = 0 # 0.052 # should come from a file of calibration data
 
 class EKF(object):
 
@@ -97,6 +97,10 @@ class EKF(object):
         else:
             pose.x += self.state[0,0]
             pose.y += self.state[1,0]
+            while pose.theta > pi:
+                pose.theta -= tau
+            while pose.theta < -pi:
+                pose.theta += tau
             pose.theta += self.state[2,0]
         y = column_vector(pose.x, pose.y, pose.theta)
         rospy.loginfo("Updating with position %s",y)
@@ -150,9 +154,9 @@ class EKF(object):
         self.state = self.state + delta
         # Use 50% of the delta x/y values as covariance, and 200% theta.
 
-        fwderr = 0.2 * dist
+        fwderr = 0.05 * dist
         sideerr = 0.1 * dist
-        yawerr  = 0.5 * dt + 0.1 * dist * 4
+        yawerr  = 0.2 * dt # + 0.1 * dist * 4
         cth = cos(odom_pose.theta)
         sth = sin(odom_pose.theta)
         dev = matrix([cth*fwderr - sth*sideerr, sth*fwderr + cth*sideerr, yawerr])

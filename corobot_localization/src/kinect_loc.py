@@ -33,7 +33,7 @@ startTheta = -0.513185441494
 endTheta = 0.49990695715
 thetaIncrement = 0.00158295687288 * laser_samples_inc
 
-probThresh = 0.44 # per good scan sample 
+probThresh = 0.42 # per good scan sample 
 
 kinectOffset = -0.09 # distance of Kinect in front of robot center (negative for behind)
 
@@ -335,6 +335,7 @@ def laser_callback(scan):
         covariance = [max(sum_cx/cCount, 1e-6), 0, 0, \
                       0, max(sum_cy/cCount, 1e-6), 0, \
                       0, 0, max(sum_ctheta/cCount, 1e-6)]
+        return
     else:
         covariance = [sum_cx/cCount, sum_xy/cCount, sum_xt/cCount, \
                sum_xy/cCount, sum_cy/cCount, sum_yt/cCount, \
