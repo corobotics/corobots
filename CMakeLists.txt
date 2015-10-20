@@ -49,11 +49,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  FaceRecognitionClientGoal.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -157,6 +156,7 @@ add_library(face_detector src/face_detector.cpp)
 target_link_libraries(face_detector ${roscpp_LIBRARIES})
 
 add_library(face_rec src/face_rec.cpp)
+add_library(face_img_capturer src/face_img_capturer.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
