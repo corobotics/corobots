@@ -1,5 +1,5 @@
 //#include "FaceRec.h"
-
+#include <ros/ros.h>
 #include "opencv2/contrib/contrib.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include <map>
@@ -70,7 +70,8 @@ int FaceRec::generateCsv() {
 void FaceRec::loadDataFromCsv() {
 	ifstream file(csv_file.c_str(), ifstream::in);
     if (!file) {
-        cout << "No valid input file was given, please check the given filename." << endl;
+        // cout << "No valid input file was given, please check the given filename." << endl;
+        ROS_ERROR ("No valid input file was given, please check the given filename.");
         return;
     }
     string line, imgPath, imgLabel, imgName;
@@ -89,6 +90,35 @@ void FaceRec::loadDataFromCsv() {
             _faceNames[label] = imgName;
         }
     }
+
+
+    /*
+    cout << "############################" << endl << endl;
+
+    cout << "_faceImgs:" << endl;
+    cout << _faceImgs.size() << endl;
+    // for (int i = 0; i < _faceImgs.size(); ++i) {
+    // 	// cout << "\t" << _faceImgs[i] << endl;
+    // 	cout << "\t" << "[]" << endl;
+    // }
+    cout << endl;
+
+    cout << "_faceLabels:" << endl;
+    cout << _faceLabels.size() << endl;
+    // for (int i = 0; i < _faceLabels.size(); ++i) {
+    // 	cout << "\t" << _faceLabels[i] << endl;
+    // }
+    cout << endl;
+
+    cout << "_faceNames:" << endl;
+    for (map<int,string>::iterator it=_faceNames.begin(); it!=_faceNames.end(); ++it)
+	    cout << it->first << " => " << it->second << endl;
+
+	cout << endl;
+    cout << "############################" << endl;
+    */
+
+
 }
 
 void FaceRec::trainModelsAndSave() {
