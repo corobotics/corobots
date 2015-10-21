@@ -1,0 +1,13 @@
+#goal definition
+uint8   order_id 
+string  order_argument
+---
+#result definition
+uint8   order_id
+string[]  names
+float32[] confidence
+---
+#feedback
+uint8   order_id
+string[]  names
+float32[] confidence
