@@ -54,7 +54,10 @@ void FaceDetector::detectFaces(Mat &frame, vector<Rect> &faces, bool drawBoxes) 
 	equalizeHist( frame_gray, frame_gray );
 
 	// _faceCascade.detectMultiScale( frame_gray, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
-	_faceCascade.detectMultiScale( frame_gray, faces, 1.1, 2, CV_HAAR_DO_CANNY_PRUNING, Size(30, 30) );
+	// _faceCascade.detectMultiScale( frame_gray, faces, 1.1, 2, CV_HAAR_DO_CANNY_PRUNING, Size(30, 30) );
+	
+
+	_faceCascade.detectMultiScale( frame_gray, faces, 1.05, 4, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
 
 	if (drawBoxes)
 		_drawBoxes(frame, faces);
