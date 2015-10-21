@@ -196,11 +196,11 @@ public:
       return;
     }
 
-    // clear previous results
+    // clear previous feedback
     _feedback.names.clear();
     _feedback.confidence.clear();
-    _result.names.clear();
-    _result.confidence.clear();
+    // _result.names.clear();
+    // _result.confidence.clear();
 
     std::vector<cv::Rect> faces;
     std::vector<cv::Mat> faceImgs = _fd.getFaceImgs(cv_ptr->image, faces, true);
