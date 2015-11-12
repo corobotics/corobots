@@ -136,7 +136,8 @@ class CorobotManager():
     def facerec_done_callback(state, result):
         rospy.loginfo("goal %d ended in state %s.", result.order_id, status)
         if order_id == 1:
-            rospy.loginfo("facerec: %s recognized with confidence %d.", feedback.names[0], feedback.confidence[0])
+            rospy.loginfo("facerec: %s recognized with confidence %d.", result.names[0], result.confidence[0])
+            self.last_seen.append((result.names[0], result.confidence[0], self.pose.x, self.pose.y))
     
     def facerec_active_callback():
         rospy.loginfo("facerec: goal went active.")
@@ -145,6 +146,7 @@ class CorobotManager():
         rospy.loginfo("facerec: feedback recieved for goal %d.", feedback.order_id)
         if order_id == 1:
             rospy.loginfo("facerec: %s recognized with confidence %d.", feedback.names[0], feedback.confidence[0])
+            self.last_seen.append((feedback.names[0], feedback.confidence[0], self.pose.x, self.pose.y))
 
     def init_ros_node(self):
         """Initialize all ROS node/sub/pub/srv stuff."""
