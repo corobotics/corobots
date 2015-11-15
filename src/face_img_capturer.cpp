@@ -10,6 +10,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <dirent.h>
 #include <ros/package.h>
+#include "tantriggs.cpp"
 
 class FaceImgCapturer
 {
@@ -19,7 +20,7 @@ public:
 	~FaceImgCapturer();
 	void capture(cv::Mat &face);
 	// void clearLastImage();
-	int checkIfDirExistsOtherwiseCreate(std::string);
+	int checkIfDirExistsOtherwiseCreate(std::string, bool computeLastImgIndex=false);
 	int getNoImgsClicked();
 
 private:
@@ -53,6 +54,11 @@ FaceImgCapturer::FaceImgCapturer(string name):
 {
 	checkIfDirExistsOtherwiseCreate("");
 	checkIfDirExistsOtherwiseCreate(name);
+	checkIfDirExistsOtherwiseCreate(name + "/original", true);
+	checkIfDirExistsOtherwiseCreate(name + "/grayscale");
+	checkIfDirExistsOtherwiseCreate(name + "/histeq");
+	checkIfDirExistsOtherwiseCreate(name + "/tantriggs");
+	checkIfDirExistsOtherwiseCreate(name + "/avg4");
 }
 
 /*FaceImgCapturer::FaceImgCapturer() {
@@ -66,8 +72,9 @@ FaceImgCapturer::~FaceImgCapturer() {
 void FaceImgCapturer::capture(Mat &face) {
     double imageDiff = 10000000000.0;
 	double currentTime, timeDiff_seconds;
-	Mat mirrorFaceImg;
-	Mat preprocessedFace;
+	Mat mirroredFace;
+	Mat faceHisteq;
+	Mat mirroredFaceHisteq;
 	Mat frame;
 	string saveName;
 	stringstream ss;
@@ -84,36 +91,75 @@ void FaceImgCapturer::capture(Mat &face) {
 
 	// Only process the face if it is noticeably different from the previous frame and there has been noticeable time gap.
     if ((imageDiff > MIN_IMG_DIFF) && (timeDiff_seconds > MIN_TIME_DIFF)) {
-    	flip(face, mirrorFaceImg, 1);
-
+    	flip(face, mirroredFace, 1);
+    	
+    	// Resize original and mirrored face imgs
     	resize(face, face, Size(face_img_size, face_img_size));
-    	cvtColor(face, face, CV_BGR2GRAY);
-    	equalizeHist(face, face);
-    	
-    	resize(mirrorFaceImg, mirrorFaceImg, Size(face_img_size, face_img_size));
-    	cvtColor(mirrorFaceImg, mirrorFaceImg, CV_BGR2GRAY);
-    	equalizeHist(mirrorFaceImg, mirrorFaceImg);
+    	resize(mirroredFace, mirroredFace, Size(face_img_size, face_img_size));
 
-        // Make a white flash on the face, so the user knows a photo has been taken.
-        // Mat displayedFaceRegion = displayedFrame(faceRect);
-        // displayedFaceRegion += CV_RGB(90,90,90);
-    	
-    	// to_string not working?
-    	// saveName = face_database_path_2 + _personName + "/" + std::to_string(_lastImgIndex) + ".jpg";
-    	saveName = face_database_path_2 + "/" + _personName + "/" + _lastImgIndexStr + ".jpg";
+    	// Save original face img
+    	saveName = face_database_path_2 + "/" + _personName + "/original/" + _lastImgIndexStr + ".jpg";
     	imwrite(saveName, face);
-    	_lastImgIndex++;
+    	
+    	// Save grayscale face img
+    	cvtColor(face, face, CV_BGR2GRAY);
+    	saveName = face_database_path_2 + "/" + _personName + "/grayscale/" + _lastImgIndexStr + ".jpg";
+    	imwrite(saveName, face);
 
+    	// Save histogram equalized face img
+    	equalizeHist(face, faceHisteq);
+    	saveName = face_database_path_2 + "/" + _personName + "/histeq/" + _lastImgIndexStr + ".jpg";
+    	imwrite(saveName, faceHisteq);
+
+
+    	namedWindow("face", WINDOW_AUTOSIZE);
+		imshow("face", face);
+		waitKey(30);
+
+    	// Save tantriggs face img
+    	Mat faceTantriggs = norm_0_255(tan_triggs_preprocessing(face));
+    	saveName = face_database_path_2 + "/" + _personName + "/tantriggs/" + _lastImgIndexStr + ".jpg";
+    	imwrite(saveName, faceTantriggs);
+    	
+    	namedWindow("faceTantriggs", WINDOW_AUTOSIZE);
+		imshow("faceTantriggs", faceTantriggs);
+		waitKey(30);
+
+
+    	// TODO
+    	// save avg4 face img
+
+    	_lastImgIndex++;
     	ss.str("");
     	ss << _lastImgIndex;
     	_lastImgIndexStr = ss.str();
-    	// to_string not working?
-    	// saveName = face_database_path_2 + _personName + "/" + std::to_string(_lastImgIndex) + ".jpg";
-    	saveName = face_database_path_2 + "/" + _personName + "/" + _lastImgIndexStr + ".jpg";
-    	imwrite(saveName, mirrorFaceImg);
+
+
+    	// Save mirrored original face img
+    	saveName = face_database_path_2 + "/" + _personName + "/original/" + _lastImgIndexStr + ".jpg";
+    	imwrite(saveName, mirroredFace);
+    	
+    	// Save mirrored grayscale face img
+    	cvtColor(mirroredFace, mirroredFace, CV_BGR2GRAY);
+    	saveName = face_database_path_2 + "/" + _personName + "/grayscale/" + _lastImgIndexStr + ".jpg";
+    	imwrite(saveName, mirroredFace);
+
+    	// Save mirrored histogram equalized face img
+    	equalizeHist(mirroredFace, mirroredFaceHisteq);
+    	saveName = face_database_path_2 + "/" + _personName + "/histeq/" + _lastImgIndexStr + ".jpg";
+    	imwrite(saveName, mirroredFaceHisteq);
+
+    	/// Save tantriggs mirrored face img
+    	faceTantriggs = norm_0_255(tan_triggs_preprocessing(mirroredFace));
+    	saveName = face_database_path_2 + "/" + _personName + "/tantriggs/" + _lastImgIndexStr + ".jpg";
+    	imwrite(saveName, faceTantriggs);
+    	 
+    	// TODO
+    	// save mirrored avg4 face img
+
     	_lastImgIndex++;
 
-        // Keep a copy of the processed face, to compare on next iteration.
+        // Keep a copy of the current face, to compare on next iteration.
         _lastImage = face;
         _timeOfLastImage = currentTime;
         _imagesClicked++;
@@ -144,7 +190,8 @@ double FaceImgCapturer::getSimilarity(Mat A, Mat B) {
 	}
 }
 
-int FaceImgCapturer::checkIfDirExistsOtherwiseCreate(string name) {
+// WARNING: LINUX ONLY
+int FaceImgCapturer::checkIfDirExistsOtherwiseCreate(string name, bool computeLastImgIndex) {
 	string path = face_database_path_2 + name;
 
 	//cout << "path: " << path << endl;
@@ -155,26 +202,26 @@ int FaceImgCapturer::checkIfDirExistsOtherwiseCreate(string name) {
 	    // cout << "User record exists." << endl;
 	    ROS_INFO ("Directory exists: %s", path.c_str());
 	    
-	    // linux only
-	   	struct dirent *entry;
-    	int ret = 1;
-    	DIR *dir;
-    	dir = opendir (path.c_str());
-    	string f_name;
-    	int index;
-    	_lastImgIndex = 0;
+	    if (computeLastImgIndex) {
+		   	struct dirent *entry;
+	    	int ret = 1;
+	    	DIR *dir;
+	    	dir = opendir (path.c_str());
+	    	string f_name;
+	    	int index;
+	    	_lastImgIndex = 0;
 
-    	while ((entry = readdir (dir)) != NULL) {
-        	f_name = entry->d_name;
-        	index = atoi(f_name.c_str());
-        	// cout << "index:" << to_string(index) << endl;
-        	if (index > _lastImgIndex)
-        		_lastImgIndex = index;
-    	}
+	    	while ((entry = readdir (dir)) != NULL) {
+	        	f_name = entry->d_name;
+	        	index = atoi(f_name.c_str());
+	        	// cout << "index:" << to_string(index) << endl;
+	        	if (index > _lastImgIndex)
+	        		_lastImgIndex = index;
+	    	}
 
-    	// cout << "_lastImgIndex: " << _lastImgIndex << endl;
-	       
-	   	(void)closedir(dir);
+	    	// cout << "_lastImgIndex: " << _lastImgIndex << endl;      
+		   	(void)closedir(dir);
+	    }
 
 	    return 0;
 	}
