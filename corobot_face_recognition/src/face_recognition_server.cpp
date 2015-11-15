@@ -32,11 +32,14 @@ protected:
   FaceDetector _fd;
   FaceRec* _fr;
   FaceImgCapturer* _fc;
+  int _window_rows;
+  int _window_cols;
 
   std::string _windowName;
 
   // PARAMS
   std::string _recognitionAlgo;
+  std::string _preprocessing;
   int _noTrainingImgs;
   int _maxFaces;
   double _faceImgSize;
@@ -52,7 +55,9 @@ public:
     _fd(),
     _fr(NULL),
     _fc(NULL),
-    _windowName("testing...")
+    _windowName("FaceRec"),
+    _window_rows(0),
+    _window_cols(0)
   {
     _as.start();
 
@@ -65,8 +70,18 @@ public:
     _ph.param<int>("no_training_images", _noTrainingImgs , 20);
     _ph.param<int>("max_faces", _maxFaces , 2);
     _ph.param<bool>("display_window", _displayWindow, true);
+    _ph.param<string>("preprocessing", _preprocessing, "tantriggs");
 
-    ROS_INFO("Using %s for recognition.", _recognitionAlgo.c_str());
+    try {
+      _fr = new FaceRec(true, _preprocessing);
+      ROS_INFO("Using %s for recognition.", _recognitionAlgo.c_str());
+      ROS_INFO("Using %s for preprocessing.", _preprocessing.c_str());
+    }
+    catch( cv::Exception& e ) {
+      const char* err_msg = e.what();
+      ROS_INFO("%s", err_msg);
+      ROS_INFO("Only ADD_IMAGES mode will work. Please add more subjects for recognition.");
+    }
 
     cv::namedWindow(_windowName);
   }
@@ -86,7 +101,7 @@ public:
     }
     
     // helper variables
-    ros::Rate r(1);
+    ros::Rate r(60);
     bool success = true;
 
     _goal_id = goal->order_id;
@@ -107,7 +122,7 @@ public:
       // RECOGNIZE ONCE
       case 0:
         // cout << "case 0" << endl;
-        _fr = new FaceRec(true);
+        // _fr = new FaceRec(true);
         _image_sub = _it.subscribe("/usb_cam/image_raw", 1, &FaceRecognition::recognizeCb, this);
         
         while( _as.isActive() && !_as.isPreemptRequested() && !ros::isShuttingDown() )
@@ -118,7 +133,7 @@ public:
       // RECOGNIZE CONTINUOUSLY
       case 1:
         //cout << "case 1" << endl;
-        _fr = new FaceRec(true);
+        // _fr = new FaceRec(true);
         _image_sub = _it.subscribe("/usb_cam/image_raw", 1, &FaceRecognition::recognizeCb, this);
         
         while( _as.isActive() && !_as.isPreemptRequested() && !ros::isShuttingDown() )
@@ -142,14 +157,23 @@ public:
         // call training function and check if successful
         // bool trainingSuccessful = true;
         // cout << "case 3" << endl;
+        _fr->train(_preprocessing);
         if (true) 
           _as.setSucceeded(_result);
         else 
           _as.setAborted(_result);
         break;
       
-      // EXIT
+      // STOP
       case 4:
+        if (_as.isActive()) {
+          _as.setPreempted();
+          // _image_sub.shutdown();
+        }
+        break;
+
+      // EXIT
+      case 5:
         // cout << "case 4" << endl;
         ROS_INFO("%s: Exit request.", _action_name.c_str());
         _as.setSucceeded(_result);
@@ -175,6 +199,10 @@ public:
       // break;
       // cout << "shutting down _image_sub" << endl;
       _image_sub.shutdown();
+      Mat inactive(_window_rows, _window_cols, CV_8UC3, CV_RGB(20,20,20));
+      appendStatusBar(inactive, "INACTIVE", "");
+      cv::imshow(_windowName, inactive);
+      cv::waitKey(3);
       return;
     }
 
@@ -182,6 +210,10 @@ public:
       // std::cout << "not active" << std::endl;
       // cout << "shutting down _image_sub" << endl;
       _image_sub.shutdown();
+      Mat inactive(_window_rows, _window_cols, CV_8UC3, CV_RGB(20,20,20));
+      appendStatusBar(inactive, "INACTIVE", "");
+      cv::imshow(_windowName, inactive);
+      cv::waitKey(3);
       return;
     }
 
@@ -194,6 +226,11 @@ public:
     {
       ROS_ERROR("%s: cv_bridge exception: %s", _action_name.c_str(), e.what());
       return;
+    }
+
+    if (_window_rows == 0) {
+      _window_rows = cv_ptr->image.rows;
+      _window_cols = cv_ptr->image.cols;
     }
 
     // clear previous feedback
@@ -230,6 +267,7 @@ public:
 
     // update GUI window
     // TODO check gui parameter
+    appendStatusBar(cv_ptr->image, "RECOGNITION", "");
     cv::imshow(_windowName, cv_ptr->image);
     cv::waitKey(3);
 
@@ -286,6 +324,11 @@ public:
       return;
     }
 
+    if (_window_rows == 0) {
+      _window_rows = cv_ptr->image.rows;
+      _window_cols = cv_ptr->image.cols;
+    }
+
     std::vector<cv::Rect> faces;
     // _fd.detectFaces(cv_ptr->image, faces, true);
 
@@ -302,15 +345,31 @@ public:
     _ph.getParam("no_training_images", no_images_to_click);
     
     if (_fc->getNoImgsClicked() >= no_images_to_click) {
-      // cv::imshow(_windowName, cv::Mat::zeros(1, 1, CV_32F));   
+      // Mat inactive = cv::Mat::zeros(cv_ptr->image.rows, cv_ptr->image.cols, CV_32F);
+      Mat inactive(_window_rows, _window_cols, CV_8UC3, CV_RGB(20,20,20));
+      appendStatusBar(inactive, "INACTIVE", "Images added. Please train.");
+      cv::imshow(_windowName, inactive);  
+      // cv::displayOverlay(_windowName, "Images added", 3000); 
       _as.setSucceeded(_result);
+    } else {
+      // update GUI window
+      // check GUI parameter
+      appendStatusBar(cv_ptr->image, "ADDING IMAGES.", "Images added");
+      cv::imshow(_windowName, cv_ptr->image);  
     }
 
-    // update GUI window
-    // check GUI parameter
-    cv::imshow(_windowName, cv_ptr->image);  
     cv::waitKey(3);
   }
+
+
+  void appendStatusBar(Mat &img, std::string mode, std::string msg) {
+    Mat row(20, img.cols, CV_8UC3, CV_RGB(56,66,72) );
+    img.push_back(row);
+    string text = "MODE: " + mode + "      " + msg;
+    // putText(img, "STATUS", Point(10 ,img.cols + 10), FONT_HERSHEY_PLAIN, 5, Scalar(255,255,255));
+    putText(img, text, Point2f(5, img.rows-5), FONT_HERSHEY_PLAIN, 1, Scalar(255,255,255), 0, CV_AA);
+  }
+
 
 };
 

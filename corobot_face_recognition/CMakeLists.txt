@@ -157,6 +157,7 @@ target_link_libraries(face_detector ${roscpp_LIBRARIES})
 
 add_library(face_rec src/face_rec.cpp)
 add_library(face_img_capturer src/face_img_capturer.cpp)
+add_library(tantriggs src/tantriggs.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
