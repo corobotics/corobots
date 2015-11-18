@@ -8,6 +8,8 @@ import socket
 import time
 import threading
 import thread
+import actionlib
+
 
 import roslib; roslib.load_manifest("corobot_manager")
 import rospy
@@ -133,18 +135,19 @@ class CorobotManager():
         #batteryLevel = float(dArray.status[2].values[3].value) / float(dArray.status[2].values[4].value) 
         #print("battery %: ", batteryLevel)
     
-    def facerec_done_callback(state, result):
-        rospy.loginfo("goal %d ended in state %s.", result.order_id, status)
-        if order_id == 1:
+    def facerec_done_callback(self, state, result):
+        # rospy.loginfo("goal %d ended in state %s.", result.order_id, status)
+        if result.order_id == 0:
             rospy.loginfo("facerec: %s recognized with confidence %d.", result.names[0], result.confidence[0])
             self.last_seen.append((result.names[0], result.confidence[0], self.pose.x, self.pose.y))
+            self.client_write(self.facerec_msg_id, "FACEREC %s %f %f %f" % (result.names[0], result.confidence[0], self.pose.x, self.pose.y))
     
-    def facerec_active_callback():
+    def facerec_active_callback(self):
         rospy.loginfo("facerec: goal went active.")
     
-    def facerec_feedback_callback(feedback):
+    def facerec_feedback_callback(self, feedback):
         rospy.loginfo("facerec: feedback recieved for goal %d.", feedback.order_id)
-        if order_id == 1:
+        if feedback.order_id == 1:
             rospy.loginfo("facerec: %s recognized with confidence %d.", feedback.names[0], feedback.confidence[0])
             self.last_seen.append((feedback.names[0], feedback.confidence[0], self.pose.x, self.pose.y))
 
@@ -159,13 +162,13 @@ class CorobotManager():
         rospy.Subscriber("goals_nav", Point, self.goals_callback)
         rospy.wait_for_service("get_landmark")
         self.get_landmark = rospy.ServiceProxy("get_landmark", GetLandmark)
-    	"""
-    	#Tristan-WebcamServices
-    	rospy.wait_for_service("WebcamService")
-    	self.webcam_service = rospy.ServiceProxy("WebcamService", WebcamService)
-    	#!Tristan
-    	"""
-    	self.recov = False
+        """
+        #Tristan-WebcamServices
+        rospy.wait_for_service("WebcamService")
+        self.webcam_service = rospy.ServiceProxy("WebcamService", WebcamService)
+        #!Tristan
+        """
+        self.recov = False
         self.goals_pub = rospy.Publisher("goals", Point)
         self.goals_nav_pub = rospy.Publisher("goals_nav", Point)
         self.show_msgs_pub = rospy.Publisher("show_msg", UIMessage)
@@ -173,7 +176,7 @@ class CorobotManager():
         # Ronit - Face Recognition 
         # Face Recognition Action Client
         self.face_rec_client = actionlib.SimpleActionClient('corobot_face_recognition', corobot_face_recognition.msg.FaceRecognitionAction)
-        face_rec_client.wait_for_server()
+        # self.face_rec_client.wait_for_server()
         #!
         
         rospy.loginfo("Listening for client robots.")
@@ -222,30 +225,42 @@ class CorobotManager():
             confirm = msg_type.endswith("CONFIRM")
             themsg = " ".join(data[1:])
             self.show_msgs_pub.publish(UIMessage(id=int(msg_id), timeout=int(data[0]), msg=themsg, req_confirm=confirm))
-	
+    
         #Ronit - Face Recognition
         elif msg_type.startswith("FACEREC"):
             if msg_type.endswith("CONTINUOUS"):
-                self.face_rec_client.send_goal(1, facerec_done_callback, facerec_active_callback, facerec_feedback_callback);
+                goal = corobot_face_recognition.msg.FaceRecognitionClientGoal(order_id=1, order_argument="unused")
+                self.face_rec_client.send_goal(goal, self.facerec_done_callback, self.facerec_active_callback, self.facerec_feedback_callback);
             else:
-                self.face_rec_client.send_goal(0, facerec_done_callback, facerec_active_callback, facerec_feedback_callback);
+                goal = corobot_face_recognition.msg.FaceRecognitionClientGoal(order_id=0, order_argument="unused")
+                print('sending goal 0 to facerec')
+                self.face_rec_client.send_goal(goal, self.facerec_done_callback, self.facerec_active_callback, self.facerec_feedback_callback);
             self.facerec_msg_id = msg_id
 
         elif msg_type.startswith("LASTSEEN"):
-            self.client_write(msg_id, "TBD")
+            count_ls = int(msg_type.split("_")[-1])
+            if len(self.last_seen) == 0:
+                self.client_write(msg_id, "LASTSEEN_0")
+            else:
+                count_ls = min(count_ls, len(self.last_seen))
+                res = "LASTSEEN_%d " % (count_ls)
+                for i in range(-1, -1-(count_ls), -1):
+                    ls_name, ls_confidence, ls_pos_x, ls_pos_y = self.last_seen[i]
+                    res += "%s %f %f %f " % (ls_name, ls_confidence, ls_pos_x, ls_pos_y)
+                res = res[:-1]
+                self.client_write(msg_id, res)
 
-
-    	"""
-    	#Tristan-Handle LASTSEEN and CURRENTSEEN requests to WebcamService
-    	elif msg_type.endswith("SEEN"):
-    		try:
-    			self.webcam_response = WebcamService(msg_type)
-    			self.client_write(msg_id, "WebcamService %s: %s" % (self.msg_type, self.webcam_response) 
-    		except rospy.ServiceException as e:
-    			self.client_write(msg_id, "WebcamService ERROR " % e)
+        """
+        #Tristan-Handle LASTSEEN and CURRENTSEEN requests to WebcamService
+        elif msg_type.endswith("SEEN"):
+            try:
+                self.webcam_response = WebcamService(msg_type)
+                self.client_write(msg_id, "WebcamService %s: %s" % (self.msg_type, self.webcam_response) 
+            except rospy.ServiceException as e:
+                self.client_write(msg_id, "WebcamService ERROR " % e)
             else:
                 self.client_write(msg_id, "ERROR Unknown message type \"%s\"" % msg_type)
-    	"""			
+        """         
 
 def main():
     CorobotManager().start()
