@@ -3,5 +3,6 @@
 # if we need to convert
 float32 x
 float32 y
+string ltype
 
 string name

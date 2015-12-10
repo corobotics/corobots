@@ -135,7 +135,7 @@ class CorobotNavigator():
         #rospy.loginfo("Selecting from %s" % (", ".join(l.name for l in landmarks)))
         visibles = []
         for landmark in landmarks:
-            if self.navigable(point, landmark):
+            if self.navigable(point, landmark) and landmark.ltype in ['NSH', 'I', 'WEH']:
                 d = point_distance(point, landmark)
                 visibles.append((d, landmark))
         visibles.sort()

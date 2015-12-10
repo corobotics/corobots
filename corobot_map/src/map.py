@@ -32,7 +32,7 @@ def handle_get_neighbors(req):
 def handle_get_landmark(req):
     if not req.name in wps:
         raise rospy.ServiceException("Node " +req.name+ " not found.")
-    return GetLandmarkResponse(Landmark(x=wps[req.name][0],y=wps[req.name][1],name=req.name))
+    return GetLandmarkResponse(Landmark(x=wps[req.name][0],y=wps[req.name][1],ltype=wps[req.name][2],name=req.name))
 
 def handle_get_pixel_occupancy(req):
     if occ_map == None:
@@ -58,16 +58,16 @@ def get_waypoints():
     """Builds and returns a Landmark[] from the graph data, no neighbor data included."""
     wp_list = []
     for k in wps.keys():
-        wp_list.append(Landmark(wps[k][0], wps[k][1], k))
+        wp_list.append(Landmark(wps[k][0], wps[k][1], wps[k][2], k))
     return wp_list
 
 def get_neighbors(nodeName):
     """Builds and returns Landmark[] of neighbors to the given waypoint name."""
-    neighbors = wps[nodeName][2]
+    neighbors = wps[nodeName][3]
     waypoints = []
     for nbr in neighbors:
         node = wps[nbr]
-        waypoints.append(Landmark(node[0], node[1], nbr))
+        waypoints.append(Landmark(node[0], node[1], node[2], nbr))
     return waypoints
 
 def load_waypoints():
@@ -84,7 +84,7 @@ def load_waypoints():
             for neighbor in vals[6:]:
                 if neighbor != "":
                     neighbor_list.append(neighbor.upper())
-            wps[vals[0].upper()]=float(vals[3]),float(vals[4]),neighbor_list
+            wps[vals[0].upper()]=float(vals[3]),float(vals[4]),vals[5],neighbor_list
 
 def main():
     """This node is acting as a relay for image-driven map data and then
