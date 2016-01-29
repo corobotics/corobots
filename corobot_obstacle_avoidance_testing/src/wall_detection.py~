@@ -1,0 +1,15 @@
+import rospy
+from std_msgs.msg import String
+
+def testing():
+	rospy.init_node("NewNode")
+	print "Hello!!!"
+
+def main():
+	testing()
+
+if __name__ == '__main__':
+	try:
+		main()
+	except rospy.ROSInterruptException:
+		pass

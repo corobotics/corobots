@@ -1,0 +1,56 @@
+#ifndef wall_detection_h
+#define wall_detection_h
+#include <iostream>
+
+#include "ros/console.h"
+#include "ros/ros.h"
+#include "sensor_msgs/LaserScan.h"
+#include "corobot_obstacle_avoidance_testing/Wall.h"
+
+
+
+using namespace std;
+using sensor_msgs::LaserScan;
+using corobot_obstacle_avoidance_testing::Wall;
+
+
+/**
+ * Helper class for 2D rectangular coordinates
+ */
+class CartesianPoint{
+public:
+	float x,y;
+	CartesianPoint(float _x,float _y){
+		x = _x;
+		y = _y;
+	}
+};
+
+/**
+ * Declaration of wall detector class
+ */
+class WallDetector {
+public:
+
+    static int wallThreshold;
+    static double verticalMask;
+    static double horizontalMask;
+
+    ros::Publisher wallPublisher;
+
+	WallDetector(){
+	}
+	void testMethod(){ cout << "Hello!\n";}
+
+    void scanCallback(sensor_msgs::LaserScan);
+
+    Wall houghTransform(sensor_msgs::LaserScan);
+};
+
+int WallDetector::wallThreshold = 45;
+
+double WallDetector::verticalMask = 0.05;
+
+double WallDetector::horizontalMask = 0.01;
+
+#endif /* wall_detection_h */

@@ -1,0 +1,121 @@
+#include <wall_detection.h>
+#include "ros/console.h"
+#include "ros/ros.h"
+#include <cmath>
+#include <vector>
+#include <limits>
+
+#include <fstream>
+
+using namespace std;
+using sensor_msgs::LaserScan;
+
+/**
+ * Callback for laserscan messages.
+ */
+void WallDetector::scanCallback(LaserScan scan) {
+    cout << "In scan Callback\n";
+    clock_t begin = clock();
+	//cout << scan;
+	cout << "here\n";
+	//Wall currWall = houghTransform(scan);
+    clock_t end = clock();
+    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+    cout << "Time taken: " << elapsed_secs << "\n";
+    cout << "Right wall conf: " << currWall.conf_right << "\n";
+    cout << "Left wall conf: " << currWall.conf_left << "\n";
+    float theta = (currWall.conf_right > currWall.conf_left)?(currWall.thetaright):(currWall.thetaleft);
+    bool isleft = (currWall.conf_right > currWall.conf_left)?(false):(true);
+    if (isInit == true){
+        toFollow_r = currWall.rright;
+        toFollow_t = currWall.thetaright;
+        isInit = false;
+    }
+    else{
+        float distleft = pow((toFollow_t - currWall.thetaleft),2.00);
+        distleft += pow((toFollow_r - currWall.rleft),2.00);
+        distleft = sqrt(distleft);
+
+        float distright = pow((toFollow_t - currWall.thetaright),2.00);
+        distright += pow((toFollow_r - currWall.rright),2.00);
+        distright = sqrt(distright);
+
+        toFollow_r = (distright > distleft)?(currWall.rleft):(currWall.rright);
+        toFollow_t = (distright > distleft)?(currWall.thetaleft):(currWall.thetaright);
+    }
+    theta = toFollow_t;
+    cout << "Theta is: " << theta << "\n";
+    Twist t;
+    if (theta <= 85.00 && !isDeadlock){
+        if (lastTurnLeft == true)
+            turnSwitchCount ++;
+        lastTurnLeft = false;
+        t.angular.z = -0.1;
+    }
+    else if (theta >= 105.00 && !isDeadlock){
+        t.angular.z = 0.1;
+        if (lastTurnLeft == false)
+            turnSwitchCount++;
+        lastTurnLeft = true;
+    }
+    else if (isDeadlock){
+        t.linear.x = 0.3;
+        turnSwitchCount = 0;
+    }
+    else{
+        t.linear.x = 0.1;
+        turnSwitchCount = 0;
+    }
+t.linear.x = 0.1;
+    cmdVelPub.publish(t);
+    cmdVelPub.publish(t);
+    cmdVelPub.publish(t);
+    if (turnSwitchCount >= 3)
+        isDeadlock = true;
+}
+
+void testWallSub(Wall wall){
+    cout << "Got a Wall msg...\n";
+    //cout << wall << "\n";
+}
+
+void poseCallBack(Pose pose){
+    float pi = atan(1)*4.00;
+    float theta = pose.theta;
+    if (theta < 0.00)
+        theta += (2.00*pi);
+    theta = theta*180.00/pi;
+    //cout << "Theta is: " << theta << "\n";
+}
+
+int main(int argc, char** argv) {
+    ros::init(argc, argv, "wall_detection");
+    ros::NodeHandle n;
+    int num=0;
+    double hmask = 0.00, vmask = 0.00;
+    if (n.hasParam("threshold")){
+    	n.getParam("threshold",num);
+ 		WallDetector::wallThreshold = num;   	
+    }
+    if (n.hasParam("hmask")){
+    	n.getParam("hmask",hmask);
+    	WallDetector::horizontalMask = hmask;
+    }
+    if (n.hasParam("vmask")){
+    	n.getParam("vmask",vmask);
+    	WallDetector::verticalMask = vmask;
+    }
+
+    
+    WallDetector* wd = new WallDetector();
+    wd->wallPublisher = n.advertise<Wall>("wall",1000);
+    wd->cmdVelPub = n.advertise<Twist>("mobile_base/commands/velocity",1);
+    wd->testMethod();
+    cout << "threshold " << WallDetector::wallThreshold << " hmask: " << WallDetector::horizontalMask << " vmask: " << WallDetector::verticalMask << "\n";
+    ros::Subscriber scanSub = n.subscribe("scan", 1, &WallDetector::scanCallback,wd);
+    ros::Subscriber wallSub = n.subscribe("wall",1,testWallSub);
+    //ros::Subscriber poseSub = n.subscribe("pose",1,poseCallBack);
+    ros::spin();
+    delete wd;
+    return 0;
+}
